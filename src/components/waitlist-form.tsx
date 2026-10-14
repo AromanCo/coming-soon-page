@@ -16,7 +16,7 @@ export function WaitlistForm({ configured }: { configured: boolean }) {
   const [status, setStatus] = useState<FormStatus>({
     type: configured ? "idle" : "error",
     message: configured
-      ? "دعوت‌ها ممکن است مرحله‌به‌مرحله ارسال شوند و زمان مشخصی برای دسترسی تضمین نمی‌شود."
+      ? "دعوت‌نامه‌ها به‌تدریج و پیش از افتتاح عمومی ارسال می‌شوند."
       : "عضویت فعلاً در دسترس نیست؛ تنظیمات پایگاه داده هنوز کامل نشده است.",
   });
 
@@ -57,7 +57,7 @@ export function WaitlistForm({ configured }: { configured: boolean }) {
         type: "success",
         message:
           result.message ??
-          "به لیست دعوت آرومان خوش آمدی! ثبت‌نامت انجام شد. وقتی نوبت دسترسی زودهنگام برسد، از طریق ایمیل باخبرت می‌کنیم.",
+          "به لیست انتظار آرومان خوش آمدی! ثبت‌نامت انجام شد. خبرهای مربوط به دعوت‌نامه را با ایمیل برایت می‌فرستیم.",
       });
       form.reset();
     } catch {
@@ -73,7 +73,7 @@ export function WaitlistForm({ configured }: { configured: boolean }) {
   return (
     <form className="waitlist-form" id="waitlist" onSubmit={handleSubmit} noValidate>
       <label className="waitlist-label" htmlFor={emailId}>
-        ایمیل برای دریافت دعوت
+        ایمیل برای دریافت دعوت‌نامه
       </label>
       <div className="waitlist-row">
         <input
@@ -90,7 +90,7 @@ export function WaitlistForm({ configured }: { configured: boolean }) {
           maxLength={254}
         />
         <button type="submit" disabled={!configured || isSubmitting}>
-          {isSubmitting ? "در حال ثبت…" : "به لیست دعوت زودهنگام بپیوند"}
+          {isSubmitting ? "در حال ثبت…" : "دریافت دعوت‌نامه"}
         </button>
       </div>
 
@@ -103,9 +103,8 @@ export function WaitlistForm({ configured }: { configured: boolean }) {
           required
         />
         <label htmlFor={consentId}>
-          موافقم دعوت‌های دسترسی زودهنگام به استودیوی آرومان و خبرهای مرتبط با
-          شروع فعالیت را از طریق ایمیل دریافت کنم و{" "}
-          <Link href="/privacy">اطلاعات حریم خصوصی</Link> را خوانده‌ام.
+          مایلم دعوت‌نامه و خبرهای مرتبط با شروع آرومان را با ایمیل دریافت کنم. {" "}
+          <Link href="/privacy">اطلاعات حریم خصوصی</Link>
         </label>
       </div>
 

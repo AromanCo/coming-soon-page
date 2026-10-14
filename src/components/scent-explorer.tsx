@@ -123,7 +123,7 @@ export function ScentExplorer() {
                 <li key={note}>{note}</li>
               ))}
             </ul>
-            <small>یک برداشت حسی و مفهومی؛ نه ترکیب یا فرمول محصول.</small>
+            <small>این توصیف‌ها برای آشنایی با حال‌وهوای رایحه‌ها هستند.</small>
           </div>
         </div>
       </div>

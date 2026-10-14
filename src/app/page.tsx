@@ -13,7 +13,7 @@ export default function Home() {
       <header className="site-header page-frame">
         <BrandMark />
         <a className="header-cta" href="#waitlist">
-          دریافت دعوت
+          دریافت دعوت‌نامه
         </a>
       </header>
 
@@ -23,7 +23,10 @@ export default function Home() {
             <p className="eyebrow" dir="ltr" lang="en">
               <span aria-hidden="true" /> MODERN FRAGRANCE ATELIER
             </p>
-            <h1 id="hero-title">عطر خودت را کشف کن؛ یا بساز.</h1>
+            <h1 id="hero-title">
+              <span>عطر خودت را</span>{" "}
+              <span>کشف کن؛ یا بساز.</span>
+            </h1>
             <p className="hero-description">
               آرومان به‌زودی راهی تازه برای کشف رایحه‌ها، انتخاب عطرهای آماده و
               ساخت عطری مطابق سلیقه‌ات پیش روی تو می‌گذارد.
@@ -38,11 +41,11 @@ export default function Home() {
               </span>
               <span>
                 <strong>
-                  اولین کسانی باش که استودیوی آرومان را تجربه می‌کنند.
+                  اولین کسانی باش که استودیوی ساخت عطر آرومان را تجربه می‌کنند.
                 </strong>
                 <small>
-                  دعوت‌ها پیش از شروع عمومی و ممکن است به‌صورت مرحله‌ای ارسال
-                  شوند.
+                  به لیست انتظار بپیوند و پیش از افتتاح عمومی، دعوت‌نامه تجربه
+                  استودیو را دریافت کن.
                 </small>
               </span>
             </div>
@@ -62,9 +65,6 @@ export default function Home() {
               />
               <div className="image-wash" aria-hidden="true" />
             </div>
-            <span className="art-index" aria-hidden="true">
-              ۰۱ / ATELIER
-            </span>
             <figcaption>تصویر مفهومی؛ محصول نهایی آرومان نیست</figcaption>
             <svg className="botanical-line" viewBox="0 0 140 190" aria-hidden="true">
               <path d="M116 181C75 144 54 99 42 22" />
@@ -117,11 +117,7 @@ export default function Home() {
                 <p className="step-label">قلب تجربه آرومان</p>
                 <h3>ساخت عطر شخصی</h3>
                 <p>
-                  در استودیوی آرومان، سلیقه و خاطره‌هایت نقطه شروع ساخت رایحه‌ای
-                  می‌شوند که برای تو معنا دارد.
-                </p>
-                <p className="concept-note">
-                  این بخش معرفی یک تجربه در حال توسعه است، نه فرمول‌سازی آنلاین.
+                  جایی برای انتخاب رایحه‌های دلخواه و خلق عطری مطابق سلیقه تو.
                 </p>
               </div>
               <div className="scent-study" aria-hidden="true">
@@ -152,12 +148,11 @@ export default function Home() {
 
           <div className="closing-invitation">
             <p className="section-kicker" dir="ltr" lang="en">BE AMONG THE FIRST</p>
-            <h2>وقتی درهای استودیو باز شد، خبرت می‌کنیم.</h2>
+            <h2>دعوت‌نامه استودیو را در ایمیلت دریافت کن.</h2>
             <p>
-              عضویت رایگان است؛ دعوت‌های دسترسی زودهنگام ممکن است مرحله‌به‌مرحله
-              ارسال شوند.
+              به لیست انتظار آرومان بپیوند و همراه شروع این تجربه باش.
             </p>
-            <a href="#waitlist">به لیست دعوت زودهنگام بپیوند</a>
+            <a href="#waitlist">دریافت دعوت‌نامه</a>
           </div>
         </section>
       </main>

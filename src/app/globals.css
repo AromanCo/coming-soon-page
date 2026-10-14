@@ -214,11 +214,15 @@ button {
   max-width: 680px;
   margin: 0;
   color: var(--plum);
-  font-size: clamp(2.45rem, 12vw, 4.8rem);
+  font-size: clamp(2.1rem, 9.8vw, 4rem);
   font-weight: 700;
   letter-spacing: -0.06em;
   line-height: 1.2;
   text-wrap: balance;
+}
+
+.hero h1 span {
+  display: inline-block;
 }
 
 .hero-description {
@@ -361,20 +365,37 @@ button {
 
 .consent-row {
   display: flex;
-  align-items: flex-start;
+  min-height: 48px;
+  align-items: center;
   gap: 10px;
-  margin: 12px 2px 0;
+  margin: 12px 0 0;
+  padding: 6px 11px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.44);
 }
 
 .consent-row input {
-  width: 20px;
-  height: 20px;
+  width: 22px;
+  height: 22px;
   flex: 0 0 auto;
-  margin: 2px 0 0;
+  margin: 0;
   accent-color: var(--plum);
+  cursor: pointer;
 }
 
-.consent-row label,
+.consent-row label {
+  display: flex;
+  min-height: 44px;
+  flex: 1;
+  flex-wrap: wrap;
+  align-items: center;
+  align-content: center;
+  color: #5f575f;
+  cursor: pointer;
+  font-size: 0.76rem;
+  line-height: 1.85;
+}
+
 .waitlist-status {
   color: #716970;
   font-size: 0.72rem;
@@ -471,30 +492,13 @@ button {
   pointer-events: none;
 }
 
-.art-index {
-  position: absolute;
-  inset: 0 auto auto 0;
-  z-index: 2;
-  padding: 8px 12px;
-  border: 1px solid var(--line);
-  background: var(--paper);
-  color: var(--plum);
-  font-family: system-ui, sans-serif;
-  font-size: 0.59rem;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-}
-
 .hero-art figcaption {
   position: absolute;
-  inset: auto 46px 0 auto;
+  inset: auto 7% 4px auto;
   z-index: 2;
-  padding: 8px 11px;
-  border-radius: 999px;
-  background: rgba(52, 38, 56, 0.9);
-  color: white;
-  font-size: 0.62rem;
-  backdrop-filter: blur(10px);
+  color: #675f66;
+  font-size: 0.64rem;
+  font-weight: 500;
 }
 
 .botanical-line {
@@ -568,7 +572,7 @@ button {
 .explorer-intro > p:last-of-type {
   max-width: 520px;
   margin: 13px 0 0;
-  color: rgba(255, 255, 255, 0.7);
+  color: rgba(255, 255, 255, 0.84);
   font-size: 0.9rem;
   line-height: 1.9;
 }
@@ -579,7 +583,7 @@ button {
   gap: 6px;
   margin-top: 25px;
   padding: 5px;
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.24);
   border-radius: 16px;
   background: rgba(255, 255, 255, 0.045);
 }
@@ -593,7 +597,7 @@ button {
   border: 0;
   border-radius: 11px;
   background: transparent;
-  color: rgba(255, 255, 255, 0.68);
+  color: rgba(255, 255, 255, 0.84);
   cursor: pointer;
   font-size: 0.69rem;
   font-weight: 600;
@@ -697,7 +701,7 @@ button {
 
 .mood-copy > p {
   margin: 8px 0 0;
-  color: rgba(255, 255, 255, 0.74);
+  color: rgba(255, 255, 255, 0.87);
   font-size: 0.82rem;
   line-height: 1.9;
 }
@@ -715,15 +719,15 @@ button {
   padding: 5px 8px;
   border: 1px solid rgba(255, 255, 255, 0.17);
   border-radius: 999px;
-  color: rgba(255, 255, 255, 0.85);
+  color: rgba(255, 255, 255, 0.94);
   font-size: 0.63rem;
 }
 
 .mood-copy small {
   display: block;
   margin-top: 18px;
-  color: rgba(255, 255, 255, 0.46);
-  font-size: 0.61rem;
+  color: rgba(255, 255, 255, 0.74);
+  font-size: 0.67rem;
   line-height: 1.7;
 }
 
@@ -733,6 +737,12 @@ button {
 
 .atelier-heading {
   max-width: 710px;
+  margin-inline: auto;
+  text-align: center;
+}
+
+.atelier-heading .section-kicker {
+  justify-content: center;
 }
 
 .atelier-heading h2 {
@@ -741,7 +751,7 @@ button {
 
 .atelier-heading > p:last-child {
   max-width: 610px;
-  margin: 14px 0 0;
+  margin: 14px auto 0;
   color: var(--muted);
   font-size: 0.94rem;
   line-height: 1.95;
@@ -859,14 +869,6 @@ button {
 
 .custom-step .step-copy > p {
   color: rgba(255, 255, 255, 0.75);
-}
-
-.custom-step .concept-note {
-  margin-top: 18px;
-  padding-top: 14px;
-  border-top: 1px solid rgba(255, 255, 255, 0.14);
-  color: rgba(255, 255, 255, 0.52);
-  font-size: 0.68rem;
 }
 
 .scent-study {
@@ -1119,7 +1121,7 @@ button {
 
   .waitlist-row button {
     width: auto;
-    min-width: 238px;
+    min-width: 168px;
   }
 
   .hero-art {
@@ -1327,7 +1329,7 @@ button {
   }
 
   .hero h1 {
-    font-size: 2.32rem;
+    font-size: clamp(2.1rem, 10vw, 2.4rem);
   }
 
   .hero-description {
