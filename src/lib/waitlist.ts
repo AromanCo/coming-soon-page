@@ -34,7 +34,16 @@ function getPool() {
       };
     }
 
-    globalThis.aromanPostgresPool = new Pool(config);
+    const pool = new Pool(config);
+
+    // PostgreSQL restarts terminate idle connections. The pool discards those
+    // clients automatically, but it still emits an event that must be handled
+    // to keep the application process from treating it as uncaught.
+    pool.on("error", (error) => {
+      console.warn("PostgreSQL idle connection was closed", error.message);
+    });
+
+    globalThis.aromanPostgresPool = pool;
   }
 
   return globalThis.aromanPostgresPool;
@@ -105,4 +114,16 @@ export async function createSubscription({
   );
 
   return result.rowCount === 1;
+}
+
+export async function isWaitlistDatabaseReady() {
+  const result = await getPool().query<{ ready: boolean }>(
+    [
+      "SELECT",
+      "  to_regclass('public.waitlist_subscriptions') IS NOT NULL",
+      "  AND to_regclass('public.waitlist_rate_limits') IS NOT NULL AS ready",
+    ].join("\n"),
+  );
+
+  return result.rows[0]?.ready === true;
 }

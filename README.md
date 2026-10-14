@@ -8,6 +8,9 @@ A mobile-first Persian landing page for AROMAN, built with Next.js, React, Tailw
 - npm 11+
 - PostgreSQL 14+
 
+Docker users only need Docker Engine with the Compose plugin; the Compose stack
+provides Node.js 24.21.0 and PostgreSQL 16.
+
 ## Local development
 
 1. Select the repository's Node version:
@@ -39,6 +42,55 @@ A mobile-first Persian landing page for AROMAN, built with Next.js, React, Tailw
 
 Without both DATABASE_URL and WAITLIST_HASH_SECRET, the UI deliberately shows that signup is unavailable and disables submission. It never displays a fabricated success.
 
+## Docker Compose
+
+Copy the example environment and replace every placeholder secret:
+
+~~~sh
+cp .env.example .env
+~~~
+
+Keep POSTGRES_PASSWORD synchronized with the password in DATABASE_URL. Within
+Compose, DATABASE_URL must use db as its hostname, not localhost. If the
+password contains URL-reserved characters, percent-encode it in DATABASE_URL.
+
+Build and start the complete production-like stack:
+
+~~~sh
+docker compose config
+docker compose build
+docker compose up -d
+docker compose ps
+~~~
+
+The stack starts PostgreSQL, waits for it to become healthy, applies every SQL
+file in db/migrations in filename order, and only then starts the standalone
+Next.js server. PostgreSQL is not published to the host. WEB_PORT controls the
+host port used by the web service.
+
+Useful lifecycle commands:
+
+~~~sh
+# Follow application and database logs
+docker compose logs -f web db migrate
+
+# Re-run all idempotent migrations
+docker compose run --rm migrate
+
+# Restart the application without touching PostgreSQL data
+docker compose restart web
+
+# Rebuild after source changes
+docker compose up -d --build
+
+# Stop containers while preserving the named database volume
+docker compose down
+~~~
+
+Do not use docker compose down -v unless permanent database deletion is
+explicitly intended. The postgres_data named volume persists subscriptions and
+rate-limit state across ordinary stops, starts, and container recreation.
+
 ## Environment variables
 
 | Variable | Required | Purpose |
@@ -51,6 +103,10 @@ Without both DATABASE_URL and WAITLIST_HASH_SECRET, the UI deliberately shows th
 | NEXT_PUBLIC_INSTAGRAM_URL | Optional | Official Instagram URL; hidden when empty |
 | NEXT_PUBLIC_LINKEDIN_URL | Optional | Official LinkedIn URL; hidden when empty |
 | NEXT_PUBLIC_PRIVACY_EMAIL | Production | Public address for data access/deletion requests |
+| WEB_PORT | Docker | Configurable host port mapped to container port 3000 |
+| POSTGRES_USER | Docker | PostgreSQL role initialized by the database container |
+| POSTGRES_PASSWORD | Docker | PostgreSQL role password; must match DATABASE_URL |
+| POSTGRES_DB | Docker | PostgreSQL database initialized by the database container |
 
 Generate the hash secret with openssl rand -hex 32. Never expose DATABASE_URL or WAITLIST_HASH_SECRET as NEXT_PUBLIC variables.
 
@@ -75,6 +131,7 @@ WHERE window_start < NOW() - INTERVAL '7 days';
 
 ~~~text
 src/app/
+  api/health/route.ts    Database-aware container health endpoint
   api/waitlist/route.ts  Server-side signup endpoint
   privacy/page.tsx       Persian privacy information
   layout.tsx             RTL document shell and SEO metadata
@@ -86,6 +143,8 @@ src/components/
 src/lib/waitlist.ts      PostgreSQL and anti-abuse logic
 db/migrations/           Idempotent database schema
 public/images/           Replaceable campaign artwork
+Dockerfile               Multi-stage standalone production image
+compose.yaml             Web, database, and one-shot migration services
 ~~~
 
 ## Validation
