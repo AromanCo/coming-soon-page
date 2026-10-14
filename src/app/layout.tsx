@@ -8,9 +8,9 @@ const siteUrl = new URL(
 
 export const metadata: Metadata = {
   metadataBase: siteUrl,
-  title: "آرومان | دنیایی از رایحه‌ها، به‌زودی",
+  title: "آرومان | عطرت را کشف کن؛ یا بساز",
   description:
-    "آرومان؛ جایی برای کشف رایحه‌ها، انتخاب عطرهای دوست‌داشتنی و ساخت عطری که شبیه خود شماست.",
+    "آرومان؛ راهی تازه برای کشف رایحه‌ها، انتخاب عطرهای آماده و ساخت عطری مطابق سلیقه شما.",
   applicationName: "AROMAN",
   keywords: ["آرومان", "عطر", "رایحه", "عطر شخصی", "خرید عطر", "Aroman"],
   alternates: { canonical: "/" },
@@ -19,22 +19,22 @@ export const metadata: Metadata = {
     locale: "fa_IR",
     url: "/",
     siteName: "AROMAN",
-    title: "هر رایحه، آغاز یک داستان | آرومان",
+    title: "عطرت را کشف کن؛ یا بساز | آرومان",
     description:
-      "دنیایی برای کشف رایحه‌ها، انتخاب عطرهای دوست‌داشتنی و ساخت عطر شخصی شما.",
+      "به لیست دعوت زودهنگام استودیوی ساخت عطر شخصی آرومان بپیوندید.",
     images: [
       {
         url: "/images/aroman-hero.png",
         width: 1024,
         height: 1536,
-        alt: "تصویر هنری یک شیشه عطر در فضای روشن و رویایی آرومان",
+        alt: "چیدمان مفهومی شیشه عطر در فضای هنری آرومان",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "هر رایحه، آغاز یک داستان | آرومان",
-    description: "دنیایی از رایحه‌ها به‌زودی در آرومان.",
+    title: "عطرت را کشف کن؛ یا بساز | آرومان",
+    description: "دعوت زودهنگام به تجربه استودیوی ساخت عطر شخصی آرومان.",
     images: ["/images/aroman-hero.png"],
   },
   robots: { index: true, follow: true },

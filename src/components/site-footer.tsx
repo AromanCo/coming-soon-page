@@ -10,7 +10,9 @@ export function SiteFooter() {
   return (
     <footer className="site-footer page-frame">
       <BrandMark />
-      <p className="footer-signature">Your Scent. Your Story.</p>
+      <p className="footer-signature" dir="ltr" lang="en">
+        Your Scent. Your Story.
+      </p>
       <div className="footer-links">
         {socialLinks.map((social) => (
           <a key={social.label} href={social.url} rel="noreferrer" target="_blank">
