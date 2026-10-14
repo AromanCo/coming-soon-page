@@ -16,7 +16,7 @@ export function WaitlistForm({ configured }: { configured: boolean }) {
   const [status, setStatus] = useState<FormStatus>({
     type: configured ? "idle" : "error",
     message: configured
-      ? "فقط خبرهای مهم شروع آرومان را برایت می‌فرستیم."
+      ? "دعوت‌ها ممکن است مرحله‌به‌مرحله ارسال شوند و زمان مشخصی برای دسترسی تضمین نمی‌شود."
       : "عضویت فعلاً در دسترس نیست؛ تنظیمات پایگاه داده هنوز کامل نشده است.",
   });
 
@@ -55,7 +55,9 @@ export function WaitlistForm({ configured }: { configured: boolean }) {
 
       setStatus({
         type: "success",
-        message: result.message ?? "ایمیلت با موفقیت ثبت شد.",
+        message:
+          result.message ??
+          "به لیست دعوت آرومان خوش آمدی! ثبت‌نامت انجام شد. وقتی نوبت دسترسی زودهنگام برسد، از طریق ایمیل باخبرت می‌کنیم.",
       });
       form.reset();
     } catch {
@@ -71,7 +73,7 @@ export function WaitlistForm({ configured }: { configured: boolean }) {
   return (
     <form className="waitlist-form" id="waitlist" onSubmit={handleSubmit} noValidate>
       <label className="waitlist-label" htmlFor={emailId}>
-        اولین فصل داستان را از دست نده
+        ایمیل برای دریافت دعوت
       </label>
       <div className="waitlist-row">
         <input
@@ -88,7 +90,7 @@ export function WaitlistForm({ configured }: { configured: boolean }) {
           maxLength={254}
         />
         <button type="submit" disabled={!configured || isSubmitting}>
-          {isSubmitting ? "در حال ثبت…" : "از شروع آرومان باخبرم کن"}
+          {isSubmitting ? "در حال ثبت…" : "به لیست دعوت زودهنگام بپیوند"}
         </button>
       </div>
 
@@ -101,7 +103,8 @@ export function WaitlistForm({ configured }: { configured: boolean }) {
           required
         />
         <label htmlFor={consentId}>
-          موافقم خبرهای شروع آرومان برایم ایمیل شود و{" "}
+          موافقم دعوت‌های دسترسی زودهنگام به استودیوی آرومان و خبرهای مرتبط با
+          شروع فعالیت را از طریق ایمیل دریافت کنم و{" "}
           <Link href="/privacy">اطلاعات حریم خصوصی</Link> را خوانده‌ام.
         </label>
       </div>
@@ -117,14 +120,17 @@ export function WaitlistForm({ configured }: { configured: boolean }) {
         />
       </div>
 
-      <p
+      <div
         className={"waitlist-status status-" + status.type}
         id={statusId}
         role="status"
         aria-live="polite"
       >
-        {status.message}
-      </p>
+        {status.type === "success" ? (
+          <span className="success-mark" aria-hidden="true">✓</span>
+        ) : null}
+        <span>{status.message}</span>
+      </div>
     </form>
   );
 }

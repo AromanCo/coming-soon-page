@@ -70,7 +70,8 @@ export async function POST(request: Request) {
     return NextResponse.json(
       {
         code: "CONSENT_REQUIRED",
-        message: "برای عضویت، موافقت با دریافت خبرهای آرومان لازم است.",
+        message:
+          "برای عضویت، موافقت با دریافت دعوت‌های دسترسی زودهنگام و خبرهای مرتبط لازم است.",
       },
       { status: 400 },
     );
@@ -106,7 +107,8 @@ export async function POST(request: Request) {
     return NextResponse.json(
       {
         code: "SUBSCRIBED",
-        message: "ایمیلت ثبت شد؛ وقت شروع داستان بهت خبر می‌دهیم.",
+        message:
+          "به لیست دعوت آرومان خوش آمدی! ثبت‌نامت انجام شد. وقتی نوبت دسترسی زودهنگام برسد، از طریق ایمیل باخبرت می‌کنیم.",
       },
       { status: 201 },
     );

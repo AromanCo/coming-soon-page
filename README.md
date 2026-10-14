@@ -120,6 +120,23 @@ Generate the hash secret with openssl rand -hex 32. Never expose DATABASE_URL or
 - Honeypot field for simple bot filtering
 - Loading, success, duplicate, rate-limit, unavailable, and network-error states
 
+The current schema already preserves `created_at`, `consented_at`, and a
+monotonic identity `id`. Those fields are sufficient to select future
+early-access cohorts in registration order without changing signup behavior.
+No invitation-management system is included in this release.
+
+### Future early-access invitation operations
+
+Implement invitations as a separate, authenticated administrative workflow.
+Use a migration to add explicit invitation status and audit fields rather than
+overloading signup or consent data. Select cohorts deterministically by
+`created_at` and `id`, record who initiated each invitation batch, and make
+retries idempotent. Invitation links should use short-lived, single-purpose
+tokens stored as hashes, and email delivery credentials must remain in a
+server-side secret manager. Do not expose cohort selection or email delivery
+through a public route, and retain unsubscribe/deletion handling throughout the
+invitation lifecycle.
+
 The rate-limit table is intentionally persistent across server instances. Periodically remove old buckets:
 
 ~~~sql
