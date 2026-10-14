@@ -7,6 +7,10 @@ const socialLinks = [
 ].filter((item): item is { label: string; url: string } => Boolean(item.url));
 
 export function SiteFooter() {
+  const currentYear = new Intl.NumberFormat("fa-IR", {
+    useGrouping: false,
+  }).format(new Date().getFullYear());
+
   return (
     <footer className="site-footer page-frame">
       <BrandMark />
@@ -22,7 +26,7 @@ export function SiteFooter() {
         <Link href="/privacy">حریم خصوصی</Link>
       </div>
       <p className="copyright">
-        © {new Date().getFullYear()} آرومان. همه حقوق محفوظ است.
+        © {currentYear} آرومان. همه حقوق محفوظ است.
       </p>
     </footer>
   );

@@ -216,7 +216,6 @@ button {
   color: var(--plum);
   font-size: clamp(2.1rem, 9.8vw, 4rem);
   font-weight: 700;
-  letter-spacing: -0.06em;
   line-height: 1.2;
   text-wrap: balance;
 }
@@ -276,12 +275,14 @@ button {
   font-size: 0.86rem;
   font-weight: 720;
   line-height: 1.75;
+  text-wrap: pretty;
 }
 
 .early-access-note small {
   color: var(--muted);
-  font-size: 0.7rem;
+  font-size: 0.75rem;
   line-height: 1.75;
+  text-wrap: pretty;
 }
 
 .waitlist-form {
@@ -396,7 +397,7 @@ button {
 
 .waitlist-status {
   color: #716970;
-  font-size: 0.72rem;
+  font-size: 0.75rem;
   line-height: 1.85;
 }
 
@@ -494,9 +495,12 @@ button {
   position: absolute;
   inset: auto 7% 4px auto;
   z-index: 2;
+  max-width: 78%;
   color: #675f66;
-  font-size: 0.64rem;
+  font-size: 0.75rem;
   font-weight: 500;
+  line-height: 1.7;
+  text-wrap: pretty;
 }
 
 .botanical-line {
@@ -562,7 +566,6 @@ button {
   margin: 0;
   font-size: clamp(1.9rem, 7vw, 3.5rem);
   font-weight: 660;
-  letter-spacing: -0.045em;
   line-height: 1.35;
   text-wrap: balance;
 }
@@ -776,10 +779,10 @@ button {
 .step-number {
   position: absolute;
   inset: 16px auto auto 0;
-  color: rgba(52, 38, 56, 0.36);
+  color: rgba(52, 38, 56, 0.5);
   font-family: system-ui, sans-serif;
-  font-size: 0.65rem;
-  font-weight: 700;
+  font-size: 0.75rem;
+  font-weight: 750;
 }
 
 .step-label {
@@ -794,6 +797,8 @@ button {
   color: var(--plum);
   font-size: 1.55rem;
   font-weight: 680;
+  line-height: 1.45;
+  text-wrap: balance;
 }
 
 .step-copy > p {
@@ -1037,7 +1042,7 @@ button {
 .copyright {
   margin: 0;
   color: #8d858c;
-  font-size: 0.68rem;
+  font-size: 0.75rem;
 }
 
 .privacy-main {
@@ -1059,8 +1064,8 @@ button {
   color: var(--plum);
   font-size: clamp(2rem, 7vw, 4rem);
   font-weight: 680;
-  letter-spacing: -0.05em;
   line-height: 1.3;
+  text-wrap: balance;
 }
 
 .privacy-heading > p:last-child {

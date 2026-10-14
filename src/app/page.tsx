@@ -40,10 +40,10 @@ export default function Home() {
               </span>
               <span>
                 <strong>
-                  اولین کسانی باش که استودیوی ساخت عطر آرومان را تجربه می‌کنند.
+                  از اولین کسانی باش که استودیوی ساخت عطر آرومان را تجربه می‌کنند.
                 </strong>
                 <small>
-                  به لیست انتظار بپیوند و پیش از افتتاح عمومی، دعوت‌نامه تجربه
+                  به لیست دعوت بپیوند و پیش از افتتاح عمومی، دعوت‌نامه تجربه
                   استودیو را دریافت کن.
                 </small>
               </span>
@@ -64,7 +64,7 @@ export default function Home() {
               />
               <div className="image-wash" aria-hidden="true" />
             </div>
-            <figcaption>تصویر مفهومی؛ محصول نهایی آرومان نیست</figcaption>
+            <figcaption>تصویری مفهومی از حال‌وهوای استودیوی آرومان</figcaption>
             <svg className="botanical-line" viewBox="0 0 140 190" aria-hidden="true">
               <path d="M116 181C75 144 54 99 42 22" />
               <path d="M52 65C30 57 18 43 12 25c21 2 35 15 40 40Z" />
@@ -116,7 +116,7 @@ export default function Home() {
                 <p className="step-label">قلب تجربه آرومان</p>
                 <h3>ساخت عطر شخصی</h3>
                 <p>
-                  جایی برای انتخاب رایحه‌های دلخواه و خلق عطری مطابق سلیقه تو.
+                  جایی برای انتخاب رایحه‌های محبوبت و خلق عطری با امضای شخصی تو.
                 </p>
               </div>
               <div className="scent-study" aria-hidden="true">
@@ -149,7 +149,7 @@ export default function Home() {
             <p className="section-kicker" dir="ltr" lang="en">BE AMONG THE FIRST</p>
             <h2>دعوت‌نامه استودیو را در ایمیلت دریافت کن.</h2>
             <p>
-              به لیست انتظار آرومان بپیوند و همراه شروع این تجربه باش.
+              به لیست دعوت آرومان بپیوند و همراه شروع این تجربه باش.
             </p>
             <WaitlistLink>عضویت در لیست دعوت</WaitlistLink>
           </div>

@@ -16,7 +16,7 @@ export function WaitlistForm({ configured }: { configured: boolean }) {
   const [status, setStatus] = useState<FormStatus>({
     type: configured ? "idle" : "error",
     message: configured
-      ? "دعوت‌نامه‌ها به‌تدریج و پیش از افتتاح عمومی ارسال می‌شوند."
+      ? "دعوت‌نامه‌ها به‌صورت مرحله‌ای ارسال می‌شوند."
       : "عضویت فعلاً در دسترس نیست؛ تنظیمات پایگاه داده هنوز کامل نشده است.",
   });
 
@@ -57,7 +57,7 @@ export function WaitlistForm({ configured }: { configured: boolean }) {
         type: "success",
         message:
           result.message ??
-          "به لیست انتظار آرومان خوش آمدی! ثبت‌نامت انجام شد. خبرهای مربوط به دعوت‌نامه را با ایمیل برایت می‌فرستیم.",
+          "به لیست دعوت آرومان خوش آمدی! ثبت‌نامت انجام شد. خبرهای مربوط به دعوت‌نامه را با ایمیل برایت می‌فرستیم.",
       });
       form.reset();
     } catch {
@@ -103,7 +103,7 @@ export function WaitlistForm({ configured }: { configured: boolean }) {
           required
         />
         <label htmlFor={consentId}>
-          مایلم دعوت‌نامه و خبرهای مرتبط با شروع آرومان را با ایمیل دریافت کنم. {" "}
+          مایلم دعوت‌نامه و خبرهای شروع آرومان را با ایمیل دریافت کنم. {" "}
           <Link href="/privacy">اطلاعات حریم خصوصی</Link>
         </label>
       </div>

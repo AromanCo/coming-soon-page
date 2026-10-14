@@ -98,7 +98,7 @@ export async function POST(request: Request) {
       return NextResponse.json(
         {
           code: "DUPLICATE_EMAIL",
-          message: "این ایمیل قبلاً در فهرست آرومان ثبت شده است.",
+          message: "این ایمیل قبلاً در لیست دعوت آرومان ثبت شده است.",
         },
         { status: 409 },
       );
@@ -108,7 +108,7 @@ export async function POST(request: Request) {
       {
         code: "SUBSCRIBED",
         message:
-          "به لیست انتظار آرومان خوش آمدی! ثبت‌نامت انجام شد. خبرهای مربوط به دعوت‌نامه را با ایمیل برایت می‌فرستیم.",
+          "به لیست دعوت آرومان خوش آمدی! ثبت‌نامت انجام شد. خبرهای مربوط به دعوت‌نامه را با ایمیل برایت می‌فرستیم.",
       },
       { status: 201 },
     );

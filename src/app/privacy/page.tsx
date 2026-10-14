@@ -4,8 +4,8 @@ import { BrandMark } from "@/components/brand-mark";
 import { SiteFooter } from "@/components/site-footer";
 
 export const metadata: Metadata = {
-  title: "حریم خصوصی فهرست انتظار | آرومان",
-  description: "اطلاعات مربوط به نحوه پردازش داده‌های فهرست انتظار آرومان.",
+  title: "حریم خصوصی لیست دعوت | آرومان",
+  description: "اطلاعات مربوط به نحوه پردازش داده‌های لیست دعوت آرومان.",
   robots: { index: true, follow: true },
 };
 
@@ -24,10 +24,10 @@ export default function PrivacyPage() {
       <main className="privacy-main page-frame">
         <div className="privacy-heading">
           <p className="section-kicker">PRIVACY</p>
-          <h1>حریم خصوصی فهرست انتظار</h1>
+          <h1>حریم خصوصی لیست دعوت</h1>
           <p>
-            این توضیحات فقط به فرم لیست دعوت زودهنگام در وب‌سایت
-            پیش‌راه‌اندازی آرومان مربوط است.
+            این توضیحات فقط به فرم لیست دعوت در وب‌سایت پیش‌راه‌اندازی آرومان
+            مربوط است.
           </p>
         </div>
 
