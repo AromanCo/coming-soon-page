@@ -1,35 +1,58 @@
-import './globals.css'
-import { Inter } from 'next/font/google'
-import { ThemeProvider } from './theme-provider'
+import type { Metadata, Viewport } from "next";
+import "@fontsource-variable/vazirmatn";
+import "./globals.css";
 
-import Head from 'next/head'
+const siteUrl = new URL(
+  process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000",
+);
 
-const inter = Inter({ 
-  weight: ['100', '200', '300', '600', '400', '700', '900'],
-  subsets: ['latin'] 
-})
+export const metadata: Metadata = {
+  metadataBase: siteUrl,
+  title: "آرومان | دنیایی از رایحه‌ها، به‌زودی",
+  description:
+    "آرومان؛ جایی برای کشف رایحه‌ها، انتخاب عطرهای دوست‌داشتنی و ساخت عطری که شبیه خود شماست.",
+  applicationName: "AROMAN",
+  keywords: ["آرومان", "عطر", "رایحه", "عطر شخصی", "خرید عطر", "Aroman"],
+  alternates: { canonical: "/" },
+  openGraph: {
+    type: "website",
+    locale: "fa_IR",
+    url: "/",
+    siteName: "AROMAN",
+    title: "هر رایحه، آغاز یک داستان | آرومان",
+    description:
+      "دنیایی برای کشف رایحه‌ها، انتخاب عطرهای دوست‌داشتنی و ساخت عطر شخصی شما.",
+    images: [
+      {
+        url: "/images/aroman-hero.png",
+        width: 1024,
+        height: 1536,
+        alt: "تصویر هنری یک شیشه عطر در فضای روشن و رویایی آرومان",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "هر رایحه، آغاز یک داستان | آرومان",
+    description: "دنیایی از رایحه‌ها به‌زودی در آرومان.",
+    images: ["/images/aroman-hero.png"],
+  },
+  robots: { index: true, follow: true },
+};
 
-export const metadata = {
-  title: "Home - Comming soon Template",
-  description: 'This is a simple coming soon template built with NextJS and TailwindCSS. It is a lightweight and responsive template that can be used for various projects that require a "coming soon" page.',
-}
+export const viewport: Viewport = {
+  themeColor: "#F7F2EC",
+  colorScheme: "light",
+};
 
 export default function RootLayout({
   children,
-}: {
-  children: React.ReactNode
-}) {
+}: Readonly<{
+  children: React.ReactNode;
+}>) {
   return (
-    <html lang="en">
-      <Head>
-        <link rel="icon" href="/favicon.ico" />        
-      </Head>
-      <body className={ `${inter.className} bg-gray-200	min-h-screen dark:bg-[#0d1117] `}
-      >
-        <ThemeProvider attribute="class" defaultTheme="system" enableSystem={true}>          
-          <main className='main'>{children}</main>
-        </ThemeProvider>          
-      </body>
+    <html lang="fa" dir="rtl">
+      <body>{children}</body>
     </html>
-  )
+  );
 }

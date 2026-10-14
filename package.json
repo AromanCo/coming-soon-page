@@ -15,9 +15,8 @@
     "test": "npm run typecheck && npm run lint"
   },
   "dependencies": {
-    "@heroicons/react": "2.2.0",
+    "@fontsource-variable/vazirmatn": "5.3.0",
     "next": "16.4.0",
-    "next-themes": "0.4.6",
     "react": "19.3.0",
     "react-dom": "19.3.0"
   },
@@ -26,7 +25,7 @@
     "@types/node": "24.10.0",
     "@types/react": "19.3.0",
     "@types/react-dom": "19.3.0",
-    "eslint": "10.12.0",
+    "eslint": "9.39.5",
     "eslint-config-next": "16.4.0",
     "tailwindcss": "4.3.3",
     "typescript": "5.9.3"
