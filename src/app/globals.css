@@ -369,9 +369,7 @@ button {
   align-items: center;
   gap: 10px;
   margin: 12px 0 0;
-  padding: 6px 11px;
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.44);
+  padding-inline: 2px;
 }
 
 .consent-row input {
@@ -727,7 +725,7 @@ button {
   display: block;
   margin-top: 18px;
   color: rgba(255, 255, 255, 0.74);
-  font-size: 0.67rem;
+  font-size: 0.75rem;
   line-height: 1.7;
 }
 

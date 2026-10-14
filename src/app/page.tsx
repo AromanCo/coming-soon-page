@@ -3,6 +3,7 @@ import { BrandMark } from "@/components/brand-mark";
 import { ScentExplorer } from "@/components/scent-explorer";
 import { SiteFooter } from "@/components/site-footer";
 import { WaitlistForm } from "@/components/waitlist-form";
+import { WaitlistLink } from "@/components/waitlist-link";
 import { isWaitlistConfigured } from "@/lib/waitlist";
 
 export const dynamic = "force-dynamic";
@@ -12,9 +13,7 @@ export default function Home() {
     <div className="site-shell">
       <header className="site-header page-frame">
         <BrandMark />
-        <a className="header-cta" href="#waitlist">
-          دریافت دعوت‌نامه
-        </a>
+        <WaitlistLink className="header-cta">عضویت در لیست دعوت</WaitlistLink>
       </header>
 
       <main>
@@ -152,7 +151,7 @@ export default function Home() {
             <p>
               به لیست انتظار آرومان بپیوند و همراه شروع این تجربه باش.
             </p>
-            <a href="#waitlist">دریافت دعوت‌نامه</a>
+            <WaitlistLink>عضویت در لیست دعوت</WaitlistLink>
           </div>
         </section>
       </main>

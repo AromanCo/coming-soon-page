@@ -90,7 +90,7 @@ export function WaitlistForm({ configured }: { configured: boolean }) {
           maxLength={254}
         />
         <button type="submit" disabled={!configured || isSubmitting}>
-          {isSubmitting ? "در حال ثبت…" : "دریافت دعوت‌نامه"}
+          {isSubmitting ? "در حال ثبت…" : "عضویت در لیست دعوت"}
         </button>
       </div>
 
