@@ -2,6 +2,10 @@ import Image from "next/image";
 import Link from "next/link";
 import { BrandMark } from "@/components/brand-mark";
 import { SiteFooter } from "@/components/site-footer";
+import { WaitlistForm } from "@/components/waitlist-form";
+import { isWaitlistConfigured } from "@/lib/waitlist";
+
+export const dynamic = "force-dynamic";
 
 const previews = [
   {
@@ -66,16 +70,7 @@ export default function Home() {
               عطری که شبیه خودته.
             </p>
 
-            <div className="waitlist-preview" id="waitlist">
-              <p className="waitlist-label">اولین فصل داستان را از دست نده</p>
-              <div className="waitlist-row" aria-label="عضویت در فهرست انتظار">
-                <span className="waitlist-placeholder">ایمیل شما</span>
-                <span className="waitlist-button">از شروع آرومان باخبرم کن</span>
-              </div>
-              <p className="waitlist-hint">
-                فرم عضویت امن و واقعی در مرحله بعدی همین پیاده‌سازی فعال می‌شود.
-              </p>
-            </div>
+            <WaitlistForm configured={isWaitlistConfigured()} />
 
             <Link className="skip-link" href="#world">
               دیدن دنیای آرومان

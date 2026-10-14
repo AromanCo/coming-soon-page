@@ -4,7 +4,7 @@
   "private": true,
   "description": "AROMAN fragrance discovery coming-soon experience",
   "engines": {
-    "node": ">=24.11.0 <25"
+    "node": ">=24.21.0 <25"
   },
   "scripts": {
     "dev": "next dev",
@@ -17,17 +17,21 @@
   "dependencies": {
     "@fontsource-variable/vazirmatn": "5.3.0",
     "next": "16.4.0",
+    "pg": "8.23.1",
     "react": "19.3.0",
     "react-dom": "19.3.0"
   },
   "devDependencies": {
+    "@eslint/js": "10.0.1",
     "@tailwindcss/postcss": "4.3.3",
     "@types/node": "24.10.0",
+    "@types/pg": "8.23.1",
     "@types/react": "19.3.0",
     "@types/react-dom": "19.3.0",
-    "eslint": "9.39.5",
-    "eslint-config-next": "16.4.0",
+    "eslint": "10.12.0",
+    "eslint-plugin-react-hooks": "7.1.1",
     "tailwindcss": "4.3.3",
-    "typescript": "5.9.3"
+    "typescript": "5.9.3",
+    "typescript-eslint": "8.71.2"
   }
 }
