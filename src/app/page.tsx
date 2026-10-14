@@ -147,7 +147,7 @@ export default function Home() {
 
           <div className="closing-invitation">
             <p className="section-kicker" dir="ltr" lang="en">BE AMONG THE FIRST</p>
-            <h2>دعوت‌نامه استودیو را در ایمیلت دریافت کن.</h2>
+            <h2>شماره موبایلت را برای دعوت‌نامه استودیو ثبت کن.</h2>
             <p>
               به لیست دعوت آرومان بپیوند و همراه شروع این تجربه باش.
             </p>

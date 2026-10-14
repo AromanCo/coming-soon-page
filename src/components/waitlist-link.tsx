@@ -10,9 +10,9 @@ type WaitlistLinkProps = {
 export function WaitlistLink({ children, className }: WaitlistLinkProps) {
   function handleClick(event: MouseEvent<HTMLAnchorElement>) {
     const form = document.getElementById("waitlist");
-    const emailInput = form?.querySelector<HTMLInputElement>('input[name="email"]');
+    const phoneInput = form?.querySelector<HTMLInputElement>('input[name="phone"]');
 
-    if (!form || !emailInput) return;
+    if (!form || !phoneInput) return;
 
     event.preventDefault();
 
@@ -20,8 +20,8 @@ export function WaitlistLink({ children, className }: WaitlistLinkProps) {
       window.history.pushState(null, "", "#waitlist");
     }
 
-    if (!emailInput.disabled) {
-      emailInput.focus({ preventScroll: true });
+    if (!phoneInput.disabled) {
+      phoneInput.focus({ preventScroll: true });
     }
 
     const prefersReducedMotion = window.matchMedia(

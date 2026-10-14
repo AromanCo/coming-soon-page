@@ -49,18 +49,6 @@ function getPool() {
   return globalThis.aromanPostgresPool;
 }
 
-export function normalizeEmail(value: string) {
-  return value.normalize("NFKC").trim().toLowerCase();
-}
-
-export function isValidEmail(email: string) {
-  return (
-    email.length >= 5 &&
-    email.length <= 254 &&
-    /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/u.test(email)
-  );
-}
-
 export function hashNetworkIdentifier(value: string) {
   const secret = process.env.WAITLIST_HASH_SECRET;
 
@@ -91,26 +79,26 @@ export async function registerRateLimitAttempt(ipHash: string) {
 }
 
 type CreateSubscriptionInput = {
-  email: string;
+  phoneE164: string;
   ipHash: string;
   userAgent: string | null;
 };
 
 export async function createSubscription({
-  email,
+  phoneE164,
   ipHash,
   userAgent,
 }: CreateSubscriptionInput) {
   const result = await getPool().query<{ id: string }>(
     [
       "INSERT INTO waitlist_subscriptions (",
-      "  email, marketing_consent, consented_at, ip_hash, user_agent, source",
+      "  phone_e164, marketing_consent, consented_at, ip_hash, user_agent, source",
       ")",
       "VALUES ($1, TRUE, NOW(), $2, $3, 'coming-soon')",
-      "ON CONFLICT (email) DO NOTHING",
+      "ON CONFLICT (phone_e164) WHERE phone_e164 IS NOT NULL DO NOTHING",
       "RETURNING id",
     ].join("\n"),
-    [email, ipHash, userAgent],
+    [phoneE164, ipHash, userAgent],
   );
 
   return result.rowCount === 1;
@@ -121,7 +109,20 @@ export async function isWaitlistDatabaseReady() {
     [
       "SELECT",
       "  to_regclass('public.waitlist_subscriptions') IS NOT NULL",
-      "  AND to_regclass('public.waitlist_rate_limits') IS NOT NULL AS ready",
+      "  AND to_regclass('public.waitlist_rate_limits') IS NOT NULL",
+      "  AND EXISTS (",
+      "    SELECT 1 FROM information_schema.columns",
+      "    WHERE table_schema = 'public'",
+      "      AND table_name = 'waitlist_subscriptions'",
+      "      AND column_name = 'phone_e164'",
+      "  )",
+      "  AND EXISTS (",
+      "    SELECT 1 FROM information_schema.columns",
+      "    WHERE table_schema = 'public'",
+      "      AND table_name = 'waitlist_subscriptions'",
+      "      AND column_name = 'email'",
+      "      AND is_nullable = 'YES'",
+      "  ) AS ready",
     ].join("\n"),
   );
 

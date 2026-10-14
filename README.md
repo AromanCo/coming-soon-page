@@ -27,11 +27,12 @@ provides Node.js 24.21.0 and PostgreSQL 16.
 
 3. Copy .env.example to .env.local and fill in the required values.
 
-4. Apply the database migration:
+4. Apply the database migrations in filename order:
 
    ~~~sh
-   psql "$DATABASE_URL" -v ON_ERROR_STOP=1 \
-     -f db/migrations/001_create_waitlist.sql
+   for migration in db/migrations/*.sql; do
+     psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f "$migration"
+   done
    ~~~
 
 5. Start the app:
@@ -112,30 +113,49 @@ Generate the hash secret with openssl rand -hex 32. Never expose DATABASE_URL or
 
 ## Waitlist behavior
 
-- Server-side normalization and email validation
+- Server-side Iranian mobile validation for local, `+98`, and `0098` formats
+- Persian, Arabic, and English digit normalization to canonical E.164 storage
 - Explicit required marketing consent
 - Persistent PostgreSQL storage
-- Duplicate detection with a database unique constraint
+- Duplicate detection with a partial unique index on canonical phone numbers
+- Preservation of legacy email-only registrations
 - Five attempts per hashed network identifier per ten-minute window
 - Honeypot field for simple bot filtering
 - Loading, success, duplicate, rate-limit, unavailable, and network-error states
 
-The current schema already preserves `created_at`, `consented_at`, and a
-monotonic identity `id`. Those fields are sufficient to select future
-early-access cohorts in registration order without changing signup behavior.
-No invitation-management system is included in this release.
+New phone registrations are stored without an email address. Phone ownership
+is not verified in this release because no OTP flow or SMS provider is active.
+The schema preserves `created_at`, `consented_at`, `source`, security metadata,
+and the monotonic identity `id`; existing email rows remain valid.
 
-### Future early-access invitation operations
+The public endpoint returns `409` for a duplicate canonical number as required
+by the current product behavior. This response can confirm whether a number is
+registered, so the persistent IP rate limit limits bulk enumeration and the
+response never echoes the submitted number. Before higher-volume launch,
+consider returning the same generic accepted response for new and existing
+numbers after product review.
 
-Implement invitations as a separate, authenticated administrative workflow.
-Use a migration to add explicit invitation status and audit fields rather than
-overloading signup or consent data. Select cohorts deterministically by
-`created_at` and `id`, record who initiated each invitation batch, and make
-retries idempotent. Invitation links should use short-lived, single-purpose
-tokens stored as hashes, and email delivery credentials must remain in a
-server-side secret manager. Do not expose cohort selection or email delivery
-through a public route, and retain unsubscribe/deletion handling throughout the
-invitation lifecycle.
+### Future OTP, SMS, and invitation operations
+
+No SMS is sent by the current application. A later implementation should:
+
+1. Integrate an approved Iranian SMS provider through a server-only adapter,
+   with credentials held in a secret manager and delivery logs free of full
+   phone numbers.
+2. Generate cryptographically random, single-purpose OTPs; store only hashes;
+   and expire them after a short configured window.
+3. Add per-number and per-network verification-attempt and resend limits on top
+   of the existing signup rate limit.
+4. Add explicit verification state and timestamps through a new migration.
+   Never infer ownership from successful storage or SMS delivery alone.
+5. Make resend and provider retry operations idempotent, with bounded retries
+   and auditable provider message identifiers.
+6. Build SMS invitation cohorts as a separate authenticated administrative
+   workflow. Select cohorts deterministically using `created_at` and `id`,
+   record the operator and batch, and do not expose cohort operations publicly.
+7. Add durable opt-out and unsubscribe handling before promotional SMS is sent,
+   and ensure deletion requests are honored across provider and application
+   records.
 
 The rate-limit table is intentionally persistent across server instances. Periodically remove old buckets:
 
@@ -158,7 +178,9 @@ src/components/
   site-footer.tsx        Configured social/privacy links
   waitlist-form.tsx      Accessible client form
 src/lib/waitlist.ts      PostgreSQL and anti-abuse logic
+src/lib/iranian-mobile.ts Iranian mobile normalization and validation
 db/migrations/           Idempotent database schema
+tests/                   Unit and Docker-backed integration tests
 public/images/           Replaceable campaign artwork
 Dockerfile               Multi-stage standalone production image
 compose.yaml             Web, database, and one-shot migration services

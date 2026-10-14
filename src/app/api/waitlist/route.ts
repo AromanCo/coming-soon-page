@@ -2,16 +2,15 @@ import { NextResponse } from "next/server";
 import {
   createSubscription,
   hashNetworkIdentifier,
-  isValidEmail,
   isWaitlistConfigured,
-  normalizeEmail,
   registerRateLimitAttempt,
 } from "@/lib/waitlist";
+import { normalizeIranianMobile } from "@/lib/iranian-mobile";
 
 export const runtime = "nodejs";
 
 type WaitlistPayload = {
-  email?: unknown;
+  phone?: unknown;
   consent?: unknown;
   website?: unknown;
 };
@@ -26,7 +25,7 @@ export async function POST(request: Request) {
     return NextResponse.json(
       {
         code: "WAITLIST_UNAVAILABLE",
-        message: "سامانه ثبت ایمیل فعلاً در دسترس نیست. لطفاً کمی بعد دوباره تلاش کنید.",
+        message: "سامانه ثبت شماره موبایل فعلاً در دسترس نیست. لطفاً کمی بعد دوباره تلاش کنید.",
       },
       { status: 503 },
     );
@@ -50,18 +49,18 @@ export async function POST(request: Request) {
     );
   }
 
-  if (typeof payload.email !== "string") {
+  if (typeof payload.phone !== "string") {
     return NextResponse.json(
-      { code: "INVALID_EMAIL", message: "لطفاً یک ایمیل معتبر وارد کنید." },
+      { code: "INVALID_PHONE", message: "لطفاً یک شماره موبایل معتبر وارد کنید." },
       { status: 400 },
     );
   }
 
-  const email = normalizeEmail(payload.email);
+  const phoneE164 = normalizeIranianMobile(payload.phone);
 
-  if (!isValidEmail(email)) {
+  if (!phoneE164) {
     return NextResponse.json(
-      { code: "INVALID_EMAIL", message: "لطفاً یک ایمیل معتبر وارد کنید." },
+      { code: "INVALID_PHONE", message: "لطفاً یک شماره موبایل معتبر وارد کنید." },
       { status: 400 },
     );
   }
@@ -71,7 +70,7 @@ export async function POST(request: Request) {
       {
         code: "CONSENT_REQUIRED",
         message:
-          "برای عضویت، موافقت با دریافت دعوت‌نامه و خبرهای مرتبط لازم است.",
+          "برای عضویت، موافقت با دریافت دعوت‌نامه و خبرهای شروع آرومان از طریق پیامک لازم است.",
       },
       { status: 400 },
     );
@@ -92,13 +91,13 @@ export async function POST(request: Request) {
     }
 
     const userAgent = request.headers.get("user-agent")?.slice(0, 500) ?? null;
-    const created = await createSubscription({ email, ipHash, userAgent });
+    const created = await createSubscription({ phoneE164, ipHash, userAgent });
 
     if (!created) {
       return NextResponse.json(
         {
-          code: "DUPLICATE_EMAIL",
-          message: "این ایمیل قبلاً در لیست دعوت آرومان ثبت شده است.",
+          code: "DUPLICATE_PHONE",
+          message: "این شماره قبلاً در لیست دعوت آرومان ثبت شده است.",
         },
         { status: 409 },
       );
@@ -107,17 +106,20 @@ export async function POST(request: Request) {
     return NextResponse.json(
       {
         code: "SUBSCRIBED",
-        message:
-          "به لیست دعوت آرومان خوش آمدی! ثبت‌نامت انجام شد. خبرهای مربوط به دعوت‌نامه را با ایمیل برایت می‌فرستیم.",
+        message: "شماره موبایلت با موفقیت در لیست دعوت آرومان ثبت شد.",
       },
       { status: 201 },
     );
   } catch (error) {
-    console.error("Waitlist subscription failed", error);
+    const errorCode =
+      typeof error === "object" && error !== null && "code" in error
+        ? String(error.code)
+        : "UNKNOWN";
+    console.error("Waitlist subscription failed", { code: errorCode });
     return NextResponse.json(
       {
         code: "WAITLIST_UNAVAILABLE",
-        message: "ثبت ایمیل انجام نشد. لطفاً کمی بعد دوباره تلاش کنید.",
+        message: "ثبت شماره موبایل انجام نشد. لطفاً کمی بعد دوباره تلاش کنید.",
       },
       { status: 503 },
     );

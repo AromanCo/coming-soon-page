@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { FormEvent, useId, useState } from "react";
+import { normalizeIranianMobile } from "@/lib/iranian-mobile";
 
 type FormStatus =
   | { type: "idle"; message: string }
@@ -9,7 +10,7 @@ type FormStatus =
   | { type: "success"; message: string };
 
 export function WaitlistForm({ configured }: { configured: boolean }) {
-  const emailId = useId();
+  const phoneId = useId();
   const consentId = useId();
   const statusId = useId();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -26,19 +27,31 @@ export function WaitlistForm({ configured }: { configured: boolean }) {
     if (!configured || isSubmitting) return;
 
     const form = event.currentTarget;
+    const phoneInput = form.elements.namedItem("phone") as HTMLInputElement;
+    phoneInput.setCustomValidity("");
 
     if (!form.reportValidity()) return;
 
     const formData = new FormData(form);
+    const phone = formData.get("phone");
+
+    if (typeof phone !== "string" || !normalizeIranianMobile(phone)) {
+      const message = "لطفاً یک شماره موبایل معتبر وارد کنید.";
+      phoneInput.setCustomValidity(message);
+      phoneInput.reportValidity();
+      setStatus({ type: "error", message });
+      return;
+    }
+
     setIsSubmitting(true);
-    setStatus({ type: "idle", message: "در حال ثبت ایمیل…" });
+    setStatus({ type: "idle", message: "در حال ثبت شماره موبایل…" });
 
     try {
       const response = await fetch("/api/waitlist", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          email: formData.get("email"),
+          phone,
           consent: formData.get("consent") === "on",
           website: formData.get("website"),
         }),
@@ -48,7 +61,9 @@ export function WaitlistForm({ configured }: { configured: boolean }) {
       if (!response.ok) {
         setStatus({
           type: "error",
-          message: result.message ?? "ثبت ایمیل انجام نشد. لطفاً دوباره تلاش کنید.",
+          message:
+            result.message ??
+            "ثبت شماره موبایل انجام نشد. لطفاً دوباره تلاش کنید.",
         });
         return;
       }
@@ -57,7 +72,7 @@ export function WaitlistForm({ configured }: { configured: boolean }) {
         type: "success",
         message:
           result.message ??
-          "به لیست دعوت آرومان خوش آمدی! ثبت‌نامت انجام شد. خبرهای مربوط به دعوت‌نامه را با ایمیل برایت می‌فرستیم.",
+          "شماره موبایلت با موفقیت در لیست دعوت آرومان ثبت شد.",
       });
       form.reset();
     } catch {
@@ -72,22 +87,24 @@ export function WaitlistForm({ configured }: { configured: boolean }) {
 
   return (
     <form className="waitlist-form" id="waitlist" onSubmit={handleSubmit} noValidate>
-      <label className="waitlist-label" htmlFor={emailId}>
-        ایمیل برای دریافت دعوت‌نامه
+      <label className="waitlist-label" htmlFor={phoneId}>
+        شماره موبایل برای عضویت در لیست دعوت
       </label>
       <div className="waitlist-row">
         <input
-          id={emailId}
-          name="email"
-          type="email"
-          inputMode="email"
-          autoComplete="email"
+          id={phoneId}
+          name="phone"
+          type="tel"
+          inputMode="tel"
+          autoComplete="tel"
           dir="ltr"
-          placeholder="name@example.com"
+          placeholder="0912 123 4567"
           aria-describedby={statusId}
           disabled={!configured || isSubmitting}
           required
-          maxLength={254}
+          minLength={11}
+          maxLength={24}
+          pattern="[0-9۰-۹٠-٩+ -]+"
         />
         <button type="submit" disabled={!configured || isSubmitting}>
           {isSubmitting ? "در حال ثبت…" : "عضویت در لیست دعوت"}
@@ -103,15 +120,15 @@ export function WaitlistForm({ configured }: { configured: boolean }) {
           required
         />
         <label htmlFor={consentId}>
-          مایلم دعوت‌نامه و خبرهای شروع آرومان را با ایمیل دریافت کنم. {" "}
+          مایلم دعوت‌نامه و خبرهای شروع آرومان را از طریق پیامک دریافت کنم. {" "}
           <Link href="/privacy">اطلاعات حریم خصوصی</Link>
         </label>
       </div>
 
       <div className="honeypot" aria-hidden="true">
-        <label htmlFor={emailId + "-website"}>وب‌سایت</label>
+        <label htmlFor={phoneId + "-website"}>وب‌سایت</label>
         <input
-          id={emailId + "-website"}
+          id={phoneId + "-website"}
           name="website"
           type="text"
           tabIndex={-1}
