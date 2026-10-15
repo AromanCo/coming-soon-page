@@ -121,19 +121,20 @@ Generate the hash secret with openssl rand -hex 32. Never expose DATABASE_URL or
 - Preservation of legacy email-only registrations
 - Five attempts per hashed network identifier per ten-minute window
 - Honeypot field for simple bot filtering
-- Loading, success, duplicate, rate-limit, unavailable, and network-error states
+- Loading, accepted, rate-limit, unavailable, and network-error states
 
 New phone registrations are stored without an email address. Phone ownership
 is not verified in this release because no OTP flow or SMS provider is active.
 The schema preserves `created_at`, `consented_at`, `source`, security metadata,
 and the monotonic identity `id`; existing email rows remain valid.
 
-The public endpoint returns `409` for a duplicate canonical number as required
-by the current product behavior. This response can confirm whether a number is
-registered, so the persistent IP rate limit limits bulk enumeration and the
-response never echoes the submitted number. Before higher-volume launch,
-consider returning the same generic accepted response for new and existing
-numbers after product review.
+The public endpoint returns the same `202 Accepted` status and response body for
+new and duplicate valid numbers. PostgreSQL still prevents duplicate rows, and
+a repeated submission does not update the original consent or registration
+timestamps. This removes the direct duplicate-status signal. Small timing
+differences at the database and network layers may still be observable, so the
+persistent IP rate limit remains necessary and the endpoint never echoes the
+submitted number.
 
 ### Future OTP, SMS, and invitation operations
 

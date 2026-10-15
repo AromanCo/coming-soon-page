@@ -293,12 +293,26 @@ button {
   text-align: right;
 }
 
-.waitlist-label {
-  display: block;
+.waitlist-label-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 3px 12px;
   margin: 0 2px 8px;
+}
+
+.waitlist-label {
   color: var(--plum);
   font-size: 0.78rem;
   font-weight: 680;
+}
+
+.phone-format-hint {
+  color: #47654b;
+  font-size: 0.73rem;
+  font-weight: 620;
+  line-height: 1.6;
 }
 
 .waitlist-row {
@@ -391,13 +405,13 @@ button {
   align-content: center;
   color: #5f575f;
   cursor: pointer;
-  font-size: 0.76rem;
+  font-size: 0.78rem;
   line-height: 1.85;
 }
 
 .waitlist-status {
   color: #716970;
-  font-size: 0.75rem;
+  font-size: 0.78rem;
   line-height: 1.85;
 }
 
@@ -518,6 +532,8 @@ button {
 .scent-explorer {
   --mood-accent: #e2ad68;
   --mood-soft: rgba(226, 173, 104, 0.17);
+  --liquid-color: rgba(226, 173, 104, 0.4);
+  --liquid-level: 0.42;
   position: relative;
   overflow: hidden;
   padding-block: 72px;
@@ -531,11 +547,15 @@ button {
 .scent-explorer.mood-woody {
   --mood-accent: #d39a6c;
   --mood-soft: rgba(173, 104, 64, 0.24);
+  --liquid-color: rgba(185, 111, 66, 0.52);
+  --liquid-level: 0.64;
 }
 
 .scent-explorer.mood-floral {
   --mood-accent: #cbb4d7;
   --mood-soft: rgba(190, 157, 207, 0.23);
+  --liquid-color: rgba(190, 157, 207, 0.44);
+  --liquid-level: 0.52;
 }
 
 .scent-explorer::after {
@@ -655,13 +675,33 @@ button {
 
 .vessel-glass {
   inset: 42px 0 0;
+  overflow: hidden;
   border: 1px solid rgba(255, 255, 255, 0.6);
   border-radius: 38px 38px 23px 23px;
-  background:
-    linear-gradient(to top, var(--mood-soft) 0 46%, transparent 46%),
-    linear-gradient(110deg, rgba(255, 255, 255, 0.2), transparent 32%);
+  background: linear-gradient(110deg, rgba(255, 255, 255, 0.2), transparent 32%);
   box-shadow: inset 10px 0 22px rgba(255, 255, 255, 0.05);
-  transition: background 240ms ease;
+}
+
+.vessel-glass::after {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(105deg, rgba(255, 255, 255, 0.14), transparent 38%);
+  content: "";
+  pointer-events: none;
+}
+
+.vessel-liquid {
+  position: absolute;
+  inset: 0;
+  display: block;
+  border-radius: inherit;
+  background-color: var(--liquid-color);
+  transform: scaleY(var(--liquid-level));
+  transform-origin: bottom;
+  transition:
+    transform 600ms cubic-bezier(0.22, 1, 0.36, 1),
+    background-color 600ms ease;
+  will-change: transform;
 }
 
 .scent-line {
@@ -689,7 +729,7 @@ button {
 .mood-count {
   color: var(--mood-accent);
   font-family: system-ui, sans-serif;
-  font-size: 0.66rem;
+  font-size: 0.72rem;
   letter-spacing: 0.12em;
 }
 
@@ -721,7 +761,8 @@ button {
   border: 1px solid rgba(255, 255, 255, 0.17);
   border-radius: 999px;
   color: rgba(255, 255, 255, 0.94);
-  font-size: 0.63rem;
+  font-size: 0.72rem;
+  line-height: 1.5;
 }
 
 .mood-copy small {
@@ -896,6 +937,7 @@ button {
   background: rgba(255, 255, 255, 0.08);
   color: white;
   font-weight: 700;
+  transition: border-color 600ms ease, box-shadow 600ms ease;
 }
 
 .study-note {
@@ -903,7 +945,8 @@ button {
   height: 42px;
   border: 1px solid rgba(255, 255, 255, 0.28);
   color: rgba(255, 255, 255, 0.7);
-  font-size: 0.59rem;
+  font-size: 0.65rem;
+  transition: border-color 600ms ease, color 600ms ease, transform 600ms ease;
 }
 
 .study-note-one {
@@ -916,6 +959,28 @@ button {
 
 .study-note-three {
   inset: auto 30px 0 auto;
+}
+
+.custom-step:is(:hover, :focus-within) .study-center {
+  border-color: #f0d2aa;
+  box-shadow: 0 0 24px rgba(232, 200, 159, 0.1);
+}
+
+.custom-step:is(:hover, :focus-within) .study-note {
+  border-color: rgba(255, 255, 255, 0.42);
+  color: rgba(255, 255, 255, 0.84);
+}
+
+.custom-step:is(:hover, :focus-within) .study-note-one {
+  transform: translate(7px, 8px);
+}
+
+.custom-step:is(:hover, :focus-within) .study-note-two {
+  transform: translate(-7px, 8px);
+}
+
+.custom-step:is(:hover, :focus-within) .study-note-three {
+  transform: translateY(-8px);
 }
 
 .bottle-study {
@@ -1238,6 +1303,11 @@ button {
 
   .hero h1 {
     font-size: clamp(3.5rem, 5vw, 5rem);
+  }
+
+  .explorer-intro h2 {
+    max-width: 18ch;
+    font-size: clamp(2.45rem, 3.15vw, 2.85rem);
   }
 
   .scent-explorer-inner {

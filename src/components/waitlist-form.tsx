@@ -11,9 +11,11 @@ type FormStatus =
 
 export function WaitlistForm({ configured }: { configured: boolean }) {
   const phoneId = useId();
+  const phoneHintId = useId();
   const consentId = useId();
   const statusId = useId();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [hasValidFormat, setHasValidFormat] = useState(false);
   const [status, setStatus] = useState<FormStatus>({
     type: configured ? "idle" : "error",
     message: configured
@@ -72,9 +74,10 @@ export function WaitlistForm({ configured }: { configured: boolean }) {
         type: "success",
         message:
           result.message ??
-          "شماره موبایلت با موفقیت در لیست دعوت آرومان ثبت شد.",
+          "ممنون! شماره‌ات برای لیست دعوت آرومان دریافت شد.",
       });
       form.reset();
+      setHasValidFormat(false);
     } catch {
       setStatus({
         type: "error",
@@ -87,9 +90,18 @@ export function WaitlistForm({ configured }: { configured: boolean }) {
 
   return (
     <form className="waitlist-form" id="waitlist" onSubmit={handleSubmit} noValidate>
-      <label className="waitlist-label" htmlFor={phoneId}>
-        شماره موبایل برای عضویت در لیست دعوت
-      </label>
+      <div className="waitlist-label-row">
+        <label className="waitlist-label" htmlFor={phoneId}>
+          شماره موبایل برای عضویت در لیست دعوت
+        </label>
+        <span
+          className="phone-format-hint"
+          id={phoneHintId}
+          aria-live="polite"
+        >
+          {hasValidFormat ? "قالب شماره معتبر است" : ""}
+        </span>
+      </div>
       <div className="waitlist-row">
         <input
           id={phoneId}
@@ -98,8 +110,14 @@ export function WaitlistForm({ configured }: { configured: boolean }) {
           inputMode="tel"
           autoComplete="tel"
           dir="ltr"
-          placeholder="0912 123 4567"
-          aria-describedby={statusId}
+          placeholder="۰۹۱۲ ۱۲۳ ۴۵۶۷"
+          aria-describedby={`${phoneHintId} ${statusId}`}
+          onChange={(event) => {
+            event.currentTarget.setCustomValidity("");
+            setHasValidFormat(
+              normalizeIranianMobile(event.currentTarget.value) !== null,
+            );
+          }}
           disabled={!configured || isSubmitting}
           required
           minLength={11}
@@ -120,7 +138,7 @@ export function WaitlistForm({ configured }: { configured: boolean }) {
           required
         />
         <label htmlFor={consentId}>
-          مایلم دعوت‌نامه و خبرهای شروع آرومان را از طریق پیامک دریافت کنم. {" "}
+          مایلم دعوت‌نامه و خبرهای شروع آرومان را با پیامک دریافت کنم. {" "}
           <Link href="/privacy">اطلاعات حریم خصوصی</Link>
         </label>
       </div>

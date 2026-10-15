@@ -137,31 +137,40 @@ test(
       assert.equal(payload.code, "INVALID_REQUEST");
     });
 
-    await t.test("inserts a canonical phone and detects normalized duplicates", async () => {
+    await t.test("new and duplicate phones receive the same public response", async () => {
       const first = await register(
         { phone: "۰۹۱۲ ۰۰۰ ۰۰۰۱", consent: true, website: "" },
         "203.0.113.43",
       );
-      assert.equal(first.response.status, 201);
-      assert.equal(first.payload.code, "SUBSCRIBED");
+      assert.equal(first.response.status, 202);
+      assert.equal(first.payload.code, "REQUEST_ACCEPTED");
       assert.equal(
         first.payload.message,
-        "شماره موبایلت با موفقیت در لیست دعوت آرومان ثبت شد.",
+        "ممنون! شماره‌ات برای لیست دعوت آرومان دریافت شد.",
+      );
+
+      const timestampsBeforeDuplicate = psql(
+        "SELECT created_at::text || '|' || consented_at::text FROM waitlist_subscriptions WHERE phone_e164 = '+989120000001'",
       );
 
       const duplicate = await register(
         { phone: "00989120000001", consent: true, website: "" },
         "203.0.113.43",
       );
-      assert.equal(duplicate.response.status, 409);
-      assert.equal(duplicate.payload.code, "DUPLICATE_PHONE");
-      assert.equal(JSON.stringify(duplicate.payload).includes("09120000001"), false);
+      assert.equal(duplicate.response.status, 202);
+      assert.deepEqual(duplicate.payload, first.payload);
 
       assert.equal(
         psql(
-          "SELECT phone_e164 || '|' || (email IS NULL)::text || '|' || marketing_consent::text FROM waitlist_subscriptions WHERE phone_e164 = '+989120000001'",
+          "SELECT count(*)::text || '|' || min(phone_e164) || '|' || bool_and(email IS NULL)::text || '|' || bool_and(marketing_consent)::text FROM waitlist_subscriptions WHERE phone_e164 = '+989120000001'",
         ),
-        "+989120000001|true|true",
+        "1|+989120000001|true|true",
+      );
+      assert.equal(
+        psql(
+          "SELECT created_at::text || '|' || consented_at::text FROM waitlist_subscriptions WHERE phone_e164 = '+989120000001'",
+        ),
+        timestampsBeforeDuplicate,
       );
     });
 
@@ -171,7 +180,7 @@ test(
           { phone: `091200000${index}`, consent: true, website: "" },
           "203.0.113.44",
         );
-        assert.equal(result.response.status, 201);
+        assert.equal(result.response.status, 202);
       }
 
       const limited = await register(

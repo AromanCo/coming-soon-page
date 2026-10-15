@@ -91,24 +91,14 @@ export async function POST(request: Request) {
     }
 
     const userAgent = request.headers.get("user-agent")?.slice(0, 500) ?? null;
-    const created = await createSubscription({ phoneE164, ipHash, userAgent });
-
-    if (!created) {
-      return NextResponse.json(
-        {
-          code: "DUPLICATE_PHONE",
-          message: "این شماره قبلاً در لیست دعوت آرومان ثبت شده است.",
-        },
-        { status: 409 },
-      );
-    }
+    await createSubscription({ phoneE164, ipHash, userAgent });
 
     return NextResponse.json(
       {
-        code: "SUBSCRIBED",
-        message: "شماره موبایلت با موفقیت در لیست دعوت آرومان ثبت شد.",
+        code: "REQUEST_ACCEPTED",
+        message: "ممنون! شماره‌ات برای لیست دعوت آرومان دریافت شد.",
       },
-      { status: 201 },
+      { status: 202 },
     );
   } catch (error) {
     const errorCode =

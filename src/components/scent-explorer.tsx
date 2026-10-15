@@ -108,7 +108,9 @@ export function ScentExplorer() {
         >
           <div className="scent-vessel" aria-hidden="true">
             <span className="vessel-cap" />
-            <span className="vessel-glass" />
+            <span className="vessel-glass">
+              <span className="vessel-liquid" />
+            </span>
             <span className="scent-line scent-line-one" />
             <span className="scent-line scent-line-two" />
           </div>
