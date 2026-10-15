@@ -13,7 +13,8 @@
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "test": "node --no-warnings --test tests/*.test.mjs && npm run typecheck && npm run lint",
-    "test:integration": "node --no-warnings --test tests/waitlist.integration.test.mjs"
+    "test:integration": "node --no-warnings --test tests/waitlist.integration.test.mjs",
+    "test:production": "./scripts/test-production-stack.sh"
   },
   "dependencies": {
     "@fontsource-variable/vazirmatn": "5.3.0",
