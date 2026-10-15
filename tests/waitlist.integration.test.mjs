@@ -2,7 +2,9 @@ import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import process from "node:process";
+import { ReadableStream } from "node:stream/web";
 import test from "node:test";
+import { TextEncoder } from "node:util";
 
 const baseUrl = process.env.TEST_BASE_URL;
 const dbContainer = process.env.TEST_DB_CONTAINER;
@@ -65,6 +67,42 @@ async function register(body, ipAddress) {
       "X-Forwarded-For": ipAddress,
     },
     body: JSON.stringify(body),
+  });
+
+  return { response, payload: await response.json() };
+}
+
+async function postRaw(body, ipAddress, contentType = "application/json") {
+  const response = await globalThis.fetch(`${baseUrl}/api/waitlist`, {
+    method: "POST",
+    headers: {
+      "Content-Type": contentType,
+      "User-Agent": "aroman-integration-test",
+      "X-Forwarded-For": ipAddress,
+    },
+    body,
+  });
+
+  return { response, payload: await response.json() };
+}
+
+async function postChunked(chunks, ipAddress) {
+  const encoder = new TextEncoder();
+  const body = new ReadableStream({
+    start(controller) {
+      for (const chunk of chunks) controller.enqueue(encoder.encode(chunk));
+      controller.close();
+    },
+  });
+  const response = await globalThis.fetch(`${baseUrl}/api/waitlist`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "User-Agent": "aroman-integration-test",
+      "X-Forwarded-For": ipAddress,
+    },
+    body,
+    duplex: "half",
   });
 
   return { response, payload: await response.json() };
@@ -137,6 +175,45 @@ test(
       assert.equal(payload.code, "INVALID_REQUEST");
     });
 
+    await t.test("rejects invalid media types and oversized request bodies", async () => {
+      const unsupported = await postRaw(
+        JSON.stringify({ phone: "09120000001", consent: true, website: "" }),
+        "203.0.113.45",
+        "text/plain",
+      );
+      assert.equal(unsupported.response.status, 415);
+      assert.equal(unsupported.payload.code, "UNSUPPORTED_MEDIA_TYPE");
+      assert.equal(unsupported.response.headers.get("cache-control"), "no-store");
+
+      const oversized = await postRaw(
+        JSON.stringify({
+          phone: "09120000001",
+          consent: true,
+          website: "",
+          padding: "x".repeat(5000),
+        }),
+        "203.0.113.46",
+      );
+      assert.equal(oversized.response.status, 413);
+      assert.equal(oversized.payload.code, "REQUEST_TOO_LARGE");
+      assert.equal(oversized.response.headers.get("cache-control"), "no-store");
+
+      const chunked = await postChunked(
+        [
+          '{"phone":"09120000001","consent":true,"padding":"',
+          "x".repeat(5000),
+          '"}',
+        ],
+        "203.0.113.48",
+      );
+      assert.equal(chunked.response.status, 413);
+      assert.equal(chunked.payload.code, "REQUEST_TOO_LARGE");
+
+      const nullPayload = await postRaw("null", "203.0.113.47");
+      assert.equal(nullPayload.response.status, 400);
+      assert.equal(nullPayload.payload.code, "INVALID_REQUEST");
+    });
+
     await t.test("new and duplicate phones receive the same public response", async () => {
       const first = await register(
         { phone: "۰۹۱۲ ۰۰۰ ۰۰۰۱", consent: true, website: "" },
@@ -144,6 +221,7 @@ test(
       );
       assert.equal(first.response.status, 202);
       assert.equal(first.payload.code, "REQUEST_ACCEPTED");
+      assert.equal(first.response.headers.get("cache-control"), "no-store");
       assert.equal(
         first.payload.message,
         "ممنون! شماره‌ات برای لیست دعوت آرومان دریافت شد.",
@@ -159,6 +237,7 @@ test(
       );
       assert.equal(duplicate.response.status, 202);
       assert.deepEqual(duplicate.payload, first.payload);
+      assert.equal(duplicate.response.headers.get("cache-control"), "no-store");
 
       assert.equal(
         psql(
@@ -190,6 +269,7 @@ test(
       assert.equal(limited.response.status, 429);
       assert.equal(limited.payload.code, "RATE_LIMITED");
       assert.equal(limited.response.headers.get("retry-after"), "600");
+      assert.equal(limited.response.headers.get("cache-control"), "no-store");
     });
   },
 );

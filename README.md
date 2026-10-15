@@ -121,6 +121,8 @@ Generate the hash secret with openssl rand -hex 32. Never expose DATABASE_URL or
 - Preservation of legacy email-only registrations
 - Five attempts per hashed network identifier per ten-minute window
 - Honeypot field for simple bot filtering
+- A 4 KiB request-body limit and required JSON media type on the public endpoint
+- `Cache-Control: no-store` on every waitlist response
 - Loading, accepted, rate-limit, unavailable, and network-error states
 
 New phone registrations are stored without an email address. Phone ownership
@@ -135,6 +137,26 @@ timestamps. This removes the direct duplicate-status signal. Small timing
 differences at the database and network layers may still be observable, so the
 persistent IP rate limit remains necessary and the endpoint never echoes the
 submitted number.
+
+### Trusted proxy requirement
+
+The waitlist currently attributes clients using the first `X-Forwarded-For`
+value, falling back to `X-Real-IP`. These headers are trustworthy only when the
+application is reachable exclusively through a controlled reverse proxy or
+hosting ingress that removes client-supplied forwarding headers and writes its
+own canonical value. `Forwarded` and provider-specific IP headers are not read.
+
+Do not expose the Compose web port directly to untrusted networks with the
+current attribution logic: a direct client can forge these headers and bypass
+the per-IP application rate limit. Before production, choose and document the
+ingress topology, block direct origin access, and configure the ingress to
+overwrite rather than append forwarding headers. If multiple trusted proxy
+hops are required, define the exact trusted-hop count and parse from the trusted
+side of the chain instead of always accepting the leftmost value.
+
+The reverse proxy or hosting edge should also enforce coarse request-rate,
+connection, header-size, body-size, and timeout limits before traffic reaches
+Next.js. Terminate TLS there and set HSTS only on the HTTPS production host.
 
 ### Future OTP, SMS, and invitation operations
 

@@ -9,11 +9,69 @@ import { normalizeIranianMobile } from "@/lib/iranian-mobile";
 
 export const runtime = "nodejs";
 
+const MAX_REQUEST_BODY_BYTES = 4 * 1024;
+const NO_STORE_HEADERS = { "Cache-Control": "no-store" };
+
 type WaitlistPayload = {
   phone?: unknown;
   consent?: unknown;
   website?: unknown;
 };
+
+class RequestBodyTooLargeError extends Error {}
+
+function jsonResponse(
+  body: Record<string, string>,
+  status: number,
+  headers: HeadersInit = {},
+) {
+  const responseHeaders = new Headers(headers);
+  responseHeaders.set("Cache-Control", NO_STORE_HEADERS["Cache-Control"]);
+
+  return NextResponse.json(body, {
+    status,
+    headers: responseHeaders,
+  });
+}
+
+async function readJsonBody(request: Request) {
+  const contentLength = request.headers.get("content-length");
+
+  if (
+    contentLength !== null &&
+    /^\d+$/u.test(contentLength) &&
+    Number(contentLength) > MAX_REQUEST_BODY_BYTES
+  ) {
+    throw new RequestBodyTooLargeError();
+  }
+
+  const reader = request.body?.getReader();
+  if (!reader) throw new SyntaxError("Missing request body");
+
+  const decoder = new TextDecoder("utf-8", { fatal: true });
+  let body = "";
+  let bytesRead = 0;
+
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      bytesRead += value.byteLength;
+      if (bytesRead > MAX_REQUEST_BODY_BYTES) {
+        await reader.cancel();
+        throw new RequestBodyTooLargeError();
+      }
+
+      body += decoder.decode(value, { stream: true });
+    }
+  } finally {
+    reader.releaseLock();
+  }
+
+  body += decoder.decode();
+  return JSON.parse(body) as unknown;
+}
 
 function clientAddress(request: Request) {
   const forwarded = request.headers.get("x-forwarded-for");
@@ -22,57 +80,83 @@ function clientAddress(request: Request) {
 
 export async function POST(request: Request) {
   if (!isWaitlistConfigured()) {
-    return NextResponse.json(
+    return jsonResponse(
       {
         code: "WAITLIST_UNAVAILABLE",
         message: "سامانه ثبت شماره موبایل فعلاً در دسترس نیست. لطفاً کمی بعد دوباره تلاش کنید.",
       },
-      { status: 503 },
+      503,
+    );
+  }
+
+  const contentType = request.headers
+    .get("content-type")
+    ?.split(";", 1)[0]
+    ?.trim()
+    .toLowerCase();
+
+  if (contentType !== "application/json") {
+    return jsonResponse(
+      { code: "UNSUPPORTED_MEDIA_TYPE", message: "نوع اطلاعات ارسال‌شده معتبر نیست." },
+      415,
     );
   }
 
   let payload: WaitlistPayload;
 
   try {
-    payload = (await request.json()) as WaitlistPayload;
-  } catch {
-    return NextResponse.json(
+    const parsed = await readJsonBody(request);
+
+    if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
+      throw new SyntaxError("Expected a JSON object");
+    }
+
+    payload = parsed as WaitlistPayload;
+  } catch (error) {
+    if (error instanceof RequestBodyTooLargeError) {
+      return jsonResponse(
+        { code: "REQUEST_TOO_LARGE", message: "حجم اطلاعات ارسال‌شده بیش از حد مجاز است." },
+        413,
+      );
+    }
+
+    return jsonResponse(
       { code: "INVALID_REQUEST", message: "اطلاعات ارسال‌شده معتبر نیست." },
-      { status: 400 },
+      400,
     );
   }
 
   if (typeof payload.website === "string" && payload.website.length > 0) {
-    return NextResponse.json(
+    return jsonResponse(
       { code: "INVALID_REQUEST", message: "اطلاعات ارسال‌شده معتبر نیست." },
-      { status: 400 },
+      400,
     );
   }
 
   if (typeof payload.phone !== "string") {
-    return NextResponse.json(
+    return jsonResponse(
       { code: "INVALID_PHONE", message: "لطفاً یک شماره موبایل معتبر وارد کنید." },
-      { status: 400 },
+      400,
     );
   }
 
   const phoneE164 = normalizeIranianMobile(payload.phone);
 
   if (!phoneE164) {
-    return NextResponse.json(
+    return jsonResponse(
       { code: "INVALID_PHONE", message: "لطفاً یک شماره موبایل معتبر وارد کنید." },
-      { status: 400 },
+      400,
     );
   }
 
   if (payload.consent !== true) {
-    return NextResponse.json(
+    return jsonResponse(
       {
         code: "CONSENT_REQUIRED",
         message:
           "برای عضویت، موافقت با دریافت دعوت‌نامه و خبرهای شروع آرومان از طریق پیامک لازم است.",
       },
-      { status: 400 },
+      400,
     );
   }
 
@@ -81,24 +165,25 @@ export async function POST(request: Request) {
     const allowed = await registerRateLimitAttempt(ipHash);
 
     if (!allowed) {
-      return NextResponse.json(
+      return jsonResponse(
         {
           code: "RATE_LIMITED",
           message: "تعداد تلاش‌ها زیاد بود. لطفاً ده دقیقه دیگر دوباره امتحان کنید.",
         },
-        { status: 429, headers: { "Retry-After": "600" } },
+        429,
+        { "Retry-After": "600" },
       );
     }
 
     const userAgent = request.headers.get("user-agent")?.slice(0, 500) ?? null;
     await createSubscription({ phoneE164, ipHash, userAgent });
 
-    return NextResponse.json(
+    return jsonResponse(
       {
         code: "REQUEST_ACCEPTED",
         message: "ممنون! شماره‌ات برای لیست دعوت آرومان دریافت شد.",
       },
-      { status: 202 },
+      202,
     );
   } catch (error) {
     const errorCode =
@@ -106,12 +191,12 @@ export async function POST(request: Request) {
         ? String(error.code)
         : "UNKNOWN";
     console.error("Waitlist subscription failed", { code: errorCode });
-    return NextResponse.json(
+    return jsonResponse(
       {
         code: "WAITLIST_UNAVAILABLE",
         message: "ثبت شماره موبایل انجام نشد. لطفاً کمی بعد دوباره تلاش کنید.",
       },
-      { status: 503 },
+      503,
     );
   }
 }
