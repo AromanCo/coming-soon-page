@@ -140,19 +140,16 @@ submitted number.
 
 ### Trusted proxy requirement
 
-The waitlist currently attributes clients using the first `X-Forwarded-For`
-value, falling back to `X-Real-IP`. These headers are trustworthy only when the
-application is reachable exclusively through a controlled reverse proxy or
-hosting ingress that removes client-supplied forwarding headers and writes its
-own canonical value. `Forwarded` and provider-specific IP headers are not read.
+Production uses `CLIENT_IP_MODE=caddy` and accepts only a single valid
+`X-Aroman-Client-IP` value. The production Caddy proxy overwrites that header
+from its direct peer address and sanitizes `X-Forwarded-For`, `X-Real-IP`, and
+`Forwarded`; neither the Next.js nor PostgreSQL container has a published host
+port. Missing or malformed canonical identities fail closed.
 
-Do not expose the Compose web port directly to untrusted networks with the
-current attribution logic: a direct client can forge these headers and bypass
-the per-IP application rate limit. Before production, choose and document the
-ingress topology, block direct origin access, and configure the ingress to
-overwrite rather than append forwarding headers. If multiple trusted proxy
-hops are required, define the exact trusted-hop count and parse from the trusted
-side of the chain instead of always accepting the leftmost value.
+The development Compose file explicitly enables a spoofable forwarded-header
+compatibility mode for local integration tests. Never enable
+`ALLOW_INSECURE_CLIENT_IP_HEADERS` in production. If a CDN or load balancer is
+introduced, re-design and re-test the trusted-hop configuration before release.
 
 The reverse proxy or hosting edge should also enforce coarse request-rate,
 connection, header-size, body-size, and timeout limits before traffic reaches
@@ -207,6 +204,8 @@ tests/                   Unit and Docker-backed integration tests
 public/images/           Replaceable campaign artwork
 Dockerfile               Multi-stage standalone production image
 compose.yaml             Web, database, and one-shot migration services
+compose.prod.yaml        Caddy and isolated production service topology
+docs/production-deployment.md  VPS, backup, recovery, and release runbook
 ~~~
 
 ## Validation
@@ -224,9 +223,13 @@ npm audit
 - A Node.js 24 runtime capable of running a Next.js server; this project is not a static export because the waitlist API is server-side.
 - A reachable PostgreSQL database with the migration applied.
 - All required environment variables set in the deployment platform.
-- A reverse proxy/platform that supplies x-forwarded-for or x-real-ip for per-client abuse limiting.
+- The production Caddy trust boundary (or an equivalently reviewed canonical client-IP contract) for per-client abuse limiting.
 - The official AROMAN logo, favicon, social URLs, privacy contact, canonical URL, and final approved campaign image.
-- A review of the current Next.js security release immediately before deployment. On 2026-10-14, 16.4.0 was the registry's latest stable release, while the Next.js team had announced an out-of-band security update for the same date that was not yet published.
+- A review of the current Next.js security release immediately before deployment. The repository currently pins the patched stable release 16.4.1.
+
+The VPS production architecture and commands are documented in
+`docs/production-deployment.md`. They are not an instruction to deploy without
+explicit approval.
 
 ## Asset replacement
 
