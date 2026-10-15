@@ -11,7 +11,7 @@ export function BrandMark() {
         </svg>
       </span>
       <span className="brand-wordmark">
-        <strong>AROMAN</strong>
+        <strong dir="ltr" lang="en">AROMAN</strong>
         <small>آرومان</small>
       </span>
     </Link>

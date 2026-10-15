@@ -1,0 +1,55 @@
+{
+	servers {
+		max_header_size 16KB
+		timeouts {
+			read_header 10s
+			read_body 10s
+			write 30s
+			idle 2m
+		}
+	}
+}
+
+{$AROMAN_DOMAIN} {
+	encode zstd gzip
+
+	log {
+		output stdout
+		format filter {
+			request>remote_ip ip_mask 24 48
+			request>client_ip ip_mask 24 48
+			request>headers>X-Forwarded-For delete
+			request>headers>X-Real-Ip delete
+			request>headers>Forwarded delete
+			request>headers>X-Aroman-Client-Ip delete
+			wrap json
+		}
+	}
+
+	header {
+		-Server
+		Strict-Transport-Security "max-age=31536000"
+		Content-Security-Policy "default-src 'self'; base-uri 'self'; connect-src 'self'; font-src 'self'; form-action 'self'; frame-ancestors 'none'; img-src 'self' data:; object-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'"
+		Permissions-Policy "camera=(), geolocation=(), microphone=()"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+	}
+
+	request_body /api/waitlist {
+		max_size 4KB
+	}
+
+	reverse_proxy web:3000 {
+		header_up X-Aroman-Client-IP {remote_host}
+		header_up X-Forwarded-For {remote_host}
+		header_up X-Real-IP {remote_host}
+		header_up -Forwarded
+
+		transport http {
+			dial_timeout 3s
+			response_header_timeout 15s
+			keepalive 30s
+		}
+	}
+}

@@ -1,0 +1,11 @@
+[Unit]
+Description=Monthly AROMAN PostgreSQL restore-verification schedule
+
+[Timer]
+OnCalendar=Sun *-*-01..07 04:20:00
+RandomizedDelaySec=30m
+Persistent=true
+Unit=aroman-backup-verify.service
+
+[Install]
+WantedBy=timers.target
