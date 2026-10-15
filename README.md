@@ -27,11 +27,12 @@ provides Node.js 24.21.0 and PostgreSQL 16.
 
 3. Copy .env.example to .env.local and fill in the required values.
 
-4. Apply the database migration:
+4. Apply the database migrations in filename order:
 
    ~~~sh
-   psql "$DATABASE_URL" -v ON_ERROR_STOP=1 \
-     -f db/migrations/001_create_waitlist.sql
+   for migration in db/migrations/*.sql; do
+     psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f "$migration"
+   done
    ~~~
 
 5. Start the app:
@@ -112,13 +113,69 @@ Generate the hash secret with openssl rand -hex 32. Never expose DATABASE_URL or
 
 ## Waitlist behavior
 
-- Server-side normalization and email validation
+- Server-side Iranian mobile validation for local, `+98`, and `0098` formats
+- Persian, Arabic, and English digit normalization to canonical E.164 storage
 - Explicit required marketing consent
 - Persistent PostgreSQL storage
-- Duplicate detection with a database unique constraint
+- Duplicate detection with a partial unique index on canonical phone numbers
+- Preservation of legacy email-only registrations
 - Five attempts per hashed network identifier per ten-minute window
 - Honeypot field for simple bot filtering
-- Loading, success, duplicate, rate-limit, unavailable, and network-error states
+- A 4 KiB request-body limit and required JSON media type on the public endpoint
+- `Cache-Control: no-store` on every waitlist response
+- Loading, accepted, rate-limit, unavailable, and network-error states
+
+New phone registrations are stored without an email address. Phone ownership
+is not verified in this release because no OTP flow or SMS provider is active.
+The schema preserves `created_at`, `consented_at`, `source`, security metadata,
+and the monotonic identity `id`; existing email rows remain valid.
+
+The public endpoint returns the same `202 Accepted` status and response body for
+new and duplicate valid numbers. PostgreSQL still prevents duplicate rows, and
+a repeated submission does not update the original consent or registration
+timestamps. This removes the direct duplicate-status signal. Small timing
+differences at the database and network layers may still be observable, so the
+persistent IP rate limit remains necessary and the endpoint never echoes the
+submitted number.
+
+### Trusted proxy requirement
+
+Production uses `CLIENT_IP_MODE=caddy` and accepts only a single valid
+`X-Aroman-Client-IP` value. The production Caddy proxy overwrites that header
+from its direct peer address and sanitizes `X-Forwarded-For`, `X-Real-IP`, and
+`Forwarded`; neither the Next.js nor PostgreSQL container has a published host
+port. Missing or malformed canonical identities fail closed.
+
+The development Compose file explicitly enables a spoofable forwarded-header
+compatibility mode for local integration tests. Never enable
+`ALLOW_INSECURE_CLIENT_IP_HEADERS` in production. If a CDN or load balancer is
+introduced, re-design and re-test the trusted-hop configuration before release.
+
+The reverse proxy or hosting edge should also enforce coarse request-rate,
+connection, header-size, body-size, and timeout limits before traffic reaches
+Next.js. Terminate TLS there and set HSTS only on the HTTPS production host.
+
+### Future OTP, SMS, and invitation operations
+
+No SMS is sent by the current application. A later implementation should:
+
+1. Integrate an approved Iranian SMS provider through a server-only adapter,
+   with credentials held in a secret manager and delivery logs free of full
+   phone numbers.
+2. Generate cryptographically random, single-purpose OTPs; store only hashes;
+   and expire them after a short configured window.
+3. Add per-number and per-network verification-attempt and resend limits on top
+   of the existing signup rate limit.
+4. Add explicit verification state and timestamps through a new migration.
+   Never infer ownership from successful storage or SMS delivery alone.
+5. Make resend and provider retry operations idempotent, with bounded retries
+   and auditable provider message identifiers.
+6. Build SMS invitation cohorts as a separate authenticated administrative
+   workflow. Select cohorts deterministically using `created_at` and `id`,
+   record the operator and batch, and do not expose cohort operations publicly.
+7. Add durable opt-out and unsubscribe handling before promotional SMS is sent,
+   and ensure deletion requests are honored across provider and application
+   records.
 
 The rate-limit table is intentionally persistent across server instances. Periodically remove old buckets:
 
@@ -141,10 +198,14 @@ src/components/
   site-footer.tsx        Configured social/privacy links
   waitlist-form.tsx      Accessible client form
 src/lib/waitlist.ts      PostgreSQL and anti-abuse logic
+src/lib/iranian-mobile.ts Iranian mobile normalization and validation
 db/migrations/           Idempotent database schema
+tests/                   Unit and Docker-backed integration tests
 public/images/           Replaceable campaign artwork
 Dockerfile               Multi-stage standalone production image
 compose.yaml             Web, database, and one-shot migration services
+compose.prod.yaml        Caddy and isolated production service topology
+docs/production-deployment.md  VPS, backup, recovery, and release runbook
 ~~~
 
 ## Validation
@@ -162,9 +223,13 @@ npm audit
 - A Node.js 24 runtime capable of running a Next.js server; this project is not a static export because the waitlist API is server-side.
 - A reachable PostgreSQL database with the migration applied.
 - All required environment variables set in the deployment platform.
-- A reverse proxy/platform that supplies x-forwarded-for or x-real-ip for per-client abuse limiting.
+- The production Caddy trust boundary (or an equivalently reviewed canonical client-IP contract) for per-client abuse limiting.
 - The official AROMAN logo, favicon, social URLs, privacy contact, canonical URL, and final approved campaign image.
-- A review of the current Next.js security release immediately before deployment. On 2026-10-14, 16.4.0 was the registry's latest stable release, while the Next.js team had announced an out-of-band security update for the same date that was not yet published.
+- A review of the current Next.js security release immediately before deployment. The repository currently pins the patched stable release 16.4.1.
+
+The VPS production architecture and commands are documented in
+`docs/production-deployment.md`. They are not an instruction to deploy without
+explicit approval.
 
 ## Asset replacement
 

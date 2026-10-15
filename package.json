@@ -12,11 +12,13 @@
     "start": "next start",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
-    "test": "npm run typecheck && npm run lint"
+    "test": "node --no-warnings --test tests/*.test.mjs && npm run typecheck && npm run lint",
+    "test:integration": "node --no-warnings --test tests/waitlist.integration.test.mjs",
+    "test:production": "./scripts/test-production-stack.sh"
   },
   "dependencies": {
     "@fontsource-variable/vazirmatn": "5.3.0",
-    "next": "16.4.0",
+    "next": "16.4.1",
     "pg": "8.23.1",
     "react": "19.3.0",
     "react-dom": "19.3.0"

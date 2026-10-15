@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { FormEvent, useId, useState } from "react";
+import { normalizeIranianMobile } from "@/lib/iranian-mobile";
 
 type FormStatus =
   | { type: "idle"; message: string }
@@ -9,14 +10,16 @@ type FormStatus =
   | { type: "success"; message: string };
 
 export function WaitlistForm({ configured }: { configured: boolean }) {
-  const emailId = useId();
+  const phoneId = useId();
+  const phoneHintId = useId();
   const consentId = useId();
   const statusId = useId();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [hasValidFormat, setHasValidFormat] = useState(false);
   const [status, setStatus] = useState<FormStatus>({
     type: configured ? "idle" : "error",
     message: configured
-      ? "فقط خبرهای مهم شروع آرومان را برایت می‌فرستیم."
+      ? "دعوت‌نامه‌ها به‌صورت مرحله‌ای ارسال می‌شوند."
       : "عضویت فعلاً در دسترس نیست؛ تنظیمات پایگاه داده هنوز کامل نشده است.",
   });
 
@@ -26,19 +29,31 @@ export function WaitlistForm({ configured }: { configured: boolean }) {
     if (!configured || isSubmitting) return;
 
     const form = event.currentTarget;
+    const phoneInput = form.elements.namedItem("phone") as HTMLInputElement;
+    phoneInput.setCustomValidity("");
 
     if (!form.reportValidity()) return;
 
     const formData = new FormData(form);
+    const phone = formData.get("phone");
+
+    if (typeof phone !== "string" || !normalizeIranianMobile(phone)) {
+      const message = "لطفاً یک شماره موبایل معتبر وارد کنید.";
+      phoneInput.setCustomValidity(message);
+      phoneInput.reportValidity();
+      setStatus({ type: "error", message });
+      return;
+    }
+
     setIsSubmitting(true);
-    setStatus({ type: "idle", message: "در حال ثبت ایمیل…" });
+    setStatus({ type: "idle", message: "در حال ثبت شماره موبایل…" });
 
     try {
       const response = await fetch("/api/waitlist", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          email: formData.get("email"),
+          phone,
           consent: formData.get("consent") === "on",
           website: formData.get("website"),
         }),
@@ -48,16 +63,21 @@ export function WaitlistForm({ configured }: { configured: boolean }) {
       if (!response.ok) {
         setStatus({
           type: "error",
-          message: result.message ?? "ثبت ایمیل انجام نشد. لطفاً دوباره تلاش کنید.",
+          message:
+            result.message ??
+            "ثبت شماره موبایل انجام نشد. لطفاً دوباره تلاش کنید.",
         });
         return;
       }
 
       setStatus({
         type: "success",
-        message: result.message ?? "ایمیلت با موفقیت ثبت شد.",
+        message:
+          result.message ??
+          "ممنون! شماره‌ات برای لیست دعوت آرومان دریافت شد.",
       });
       form.reset();
+      setHasValidFormat(false);
     } catch {
       setStatus({
         type: "error",
@@ -70,25 +90,42 @@ export function WaitlistForm({ configured }: { configured: boolean }) {
 
   return (
     <form className="waitlist-form" id="waitlist" onSubmit={handleSubmit} noValidate>
-      <label className="waitlist-label" htmlFor={emailId}>
-        اولین فصل داستان را از دست نده
-      </label>
+      <div className="waitlist-label-row">
+        <label className="waitlist-label" htmlFor={phoneId}>
+          شماره موبایل برای عضویت در لیست دعوت
+        </label>
+        <span
+          className="phone-format-hint"
+          id={phoneHintId}
+          aria-live="polite"
+        >
+          {hasValidFormat ? "قالب شماره معتبر است" : ""}
+        </span>
+      </div>
       <div className="waitlist-row">
         <input
-          id={emailId}
-          name="email"
-          type="email"
-          inputMode="email"
-          autoComplete="email"
+          id={phoneId}
+          name="phone"
+          type="tel"
+          inputMode="tel"
+          autoComplete="tel"
           dir="ltr"
-          placeholder="name@example.com"
-          aria-describedby={statusId}
+          placeholder="۰۹۱۲ ۱۲۳ ۴۵۶۷"
+          aria-describedby={`${phoneHintId} ${statusId}`}
+          onChange={(event) => {
+            event.currentTarget.setCustomValidity("");
+            setHasValidFormat(
+              normalizeIranianMobile(event.currentTarget.value) !== null,
+            );
+          }}
           disabled={!configured || isSubmitting}
           required
-          maxLength={254}
+          minLength={11}
+          maxLength={24}
+          pattern="[0-9۰-۹٠-٩+ -]+"
         />
         <button type="submit" disabled={!configured || isSubmitting}>
-          {isSubmitting ? "در حال ثبت…" : "از شروع آرومان باخبرم کن"}
+          {isSubmitting ? "در حال ثبت…" : "عضویت در لیست دعوت"}
         </button>
       </div>
 
@@ -101,15 +138,15 @@ export function WaitlistForm({ configured }: { configured: boolean }) {
           required
         />
         <label htmlFor={consentId}>
-          موافقم خبرهای شروع آرومان برایم ایمیل شود و{" "}
-          <Link href="/privacy">اطلاعات حریم خصوصی</Link> را خوانده‌ام.
+          مایلم دعوت‌نامه و خبرهای شروع آرومان را با پیامک دریافت کنم. {" "}
+          <Link href="/privacy">اطلاعات حریم خصوصی</Link>
         </label>
       </div>
 
       <div className="honeypot" aria-hidden="true">
-        <label htmlFor={emailId + "-website"}>وب‌سایت</label>
+        <label htmlFor={phoneId + "-website"}>وب‌سایت</label>
         <input
-          id={emailId + "-website"}
+          id={phoneId + "-website"}
           name="website"
           type="text"
           tabIndex={-1}
@@ -117,14 +154,17 @@ export function WaitlistForm({ configured }: { configured: boolean }) {
         />
       </div>
 
-      <p
+      <div
         className={"waitlist-status status-" + status.type}
         id={statusId}
         role="status"
         aria-live="polite"
       >
-        {status.message}
-      </p>
+        {status.type === "success" ? (
+          <span className="success-mark" aria-hidden="true">✓</span>
+        ) : null}
+        <span>{status.message}</span>
+      </div>
     </form>
   );
 }

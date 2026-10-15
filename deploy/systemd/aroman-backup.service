@@ -1,0 +1,16 @@
+[Unit]
+Description=Encrypted AROMAN PostgreSQL backup
+Requires=docker.service
+After=docker.service
+
+[Service]
+Type=oneshot
+User=root
+Environment=AROMAN_BACKUP_CONFIG=/etc/aroman/backup.env
+ExecStart=/opt/aroman/app/scripts/backup-postgres.sh
+Nice=10
+IOSchedulingClass=best-effort
+IOSchedulingPriority=7
+
+[Install]
+WantedBy=multi-user.target

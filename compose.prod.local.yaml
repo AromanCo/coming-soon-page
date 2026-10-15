@@ -1,0 +1,17 @@
+services:
+  caddy:
+    environment:
+      AROMAN_DOMAIN: http://localhost
+    ports: !override
+      - target: 80
+        published: "${LOCAL_HTTP_PORT:-8080}"
+        host_ip: 127.0.0.1
+        protocol: tcp
+  web:
+    build:
+      args:
+        NEXT_PUBLIC_SITE_URL: http://localhost:${LOCAL_HTTP_PORT:-8080}
+        NEXT_PUBLIC_PRIVACY_EMAIL: privacy@example.test
+    environment:
+      NEXT_PUBLIC_SITE_URL: http://localhost:${LOCAL_HTTP_PORT:-8080}
+      NEXT_PUBLIC_PRIVACY_EMAIL: privacy@example.test

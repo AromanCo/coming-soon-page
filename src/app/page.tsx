@@ -1,110 +1,157 @@
 import Image from "next/image";
-import Link from "next/link";
 import { BrandMark } from "@/components/brand-mark";
+import { ScentExplorer } from "@/components/scent-explorer";
 import { SiteFooter } from "@/components/site-footer";
 import { WaitlistForm } from "@/components/waitlist-form";
+import { WaitlistLink } from "@/components/waitlist-link";
 import { isWaitlistConfigured } from "@/lib/waitlist";
 
 export const dynamic = "force-dynamic";
 
-const previews = [
-  {
-    number: "۰۱",
-    title: "کشف رایحه‌ها",
-    description: "شناختن نت‌ها و پیدا کردن مسیری که با حس‌وحال تو هماهنگ است.",
-  },
-  {
-    number: "۰۲",
-    title: "ساخت عطر شخصی",
-    description: "تجربه‌ای که به‌زودی کمک می‌کند امضای بویایی خودت را بسازی.",
-  },
-  {
-    number: "۰۳",
-    title: "عطرهای منتخب",
-    description: "مجموعه‌ای دوست‌داشتنی و بافکر، برای انتخابی ساده‌تر و مطمئن‌تر.",
-  },
-];
-
 export default function Home() {
   return (
     <div className="site-shell">
-      <div className="ambient ambient-one" aria-hidden="true" />
-      <div className="ambient ambient-two" aria-hidden="true" />
-
       <header className="site-header page-frame">
         <BrandMark />
-        <div className="coming-pill" aria-label="آرومان به‌زودی راه‌اندازی می‌شود">
-          <span className="coming-dot" aria-hidden="true" />
-          <span>به‌زودی</span>
-        </div>
+        <WaitlistLink className="header-cta">عضویت در لیست دعوت</WaitlistLink>
       </header>
 
       <main>
         <section className="hero page-frame" aria-labelledby="hero-title">
-          <div className="hero-art" aria-hidden="true">
-            <div className="hero-orbit hero-orbit-one" />
-            <div className="hero-orbit hero-orbit-two" />
+          <div className="hero-copy">
+            <p className="eyebrow" dir="ltr" lang="en">
+              <span aria-hidden="true" /> MODERN FRAGRANCE ATELIER
+            </p>
+            <h1 id="hero-title">
+              <span>عطر خودت را</span>{" "}
+              <span>کشف کن؛ یا بساز.</span>
+            </h1>
+            <p className="hero-description">
+              آرومان به‌زودی راهی تازه برای کشف رایحه‌ها، انتخاب عطرهای آماده و
+              ساخت عطری مطابق سلیقه‌ات پیش روی تو می‌گذارد.
+            </p>
+
+            <div className="early-access-note">
+              <span className="invitation-mark" aria-hidden="true">
+                <svg viewBox="0 0 48 48">
+                  <path d="M9 15.5 24 7l15 8.5v17L24 41 9 32.5v-17Z" />
+                  <path d="m14 18 10 7 10-7M24 25v11" />
+                </svg>
+              </span>
+              <span>
+                <strong>
+                  از اولین کسانی باش که استودیوی ساخت عطر آرومان را تجربه می‌کنند.
+                </strong>
+                <small>
+                  به لیست دعوت بپیوند و پیش از افتتاح عمومی، دعوت‌نامه تجربه
+                  استودیو را دریافت کن.
+                </small>
+              </span>
+            </div>
+
+            <WaitlistForm configured={isWaitlistConfigured()} />
+          </div>
+
+          <figure className="hero-art">
             <div className="hero-image-frame">
               <Image
                 className="hero-image"
                 src="/images/aroman-hero.png"
-                alt=""
+                alt="چیدمان مفهومی شیشه عطر میان شیشه‌های رنگی و سایه گیاهان"
                 fill
-                priority
-                sizes="(max-width: 767px) 88vw, (max-width: 1199px) 45vw, 560px"
+                preload
+                sizes="(max-width: 699px) calc(100vw - 32px), (max-width: 1099px) 44vw, 540px"
               />
-              <div className="image-wash" />
+              <div className="image-wash" aria-hidden="true" />
             </div>
-            <span className="scent-note note-one">روشن</span>
-            <span className="scent-note note-two">لطیف</span>
-            <span className="scent-note note-three">ماندگار</span>
-          </div>
-
-          <div className="hero-copy">
-            <p className="eyebrow" dir="ltr">
-              <span /> YOUR SCENT. YOUR STORY.
-            </p>
-            <h1 id="hero-title">هر رایحه، آغاز یک داستان</h1>
-            <p className="hero-description">
-              به‌زودی جایی برای کشف رایحه‌ها، انتخاب عطرهای دوست‌داشتنی و ساخت
-              عطری که شبیه خودته.
-            </p>
-
-            <WaitlistForm configured={isWaitlistConfigured()} />
-
-            <Link className="skip-link" href="#world">
-              دیدن دنیای آرومان
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M12 5v14M18 13l-6 6-6-6" />
-              </svg>
-            </Link>
-          </div>
+            <figcaption>تصویری مفهومی از حال‌وهوای استودیوی آرومان</figcaption>
+            <svg className="botanical-line" viewBox="0 0 140 190" aria-hidden="true">
+              <path d="M116 181C75 144 54 99 42 22" />
+              <path d="M52 65C30 57 18 43 12 25c21 2 35 15 40 40Z" />
+              <path d="M69 112c-2-23 7-40 27-52 4 22-4 39-27 52Z" />
+              <path d="M88 147c17-16 35-21 56-14-13 18-32 23-56 14Z" />
+            </svg>
+          </figure>
         </section>
 
-        <section className="world page-frame" id="world" aria-labelledby="world-title">
-          <div className="world-heading">
-            <p className="section-kicker">A WORLD OF SCENTS</p>
-            <h2 id="world-title">دنیایی که آرام‌آرام شکل می‌گیرد</h2>
+        <ScentExplorer />
+
+        <section
+          className="atelier page-frame"
+          id="atelier"
+          aria-labelledby="atelier-title"
+        >
+          <div className="atelier-heading">
+            <p className="section-kicker" dir="ltr" lang="en">
+              THREE WAYS INTO SCENT
+            </p>
+            <h2 id="atelier-title">رایحه را از مسیر خودت پیدا کن</h2>
             <p>
-              آرومان برای یک تجربه ساده، خلاق و شخصی از دنیای عطر در حال ساخته
-              شدن است.
+              گاهی با یک حس شروع می‌کنی، گاهی با یک عطر آماده و گاهی با ایده‌ای
+              که فقط برای خود توست.
             </p>
           </div>
 
-          <div className="preview-grid">
-            {previews.map((item) => (
-              <article className="preview-card" key={item.number}>
-                <span className="preview-number" aria-hidden="true">
-                  {item.number}
-                </span>
-                <div className="preview-icon" aria-hidden="true">
-                  <span />
-                </div>
-                <h3>{item.title}</h3>
-                <p>{item.description}</p>
-                <span className="preview-status">در راه است</span>
-              </article>
-            ))}
+          <div className="atelier-path">
+            <article className="atelier-step discovery-step">
+              <span className="step-number" aria-hidden="true">۰۱</span>
+              <div className="step-copy">
+                <p className="step-label">از حس شروع کن</p>
+                <h3>کشف رایحه‌ها</h3>
+                <p>
+                  حال‌وهوای مورد علاقه‌ات را بشناس و زبان ساده‌تری برای انتخاب
+                  رایحه پیدا کن.
+                </p>
+              </div>
+              <div className="discovery-glyph" aria-hidden="true">
+                <span />
+                <span />
+                <span />
+              </div>
+            </article>
+
+            <article className="atelier-step custom-step">
+              <span className="step-number" aria-hidden="true">۰۲</span>
+              <div className="step-copy">
+                <p className="step-label">قلب تجربه آرومان</p>
+                <h3>ساخت عطر شخصی</h3>
+                <p>
+                  جایی برای انتخاب رایحه‌های محبوبت و خلق عطری با امضای شخصی تو.
+                </p>
+              </div>
+              <div className="scent-study" aria-hidden="true">
+                <span className="study-center">تو</span>
+                <span className="study-note study-note-one">حس</span>
+                <span className="study-note study-note-two">خاطره</span>
+                <span className="study-note study-note-three">سلیقه</span>
+              </div>
+            </article>
+
+            <article className="atelier-step selected-step">
+              <span className="step-number" aria-hidden="true">۰۳</span>
+              <div className="step-copy">
+                <p className="step-label">انتخاب ساده‌تر</p>
+                <h3>عطرهای منتخب</h3>
+                <p>
+                  مجموعه‌ای برای زمانی که می‌خواهی میان رایحه‌های آماده، با
+                  اطمینان بیشتری انتخاب کنی.
+                </p>
+              </div>
+              <div className="bottle-study" aria-hidden="true">
+                <span />
+                <span />
+                <span />
+              </div>
+            </article>
+          </div>
+
+          <div className="closing-invitation">
+            <p className="section-kicker" dir="ltr" lang="en">BE AMONG THE FIRST</p>
+            <h2>شماره موبایلت را برای دعوت‌نامه استودیو ثبت کن.</h2>
+            <p>
+              به لیست دعوت آرومان بپیوند و همراه شروع این تجربه باش.
+            </p>
+            <WaitlistLink>عضویت در لیست دعوت</WaitlistLink>
           </div>
         </section>
       </main>

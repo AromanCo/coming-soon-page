@@ -1,0 +1,13 @@
+[Unit]
+Description=Verify the latest AROMAN PostgreSQL backup by isolated restore
+Requires=docker.service
+After=docker.service
+
+[Service]
+Type=oneshot
+User=root
+Environment=AROMAN_BACKUP_CONFIG=/etc/aroman/backup.env
+ExecStart=/opt/aroman/app/scripts/verify-latest-backup.sh
+Nice=10
+IOSchedulingClass=best-effort
+IOSchedulingPriority=7

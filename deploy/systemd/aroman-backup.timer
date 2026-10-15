@@ -1,0 +1,11 @@
+[Unit]
+Description=Daily AROMAN PostgreSQL backup schedule
+
+[Timer]
+OnCalendar=*-*-* 02:20:00
+RandomizedDelaySec=15m
+Persistent=true
+Unit=aroman-backup.service
+
+[Install]
+WantedBy=timers.target

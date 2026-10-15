@@ -7,10 +7,16 @@ const socialLinks = [
 ].filter((item): item is { label: string; url: string } => Boolean(item.url));
 
 export function SiteFooter() {
+  const currentYear = new Intl.NumberFormat("fa-IR", {
+    useGrouping: false,
+  }).format(new Date().getFullYear());
+
   return (
     <footer className="site-footer page-frame">
       <BrandMark />
-      <p className="footer-signature">Your Scent. Your Story.</p>
+      <p className="footer-signature" dir="ltr" lang="en">
+        Your Scent. Your Story.
+      </p>
       <div className="footer-links">
         {socialLinks.map((social) => (
           <a key={social.label} href={social.url} rel="noreferrer" target="_blank">
@@ -20,7 +26,7 @@ export function SiteFooter() {
         <Link href="/privacy">حریم خصوصی</Link>
       </div>
       <p className="copyright">
-        © {new Date().getFullYear()} آرومان. همه حقوق محفوظ است.
+        © {currentYear} آرومان. همه حقوق محفوظ است.
       </p>
     </footer>
   );
