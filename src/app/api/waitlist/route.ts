@@ -6,6 +6,7 @@ import {
   registerRateLimitAttempt,
 } from "@/lib/waitlist";
 import { normalizeIranianMobile } from "@/lib/iranian-mobile";
+import { getClientNetworkIdentity } from "@/lib/client-ip";
 
 export const runtime = "nodejs";
 
@@ -71,11 +72,6 @@ async function readJsonBody(request: Request) {
 
   body += decoder.decode();
   return JSON.parse(body) as unknown;
-}
-
-function clientAddress(request: Request) {
-  const forwarded = request.headers.get("x-forwarded-for");
-  return forwarded?.split(",")[0]?.trim() || request.headers.get("x-real-ip") || "unknown";
 }
 
 export async function POST(request: Request) {
@@ -160,8 +156,17 @@ export async function POST(request: Request) {
     );
   }
 
+  const clientIdentity = getClientNetworkIdentity(request);
+
+  if (!clientIdentity) {
+    return jsonResponse(
+      { code: "INVALID_REQUEST", message: "اطلاعات ارسال‌شده معتبر نیست." },
+      400,
+    );
+  }
+
   try {
-    const ipHash = hashNetworkIdentifier(clientAddress(request));
+    const ipHash = hashNetworkIdentifier(clientIdentity);
     const allowed = await registerRateLimitAttempt(ipHash);
 
     if (!allowed) {
