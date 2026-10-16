@@ -181,34 +181,7 @@ export function ScentExplorer({
     document.getElementById(`${titleId}-${nextMood.id}`)?.focus();
   }
 
-  let autoplayStatus = `تغییر خودکار هر ${new Intl.NumberFormat("fa-IR").format(
-    Math.round(safeIntervalMs / 1_000),
-  )} ثانیه`;
-
-  if (isHovering || hasFocusWithin) {
-    autoplayStatus = "پخش هنگام تعامل شما موقتاً متوقف است";
-  }
-  if (isUserPaused) {
-    autoplayStatus = "پخش خودکار متوقف است";
-  }
-  if (prefersReducedMotion) {
-    autoplayStatus = "پخش خودکار مطابق تنظیم کاهش حرکت خاموش است";
-  }
-  if (hasManualSelection) {
-    autoplayStatus = "انتخاب شما ثابت می‌ماند";
-  }
-
   const autoplayControlDisabled = hasManualSelection || prefersReducedMotion;
-  const autoplayControlLabel = autoplayControlDisabled
-    ? autoplayStatus
-    : isUserPaused
-      ? "ادامه پخش خودکار"
-      : "توقف پخش خودکار";
-  const autoplayControlText = autoplayControlDisabled
-    ? "خاموش"
-    : isUserPaused
-      ? "ادامه"
-      : "مکث";
 
   return (
     <section
@@ -255,22 +228,29 @@ export function ScentExplorer({
             ))}
           </div>
 
-          <div className="autoplay-row">
+          {!autoplayControlDisabled ? (
             <button
               type="button"
               className="autoplay-control"
-              aria-pressed={autoplayControlDisabled ? undefined : isUserPaused}
-              aria-label={autoplayControlLabel}
-              disabled={autoplayControlDisabled}
+              aria-pressed={isUserPaused}
+              aria-label={
+                isUserPaused
+                  ? "ادامه نمایش خودکار"
+                  : "توقف نمایش خودکار"
+              }
               onClick={() => setIsUserPaused((current) => !current)}
             >
-              <span className="autoplay-icon" aria-hidden="true">
-                {autoplayControlDisabled ? "—" : isUserPaused ? "▶" : "Ⅱ"}
-              </span>
-              <span>{autoplayControlText}</span>
+              {isUserPaused ? (
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="m9 7 8 5-8 5V7Z" />
+                </svg>
+              ) : (
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M9 7v10M15 7v10" />
+                </svg>
+              )}
             </button>
-            <p>{autoplayStatus}</p>
-          </div>
+          ) : null}
         </div>
 
         <article
