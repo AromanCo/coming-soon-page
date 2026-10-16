@@ -1,14 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { FormEvent, useId, useState } from "react";
+import { FormEvent, useEffect, useId, useRef, useState } from "react";
+import { SignupSuccessDialog } from "@/components/signup-success-dialog";
 import { normalizeIranianMobile } from "@/lib/iranian-mobile";
 
 type FormStatus =
   | { type: "idle"; message: string }
   | { type: "pending"; message: string }
-  | { type: "error"; message: string }
-  | { type: "success"; message: string };
+  | { type: "error"; message: string };
 
 function ArrowIcon() {
   return (
@@ -24,7 +24,12 @@ export function WaitlistForm({ configured }: { configured: boolean }) {
   const consentId = useId();
   const consentHintId = useId();
   const statusId = useId();
+  const phoneInputRef = useRef<HTMLInputElement>(null);
+  const submissionInFlightRef = useRef(false);
+  const shouldRestoreFocusRef = useRef(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [hasAcceptedSubmission, setHasAcceptedSubmission] = useState(false);
+  const [isSuccessDialogOpen, setIsSuccessDialogOpen] = useState(false);
   const [phone, setPhone] = useState("");
   const [consent, setConsent] = useState(false);
   const normalizedPhone = normalizeIranianMobile(phone);
@@ -35,10 +40,28 @@ export function WaitlistForm({ configured }: { configured: boolean }) {
       : "عضویت فعلاً در دسترس نیست؛ تنظیمات پایگاه داده هنوز کامل نشده است.",
   });
 
+  useEffect(() => {
+    if (
+      shouldRestoreFocusRef.current &&
+      !isSuccessDialogOpen &&
+      !hasAcceptedSubmission
+    ) {
+      shouldRestoreFocusRef.current = false;
+      phoneInputRef.current?.focus();
+    }
+  }, [hasAcceptedSubmission, isSuccessDialogOpen]);
+
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    if (!configured || isSubmitting) return;
+    if (
+      !configured ||
+      isSubmitting ||
+      hasAcceptedSubmission ||
+      submissionInFlightRef.current
+    ) {
+      return;
+    }
 
     const form = event.currentTarget;
     const phoneInput = form.elements.namedItem("phone") as HTMLInputElement;
@@ -60,6 +83,7 @@ export function WaitlistForm({ configured }: { configured: boolean }) {
       return;
     }
 
+    submissionInFlightRef.current = true;
     setIsSubmitting(true);
     setStatus({ type: "pending", message: "در حال بررسی و ثبت شماره موبایل…" });
 
@@ -73,9 +97,12 @@ export function WaitlistForm({ configured }: { configured: boolean }) {
           website: formData.get("website"),
         }),
       });
-      const result = (await response.json()) as { message?: string };
+      const result = (await response.json()) as {
+        code?: string;
+        message?: string;
+      };
 
-      if (!response.ok) {
+      if (response.status !== 202 || result.code !== "REQUEST_ACCEPTED") {
         setStatus({
           type: "error",
           message:
@@ -86,11 +113,11 @@ export function WaitlistForm({ configured }: { configured: boolean }) {
       }
 
       setStatus({
-        type: "success",
-        message:
-          result.message ??
-          "ممنون! شماره‌ات برای لیست دعوت آرومان دریافت شد.",
+        type: "idle",
+        message: "دعوت‌نامه‌ها به‌صورت مرحله‌ای ارسال می‌شوند.",
       });
+      setHasAcceptedSubmission(true);
+      setIsSuccessDialogOpen(true);
       form.reset();
       setPhone("");
       setConsent(false);
@@ -100,117 +127,129 @@ export function WaitlistForm({ configured }: { configured: boolean }) {
         message: "ارتباط با سامانه برقرار نشد. لطفاً دوباره تلاش کنید.",
       });
     } finally {
+      submissionInFlightRef.current = false;
       setIsSubmitting(false);
     }
   }
 
   const submitDisabled =
-    !configured || isSubmitting || normalizedPhone === null || !consent;
+    !configured ||
+    isSubmitting ||
+    hasAcceptedSubmission ||
+    normalizedPhone === null ||
+    !consent;
 
   return (
-    <form
-      className="waitlist-form"
-      id="waitlist"
-      onSubmit={handleSubmit}
-      aria-busy={isSubmitting}
-      noValidate
-    >
-      <label className="field-label" htmlFor={phoneId}>
-        شماره موبایل برای عضویت در لیست دعوت
-      </label>
-
-      <div className="signup-row">
-        <div className="input-wrap">
-          <svg aria-hidden="true" viewBox="0 0 24 24">
-            <path d="M7.5 3.5h5l1 4-2 1.5c1.2 3 2.5 4.3 5.5 5.5l1.5-2 3 1v4c0 2-1.5 3-3.5 3C10 19.5 4.5 14 3 6c0-2 1.5-3 4.5-2.5Z" />
-          </svg>
-          <input
-            id={phoneId}
-            name="phone"
-            type="tel"
-            inputMode="numeric"
-            autoComplete="tel"
-            dir="ltr"
-            value={phone}
-            placeholder="۰۹۱۲ ۱۲۳ ۴۵۶۷"
-            aria-describedby={`${phoneHintId} ${statusId}`}
-            aria-invalid={phone.length > 0 && normalizedPhone === null}
-            onChange={(event) => {
-              event.currentTarget.setCustomValidity("");
-              setPhone(event.currentTarget.value);
-            }}
-            disabled={!configured || isSubmitting}
-            required
-            minLength={11}
-            maxLength={24}
-            pattern="[0-9۰-۹٠-٩+ -]+"
-          />
-          <span className="visually-hidden" id={phoneHintId}>
-            نمونه شماره معتبر: ۰۹۱۲ ۱۲۳ ۴۵۶۷
-          </span>
-        </div>
-
-        <button
-          className={`primary-button${isSubmitting ? " is-pending" : ""}`}
-          type="submit"
-          disabled={submitDisabled}
-        >
-          <span>{isSubmitting ? "در حال ثبت…" : "عضویت در لیست دعوت"}</span>
-          {isSubmitting ? (
-            <span className="loading-mark" aria-hidden="true" />
-          ) : (
-            <ArrowIcon />
-          )}
-        </button>
-      </div>
-
-      <div className="consent-row">
-        <label className="consent" htmlFor={consentId}>
-          <input
-            id={consentId}
-            name="consent"
-            type="checkbox"
-            checked={consent}
-            onChange={(event) => setConsent(event.currentTarget.checked)}
-            disabled={!configured || isSubmitting}
-            aria-describedby={consentHintId}
-            required
-          />
-          <span className="checkmark" aria-hidden="true" />
-          <span>
-            مایلم دعوت‌نامه و خبرهای شروع آرومان را با پیامک دریافت کنم.
-          </span>
+    <>
+      <form
+        className="waitlist-form"
+        id="waitlist"
+        onSubmit={handleSubmit}
+        aria-busy={isSubmitting}
+        noValidate
+      >
+        <label className="field-label" htmlFor={phoneId}>
+          شماره موبایل برای عضویت در لیست دعوت
         </label>
-      </div>
 
-      <div className="form-meta" id={consentHintId}>
-        <Link href="/privacy">اطلاعات حریم خصوصی</Link>
-        <div
-          className={`waitlist-status status-${status.type}`}
-          id={statusId}
-          role={status.type === "error" ? "alert" : "status"}
-          aria-live="polite"
-          aria-busy={status.type === "pending"}
-        >
-          {status.type === "success" ? (
-            <span className="success-mark" aria-hidden="true">
-              ✓
+        <div className="signup-row">
+          <div className="input-wrap">
+            <svg aria-hidden="true" viewBox="0 0 24 24">
+              <path d="M7.5 3.5h5l1 4-2 1.5c1.2 3 2.5 4.3 5.5 5.5l1.5-2 3 1v4c0 2-1.5 3-3.5 3C10 19.5 4.5 14 3 6c0-2 1.5-3 4.5-2.5Z" />
+            </svg>
+            <input
+              ref={phoneInputRef}
+              id={phoneId}
+              name="phone"
+              type="tel"
+              inputMode="numeric"
+              autoComplete="tel"
+              dir="ltr"
+              value={phone}
+              placeholder="۰۹۱۲ ۱۲۳ ۴۵۶۷"
+              aria-describedby={`${phoneHintId} ${statusId}`}
+              aria-invalid={phone.length > 0 && normalizedPhone === null}
+              onChange={(event) => {
+                event.currentTarget.setCustomValidity("");
+                setPhone(event.currentTarget.value);
+              }}
+              disabled={!configured || isSubmitting || hasAcceptedSubmission}
+              required
+              minLength={11}
+              maxLength={24}
+              pattern="[0-9۰-۹٠-٩+ -]+"
+            />
+            <span className="visually-hidden" id={phoneHintId}>
+              نمونه شماره معتبر: ۰۹۱۲ ۱۲۳ ۴۵۶۷
             </span>
-          ) : null}
-          <span>{status.message}</span>
-        </div>
-      </div>
+          </div>
 
-      <div className="honeypot" aria-hidden="true">
-        <label htmlFor={`${phoneId}-website`}>وب‌سایت</label>
-        <input
-          id={`${phoneId}-website`}
-          name="website"
-          type="text"
-          tabIndex={-1}
-          autoComplete="off"
-        />
-      </div>
-    </form>
+          <button
+            className={`primary-button${isSubmitting ? " is-pending" : ""}`}
+            type="submit"
+            disabled={submitDisabled}
+          >
+            <span>{isSubmitting ? "در حال ثبت…" : "عضویت در لیست دعوت"}</span>
+            {isSubmitting ? (
+              <span className="loading-mark" aria-hidden="true" />
+            ) : (
+              <ArrowIcon />
+            )}
+          </button>
+        </div>
+
+        <div className="consent-row">
+          <label className="consent" htmlFor={consentId}>
+            <input
+              id={consentId}
+              name="consent"
+              type="checkbox"
+              checked={consent}
+              onChange={(event) => setConsent(event.currentTarget.checked)}
+              disabled={!configured || isSubmitting || hasAcceptedSubmission}
+              aria-describedby={consentHintId}
+              required
+            />
+            <span className="checkmark" aria-hidden="true" />
+            <span>
+              مایلم دعوت‌نامه و خبرهای شروع آرومان را با پیامک دریافت کنم.
+            </span>
+          </label>
+        </div>
+
+        <div className="form-meta" id={consentHintId}>
+          <Link href="/privacy">اطلاعات حریم خصوصی</Link>
+          <div
+            className={`waitlist-status status-${status.type}`}
+            id={statusId}
+            role={status.type === "error" ? "alert" : "status"}
+            aria-live="polite"
+            aria-busy={status.type === "pending"}
+          >
+            <span>{status.message}</span>
+          </div>
+        </div>
+
+        <div className="honeypot" aria-hidden="true">
+          <label htmlFor={`${phoneId}-website`}>وب‌سایت</label>
+          <input
+            id={`${phoneId}-website`}
+            name="website"
+            type="text"
+            tabIndex={-1}
+            autoComplete="off"
+          />
+        </div>
+      </form>
+
+      <SignupSuccessDialog
+        open={isSuccessDialogOpen}
+        onClose={() => {
+          shouldRestoreFocusRef.current = true;
+          setIsSuccessDialogOpen(false);
+          setHasAcceptedSubmission(false);
+        }}
+      />
+    </>
   );
 }
