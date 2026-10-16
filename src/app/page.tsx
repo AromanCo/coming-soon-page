@@ -1,6 +1,7 @@
 import Image from "next/image";
 import { BrandMark } from "@/components/brand-mark";
 import { FragrancePaths } from "@/components/fragrance-paths";
+import { HomeFaq } from "@/components/home-faq";
 import { ScentExplorer } from "@/components/scent-explorer";
 import { SiteFooter } from "@/components/site-footer";
 import { WaitlistForm } from "@/components/waitlist-form";
@@ -82,6 +83,7 @@ export default function Home() {
 
         <ScentExplorer />
         <FragrancePaths />
+        <HomeFaq />
 
         <section className="invitation" aria-labelledby="invitation-title">
           <Image

@@ -17,7 +17,6 @@ function Mark({ compact }: Pick<BrandMarkProps, "compact">) {
       </span>
       <span className="brand-wordmark">
         <strong dir="ltr" lang="en">AROMAN</strong>
-        <small>آرومان</small>
       </span>
     </span>
   );
