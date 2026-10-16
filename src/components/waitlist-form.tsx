@@ -6,6 +6,7 @@ import { normalizeIranianMobile } from "@/lib/iranian-mobile";
 
 type FormStatus =
   | { type: "idle"; message: string }
+  | { type: "pending"; message: string }
   | { type: "error"; message: string }
   | { type: "success"; message: string };
 
@@ -60,7 +61,7 @@ export function WaitlistForm({ configured }: { configured: boolean }) {
     }
 
     setIsSubmitting(true);
-    setStatus({ type: "idle", message: "در حال ثبت شماره موبایل…" });
+    setStatus({ type: "pending", message: "در حال بررسی و ثبت شماره موبایل…" });
 
     try {
       const response = await fetch("/api/waitlist", {
@@ -107,7 +108,13 @@ export function WaitlistForm({ configured }: { configured: boolean }) {
     !configured || isSubmitting || normalizedPhone === null || !consent;
 
   return (
-    <form className="waitlist-form" id="waitlist" onSubmit={handleSubmit} noValidate>
+    <form
+      className="waitlist-form"
+      id="waitlist"
+      onSubmit={handleSubmit}
+      aria-busy={isSubmitting}
+      noValidate
+    >
       <label className="field-label" htmlFor={phoneId}>
         شماره موبایل برای عضویت در لیست دعوت
       </label>
@@ -143,9 +150,17 @@ export function WaitlistForm({ configured }: { configured: boolean }) {
           </span>
         </div>
 
-        <button className="primary-button" type="submit" disabled={submitDisabled}>
+        <button
+          className={`primary-button${isSubmitting ? " is-pending" : ""}`}
+          type="submit"
+          disabled={submitDisabled}
+        >
           <span>{isSubmitting ? "در حال ثبت…" : "عضویت در لیست دعوت"}</span>
-          <ArrowIcon />
+          {isSubmitting ? (
+            <span className="loading-mark" aria-hidden="true" />
+          ) : (
+            <ArrowIcon />
+          )}
         </button>
       </div>
 
@@ -173,8 +188,9 @@ export function WaitlistForm({ configured }: { configured: boolean }) {
         <div
           className={`waitlist-status status-${status.type}`}
           id={statusId}
-          role="status"
+          role={status.type === "error" ? "alert" : "status"}
           aria-live="polite"
+          aria-busy={status.type === "pending"}
         >
           {status.type === "success" ? (
             <span className="success-mark" aria-hidden="true">

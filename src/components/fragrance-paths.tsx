@@ -43,6 +43,7 @@ export function FragrancePaths() {
             <article
               className={path.featured ? "path-card featured" : "path-card"}
               key={path.number}
+              tabIndex={0}
             >
               <Image
                 src={path.image}
