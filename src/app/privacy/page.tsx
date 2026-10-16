@@ -14,11 +14,13 @@ const privacyEmail = process.env.NEXT_PUBLIC_PRIVACY_EMAIL;
 export default function PrivacyPage() {
   return (
     <div className="site-shell privacy-shell">
-      <header className="site-header page-frame">
-        <BrandMark />
-        <Link className="back-link" href="/">
-          بازگشت به صفحه اصلی
-        </Link>
+      <header className="site-header">
+        <div className="header-inner">
+          <BrandMark compact />
+          <Link className="back-link" href="/">
+            بازگشت به صفحه اصلی
+          </Link>
+        </div>
       </header>
 
       <main className="privacy-main page-frame">

@@ -12,9 +12,10 @@ export function SiteFooter() {
   }).format(new Date().getFullYear());
 
   return (
-    <footer className="site-footer page-frame">
-      <BrandMark />
-      <p className="footer-signature" dir="ltr" lang="en">
+    <footer className="site-footer">
+      <div className="section-shell footer-inner">
+      <BrandMark compact />
+      <p className="tagline" dir="ltr" lang="en">
         Your Scent. Your Story.
       </p>
       <div className="footer-links">
@@ -28,6 +29,7 @@ export function SiteFooter() {
       <p className="copyright">
         © {currentYear} آرومان. همه حقوق محفوظ است.
       </p>
+      </div>
     </footer>
   );
 }
