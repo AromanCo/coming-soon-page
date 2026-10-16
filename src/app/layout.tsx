@@ -24,10 +24,10 @@ export const metadata: Metadata = {
       "به لیست دعوت زودهنگام استودیوی ساخت عطر شخصی آرومان بپیوندید.",
     images: [
       {
-        url: "/images/aroman-hero.png",
-        width: 1024,
-        height: 1536,
-        alt: "چیدمان مفهومی شیشه عطر در فضای هنری آرومان",
+        url: "/images/hero-atelier-composite.png",
+        width: 1400,
+        height: 1750,
+        alt: "چیدمان مفهومی بطری عطر و مواد گیاهی در آتلیه آرومان",
       },
     ],
   },
@@ -35,7 +35,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "عطرت را کشف کن؛ یا بساز | آرومان",
     description: "دعوت زودهنگام به تجربه استودیوی ساخت عطر شخصی آرومان.",
-    images: ["/images/aroman-hero.png"],
+    images: ["/images/hero-atelier-composite.png"],
   },
   robots: { index: true, follow: true },
 };

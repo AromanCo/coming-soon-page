@@ -101,8 +101,9 @@ rate-limit state across ordinary stops, starts, and container recreation.
 | DATABASE_SSL | Provider-dependent | Set to true when PostgreSQL requires TLS |
 | DATABASE_SSL_REJECT_UNAUTHORIZED | Provider-dependent | Keep true; set false only when the provider explicitly requires it |
 | WAITLIST_HASH_SECRET | Waitlist | Long random secret used to HMAC network identifiers for abuse prevention |
-| NEXT_PUBLIC_INSTAGRAM_URL | Optional | Official Instagram URL; hidden when empty |
-| NEXT_PUBLIC_LINKEDIN_URL | Optional | Official LinkedIn URL; hidden when empty |
+| NEXT_PUBLIC_INSTAGRAM_URL | Optional | Official HTTPS Instagram profile URL; hidden when empty or invalid |
+| NEXT_PUBLIC_TELEGRAM_URL | Optional | Official HTTPS Telegram channel URL; hidden when empty or invalid |
+| NEXT_PUBLIC_LINKEDIN_URL | Optional | Official HTTPS LinkedIn URL; hidden when empty or invalid |
 | NEXT_PUBLIC_PRIVACY_EMAIL | Production | Public address for data access/deletion requests |
 | WEB_PORT | Docker | Configurable host port mapped to container port 3000 |
 | POSTGRES_USER | Docker | PostgreSQL role initialized by the database container |
@@ -195,6 +196,7 @@ src/app/
   page.tsx               Landing page
 src/components/
   brand-mark.tsx         Temporary brand asset presentation
+  social-links.tsx       Validated official social-link components
   site-footer.tsx        Configured social/privacy links
   waitlist-form.tsx      Accessible client form
 src/lib/waitlist.ts      PostgreSQL and anti-abuse logic

@@ -5,100 +5,234 @@ import { SiteFooter } from "@/components/site-footer";
 
 export const metadata: Metadata = {
   title: "حریم خصوصی لیست دعوت | آرومان",
-  description: "اطلاعات مربوط به نحوه پردازش داده‌های لیست دعوت آرومان.",
+  description:
+    "مسیر پردازش شماره موبایل و اطلاعات حریم خصوصی لیست دعوت آرومان.",
   robots: { index: true, follow: true },
 };
 
-const privacyEmail = process.env.NEXT_PUBLIC_PRIVACY_EMAIL;
+const privacyEmailCandidate = process.env.NEXT_PUBLIC_PRIVACY_EMAIL?.trim();
+const privacyEmail =
+  privacyEmailCandidate &&
+  /^[^\s@]+@[^\s@]+\.[^\s@]+$/u.test(privacyEmailCandidate)
+    ? privacyEmailCandidate
+    : null;
+
+const privacyJourney = [
+  {
+    title: "ثبت با رضایت روشن",
+    text: "شماره موبایل را وارد می‌کنی و فقط پس از انتخاب صریح گزینه رضایت، درخواست عضویت فرستاده می‌شود.",
+  },
+  {
+    title: "بررسی و نگهداری",
+    text: "سرور قالب شماره و رضایت را بررسی می‌کند و سپس داده‌های لازم را در پایگاه داده نگه می‌دارد.",
+  },
+  {
+    title: "دعوت در آینده، نه امروز",
+    text: "این نسخه پیامکی ارسال نمی‌کند. اگر سرویس پیامک تأیید و راه‌اندازی شود، شماره می‌تواند برای دعوت‌نامه و خبرهای شروع آرومان استفاده شود.",
+  },
+  {
+    title: "امکان درخواست حذف",
+    text: "درخواست دسترسی یا حذف شماره از راه ارتباطی رسمی همین صفحه برای آرومان فرستاده می‌شود.",
+  },
+] as const;
 
 export default function PrivacyPage() {
   return (
     <div className="site-shell privacy-shell">
-      <header className="site-header page-frame">
-        <BrandMark />
-        <Link className="back-link" href="/">
-          بازگشت به صفحه اصلی
-        </Link>
+      <header className="site-header">
+        <div className="header-inner">
+          <BrandMark compact />
+          <Link className="back-link" href="/">
+            بازگشت به صفحه اصلی
+          </Link>
+        </div>
       </header>
 
-      <main className="privacy-main page-frame">
-        <div className="privacy-heading">
-          <p className="section-kicker">PRIVACY</p>
-          <h1>حریم خصوصی لیست دعوت</h1>
-          <p>
-            این توضیحات فقط به فرم لیست دعوت در وب‌سایت پیش‌راه‌اندازی آرومان
-            مربوط است.
-          </p>
+      <main className="privacy-main">
+        <section className="privacy-hero page-frame" aria-labelledby="privacy-title">
+          <div className="privacy-heading">
+            <p className="kicker" dir="ltr" lang="en">
+              <span aria-hidden="true" /> PRIVACY AT AROMAN
+            </p>
+            <h1 id="privacy-title">رایحه شخصی است؛ اطلاعات تو هم همین‌طور.</h1>
+            <p>
+              این صفحه با زبان روشن توضیح می‌دهد شماره موبایلی که در فرم لیست
+              دعوت وارد می‌کنی، در نسخه پیش‌راه‌اندازی آرومان چه مسیری دارد.
+            </p>
+          </div>
+          <aside className="privacy-hero-note" aria-label="خلاصه وضعیت فعلی">
+            <span className="privacy-note-mark" aria-hidden="true">۰</span>
+            <div>
+              <p>وضعیت فعلی</p>
+              <strong>هیچ پیامکی از این نسخه ارسال نمی‌شود.</strong>
+              <span>
+                ثبت شماره به‌معنای تأیید مالکیت آن یا ارسال فوری دعوت‌نامه نیست.
+              </span>
+            </div>
+          </aside>
+        </section>
+
+        <section
+          className="privacy-journey-section"
+          aria-labelledby="privacy-journey-title"
+        >
+          <div className="section-shell">
+            <div className="privacy-section-heading">
+              <p className="kicker light" dir="ltr" lang="en">
+                <span aria-hidden="true" /> YOUR DATA JOURNEY
+              </p>
+              <h2 id="privacy-journey-title">
+                شماره‌ات پیش آرومان چه مسیری دارد؟
+              </h2>
+            </div>
+            <ol className="privacy-journey">
+              {privacyJourney.map((step, index) => (
+                <li key={step.title}>
+                  <span className="journey-number" aria-hidden="true">
+                    {new Intl.NumberFormat("fa-IR", {
+                      minimumIntegerDigits: 2,
+                      useGrouping: false,
+                    }).format(index + 1)}
+                  </span>
+                  <h3>{step.title}</h3>
+                  <p>{step.text}</p>
+                </li>
+              ))}
+            </ol>
+          </div>
+        </section>
+
+        <div className="privacy-details page-frame">
+          <article className="privacy-policy" aria-labelledby="policy-title">
+            <div className="privacy-section-heading dark">
+              <p className="kicker" dir="ltr" lang="en">
+                <span aria-hidden="true" /> THE DETAILS
+              </p>
+              <h2 id="policy-title">جزئیات سیاست لیست دعوت</h2>
+              <p>
+                این سیاست فقط به فرم لیست دعوت در وب‌سایت پیش‌راه‌اندازی آرومان
+                مربوط است.
+              </p>
+            </div>
+
+            <section>
+              <h3>چه اطلاعاتی ثبت می‌شود؟</h3>
+              <p>
+                شماره موبایل در قالب استاندارد، زمان اعلام رضایت، منبع ثبت‌نام
+                و اطلاعات فنی محدود شامل شناسه شبکه به‌شکل هش‌شده و مشخصات
+                مرورگر ثبت می‌شود. اطلاعات فنی برای پیشگیری از سوءاستفاده و حفظ
+                امنیت فرم پردازش می‌شود.
+              </p>
+            </section>
+
+            <section>
+              <h3>هدف استفاده چیست؟</h3>
+              <p>
+                شماره موبایل برای لیست دعوت استودیوی آرومان و خبرهای مرتبط با
+                شروع فعالیت نگهداری می‌شود. اگر در آینده سرویس پیامک تأیید و
+                راه‌اندازی شود، ممکن است برای همین هدف از شماره استفاده شود.
+                آرومان شماره را برای تبلیغات شخص ثالث نمی‌فروشد یا در اختیار
+                آن‌ها قرار نمی‌دهد.
+              </p>
+            </section>
+
+            <section>
+              <h3>رضایت و تأیید شماره</h3>
+              <p>
+                عضویت فقط پس از انتخاب صریح گزینه رضایت ثبت می‌شود. در نسخه
+                فعلی رمز یک‌بارمصرفی فرستاده نمی‌شود؛ پس شماره ذخیره‌شده هنوز
+                به‌عنوان شماره تحت مالکیت ثبت‌کننده تأیید نشده است.
+              </p>
+            </section>
+
+            <section>
+              <h3>نگهداری و حذف</h3>
+              <p>
+                اطلاعات برای هدف لیست دعوت نگهداری می‌شود یا می‌توانی درخواست
+                حذف آن را مطرح کنی. این نسخه مدت ثابت یا حذف خودکار داده را
+                وعده نمی‌دهد. داده‌های فنی محدود نیز برای امنیت و کنترل
+                سوءاستفاده پردازش می‌شوند.
+              </p>
+            </section>
+          </article>
+
+          <aside className="privacy-aside">
+            <section className="privacy-contact" aria-labelledby="contact-title">
+              <p className="contact-eyebrow">درخواست دسترسی یا حذف</p>
+              <h2 id="contact-title">کنترل شماره‌ات دست توست.</h2>
+              <p>
+                برای دریافت نسخه اطلاعات ثبت‌شده یا درخواست حذف شماره، از مسیر
+                رسمی زیر با آرومان تماس بگیر.
+              </p>
+              {privacyEmail ? (
+                <a className="privacy-contact-link" href={`mailto:${privacyEmail}`}>
+                  <span>ارسال درخواست حریم خصوصی</span>
+                  <small dir="ltr">{privacyEmail}</small>
+                </a>
+              ) : (
+                <p className="privacy-contact-missing" role="note">
+                  راه ارتباطی رسمی حریم خصوصی هنوز پیکربندی نشده است و باید پیش
+                  از انتشار عمومی اضافه شود.
+                </p>
+              )}
+            </section>
+
+            <section className="privacy-principles" aria-labelledby="principles-title">
+              <h2 id="principles-title">خلاصه تعهد آرومان</h2>
+              <ul>
+                <li>ثبت فقط با رضایت صریح</li>
+                <li>بدون ارسال پیامک در نسخه فعلی</li>
+                <li>بدون ادعای تأیید مالکیت شماره</li>
+                <li>بدون فروش شماره به تبلیغ‌کنندگان ثالث</li>
+              </ul>
+            </section>
+          </aside>
         </div>
 
-        <div className="privacy-content">
-          <section>
-            <h2>چه اطلاعاتی ثبت می‌شود؟</h2>
-            <p>
-              شماره موبایل در قالب استاندارد، زمان اعلام رضایت، منبع ثبت‌نام و
-              اطلاعات فنی محدود شامل شناسه شبکه به‌شکل هش‌شده و مشخصات مرورگر
-              ثبت می‌شود. اطلاعات فنی برای جلوگیری از سوءاستفاده و حفظ امنیت
-              فرم استفاده می‌شود.
+        <section className="privacy-faq page-frame" aria-labelledby="faq-title">
+          <div className="privacy-section-heading dark">
+            <p className="kicker" dir="ltr" lang="en">
+              <span aria-hidden="true" /> SHORT ANSWERS
             </p>
-          </section>
-
-          <section>
-            <h2>چرا این اطلاعات را می‌گیریم؟</h2>
-            <p>
-              شماره موبایل برای ارسال دعوت‌نامه استودیوی آرومان و خبرهای مرتبط
-              با شروع فعالیت از طریق پیامک نگهداری می‌شود. سرویس ارسال پیامک
-              هنوز راه‌اندازی نشده و عضویت به‌معنای ارسال فوری پیامک نیست. شماره
-              شما برای تبلیغات شخص ثالث فروخته یا در اختیار آن‌ها قرار داده
-              نمی‌شود.
-            </p>
-          </section>
-
-          <section>
-            <h2>آیا شماره موبایل تأیید شده است؟</h2>
-            <p>
-              در نسخه فعلی تأیید مالکیت شماره با رمز یک‌بارمصرف انجام نمی‌شود؛
-              بنابراین شماره ثبت‌شده ذخیره می‌شود، اما هنوز تأییدشده محسوب
-              نمی‌شود.
-            </p>
-          </section>
-
-          <section>
-            <h2>مبنای رضایت</h2>
-            <p>
-              عضویت تنها پس از انتخاب صریح گزینه رضایت برای دریافت دعوت‌نامه و
-              خبرهای شروع آرومان از طریق پیامک انجام می‌شود. اگر این گزینه
-              انتخاب نشود، هیچ عضویتی ثبت نخواهد شد.
-            </p>
-          </section>
-
-          <section>
-            <h2>مدت نگهداری و حذف</h2>
-            <p>
-              اطلاعات تا زمانی نگهداری می‌شود که برای اطلاع‌رسانی شروع آرومان
-              لازم باشد یا درخواست حذف آن را مطرح کنید. داده‌های محدودکننده
-              سوءاستفاده نیز باید به‌صورت دوره‌ای پاک‌سازی شوند.
-            </p>
-          </section>
-
-          <section>
-            <h2>درخواست دسترسی یا حذف</h2>
-            <p>
-              می‌توانید درخواست دریافت نسخه اطلاعات یا حذف شماره موبایل خود را
-              از راه ارتباطی همین بخش برای آرومان بفرستید.
-            </p>
-            {privacyEmail ? (
+            <h2 id="faq-title">پرسش‌های رایج</h2>
+          </div>
+          <div className="privacy-faq-list">
+            <details>
+              <summary>الان بعد از عضویت پیامک می‌گیرم؟</summary>
               <p>
-                برای ثبت درخواست با{" "}
-                <a href={"mailto:" + privacyEmail}>{privacyEmail}</a> تماس بگیرید.
+                خیر. سرویس پیامک در این نسخه راه‌اندازی نشده و ثبت موفق فقط
+                دریافت شماره برای لیست دعوت را تأیید می‌کند.
               </p>
-            ) : (
+            </details>
+            <details>
+              <summary>آیا آرومان مطمئن است شماره برای من است؟</summary>
               <p>
-                راه ارتباطی مسئول حریم خصوصی هنوز در تنظیمات وب‌سایت وارد نشده
-                است و باید پیش از انتشار عمومی پیکربندی شود.
+                خیر. چون فرایند OTP وجود ندارد، مالکیت شماره در نسخه فعلی
+                تأیید نمی‌شود.
               </p>
-            )}
-          </section>
-        </div>
+            </details>
+            <details>
+              <summary>چرا شناسه شبکه به‌شکل هش‌شده ثبت می‌شود؟</summary>
+              <p>
+                برای محدودکردن تلاش‌های پرتعداد و محافظت از فرم در برابر
+                سوءاستفاده؛ سامانه شناسه خام شبکه را در رکورد عضویت ذخیره
+                نمی‌کند.
+              </p>
+            </details>
+            <details>
+              <summary>چطور درخواست حذف بدهم؟</summary>
+              <p>
+                از راه ارتباطی رسمی بخش «درخواست دسترسی یا حذف» در همین صفحه
+                استفاده کن. اگر این راه هنوز نمایش داده نمی‌شود، انتشار عمومی
+                صفحه باید تا پیکربندی آن متوقف بماند.
+              </p>
+            </details>
+          </div>
+          <Link className="privacy-home-link" href="/">
+            <span aria-hidden="true">→</span>
+            بازگشت به تجربه آرومان
+          </Link>
+        </section>
       </main>
 
       <SiteFooter />
