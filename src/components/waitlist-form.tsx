@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { SCENT_MOOD_LABELS, useScentJourney } from "@/components/scent-journey-context";
 import { FormEvent, useEffect, useId, useRef, useState } from "react";
 import { SignupSuccessDialog } from "@/components/signup-success-dialog";
 import { normalizeIranianMobile } from "@/lib/iranian-mobile";
@@ -19,6 +20,7 @@ function ArrowIcon() {
 }
 
 export function WaitlistForm({ configured }: { configured: boolean }) {
+  const { chosenMood, clearMood } = useScentJourney();
   const phoneId = useId();
   const phoneHintId = useId();
   const consentId = useId();
@@ -148,6 +150,18 @@ export function WaitlistForm({ configured }: { configured: boolean }) {
         aria-busy={isSubmitting}
         noValidate
       >
+        {chosenMood && (
+          <div className="chosen-mood-summary" role="status">
+            <div>
+              <span>انتخاب رایحه تو</span>
+              <strong>{SCENT_MOOD_LABELS[chosenMood]}</strong>
+              <small>این انتخاب فقط در همین صفحه نمایش داده می‌شود و همراه شماره ارسال یا ذخیره نمی‌شود.</small>
+            </div>
+            <button type="button" onClick={clearMood} aria-label="حذف انتخاب رایحه">
+              حذف انتخاب
+            </button>
+          </div>
+        )}
         <label className="field-label" htmlFor={phoneId}>
           شماره موبایل برای عضویت در لیست دعوت
         </label>
