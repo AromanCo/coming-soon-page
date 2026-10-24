@@ -2592,3 +2592,58 @@ input:focus-visible {
     transition-duration: 0.01ms !important;
   }
 }
+
+
+/* Optional, client-only Scent Explorer to waitlist journey */
+.mood-continue {
+  display: flex;
+  width: 100%;
+  min-height: 52px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 18px;
+  padding: 10px 20px;
+  border: 1px solid var(--champagne);
+  border-radius: var(--radius-control);
+  background: var(--champagne);
+  color: var(--plum-dark);
+  font-size: 14px;
+  font-weight: 800;
+  transition: transform 180ms ease, filter 180ms ease;
+}
+.mood-continue:hover { filter: brightness(1.06); transform: translateY(-2px); }
+.mood-continue:focus-visible { outline: 3px solid white; outline-offset: 3px; }
+.mood-journey-note { margin-top: 10px; font-size: 12px; line-height: 1.8; color: rgba(255,255,255,.8); }
+.chosen-mood-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  margin-bottom: 16px;
+  border: 1px solid #dcc5a5;
+  border-radius: var(--radius-control);
+  background: #f7f0e7;
+  color: var(--ink);
+}
+.chosen-mood-summary > div { display: grid; gap: 3px; }
+.chosen-mood-summary span { font-size: 11px; color: #8d6740; }
+.chosen-mood-summary strong { font-size: 14px; }
+.chosen-mood-summary small { max-width: 380px; font-size: 11px; line-height: 1.7; color: #665762; }
+.chosen-mood-summary button {
+  min-height: 44px;
+  flex-shrink: 0;
+  padding: 7px 10px;
+  border: 1px solid #bda58b;
+  border-radius: var(--radius-control);
+  background: transparent;
+  color: var(--ink);
+  cursor: pointer;
+  font-size: 12px;
+}
+.chosen-mood-summary button:focus-visible { outline: 3px solid var(--plum); outline-offset: 2px; }
+@media (max-width: 430px) {
+  .chosen-mood-summary { align-items: flex-start; }
+  .mood-continue { font-size: 13px; }
+}
