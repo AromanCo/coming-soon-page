@@ -24,9 +24,11 @@ COPY . .
 RUN npm run build
 
 FROM base AS runner
+ARG AROMAN_BUILD_REVISION=unknown
 ENV NODE_ENV=production
 ENV HOSTNAME=0.0.0.0
 ENV PORT=3000
+LABEL org.opencontainers.image.revision=$AROMAN_BUILD_REVISION
 
 COPY --from=builder --chown=node:node /app/public ./public
 COPY --from=builder --chown=node:node /app/.next/standalone ./
