@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import { useScentJourney, type ScentMoodId } from "@/components/scent-journey-context";
 import {
   KeyboardEvent,
   useEffect,
@@ -42,13 +43,14 @@ const moods = [
 const DEFAULT_AUTOPLAY_INTERVAL_MS = 7_000;
 const MIN_AUTOPLAY_INTERVAL_MS = 1_000;
 
-type MoodId = (typeof moods)[number]["id"];
+type MoodId = ScentMoodId;
 
 export function ScentExplorer({
   autoplayIntervalMs = DEFAULT_AUTOPLAY_INTERVAL_MS,
 }: {
   autoplayIntervalMs?: number;
 }) {
+  const { chooseMood, chosenMood } = useScentJourney();
   const titleId = useId();
   const explorerRef = useRef<HTMLElement>(null);
   const [selectedId, setSelectedId] = useState<MoodId>("citrus");
@@ -183,6 +185,24 @@ export function ScentExplorer({
 
   const autoplayControlDisabled = hasManualSelection || prefersReducedMotion;
 
+  function continueToWaitlist() {
+    chooseMood(selected.id);
+    setHasManualSelection(true);
+    const form = document.getElementById("waitlist");
+    const input = form?.querySelector<HTMLInputElement>('input[name="phone"]');
+    if (!form) return;
+    if (window.location.hash !== "#waitlist") {
+      window.history.pushState(null, "", "#waitlist");
+    }
+    form.scrollIntoView({
+      behavior: prefersReducedMotion ? "auto" : "smooth",
+      block: "center",
+    });
+    if (input && !input.disabled) {
+      input.focus({ preventScroll: true });
+    }
+  }
+
   return (
     <section
       ref={explorerRef}
@@ -227,6 +247,20 @@ export function ScentExplorer({
               </button>
             ))}
           </div>
+
+          <button
+            type="button"
+            className="mood-continue"
+            onClick={continueToWaitlist}
+          >
+            <span>ادامه با رایحه {selected.label}</span>
+            <span aria-hidden="true">←</span>
+          </button>
+          <p className="mood-journey-note">
+            {chosenMood === selected.id
+              ? "انتخابت در فرم دعوت نمایش داده می‌شود."
+              : "انتخاب رایحه اختیاری است و برای ثبت‌نام ذخیره نمی‌شود."}
+          </p>
 
           {!autoplayControlDisabled ? (
             <button
