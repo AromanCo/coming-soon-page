@@ -3,6 +3,7 @@ import { BrandMark } from "@/components/brand-mark";
 import { FragrancePaths } from "@/components/fragrance-paths";
 import { HomeFaq } from "@/components/home-faq";
 import { ScentExplorer } from "@/components/scent-explorer";
+import { ScentJourneyProvider } from "@/components/scent-journey-context";
 import { SiteFooter } from "@/components/site-footer";
 import { WaitlistForm } from "@/components/waitlist-form";
 import { WaitlistLink } from "@/components/waitlist-link";
@@ -20,6 +21,7 @@ function ArrowIcon() {
 
 export default function Home() {
   return (
+    <ScentJourneyProvider>
     <div className="site-shell">
       <header className="site-header">
         <div className="header-inner">
@@ -116,5 +118,6 @@ export default function Home() {
 
       <SiteFooter />
     </div>
+    </ScentJourneyProvider>
   );
 }
