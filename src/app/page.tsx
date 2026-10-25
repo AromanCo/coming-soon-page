@@ -1,4 +1,5 @@
 import Image from "next/image";
+import "./scent-quest/home-teaser.css";
 import Link from "next/link";
 import { BrandMark } from "@/components/brand-mark";
 import { FragrancePaths } from "@/components/fragrance-paths";
