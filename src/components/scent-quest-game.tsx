@@ -218,7 +218,7 @@ export function ScentQuestGame(){
           <span className="sq-glyph">{result.archetype.ornament}</span><h2>{result.archetype.title}</h2>
           <p>{result.archetype.subtitle}</p><div className="sq-accords">{result.accords.map(a=><span key={a}>{a}</span>)}</div></div>
         <aside className="sq-result-art" aria-hidden="true"><AromanEmblem /><span>YOUR SCENT. YOUR STORY.</span></aside>
-      </div>
+      </div>}
       {stage==="quick"&&<div className="sq-deep sq-deep-prominent"><div><p className="sq-kicker">ACT II · GO DEEPER</p><h3>قصه رایحه‌ات هنوز ادامه داره…</h3><p>۸ سؤال دیگر؛ شناخت دقیق‌تر نت‌ها، سلیقه و پیشنهادهای تازه‌تر.</p></div><button className="sq-primary" onClick={()=>{setStage("deep");setIndex(0);setMode("question");}}>کشف عمیق ←</button></div>}<div className="sq-rec-head"><h3>{stage==="deep"?"سه عطر برگزیده برای پرتره کامل تو":"سه عطر نزدیک به سلیقه تو"}</h3><p>پیشنهادها الگوریتمی‌اند و تضمین پسندیدن عطر نیستند.</p></div>
       <div className="sq-recs">{result.recommendations.map((p,i)=><article key={p.id}>
         <div className="sq-rec-image"><img src={p.image} alt={"تصویر "+p.name} loading="lazy" referrerPolicy="no-referrer" onError={e=>{e.currentTarget.style.display="none";}}/><span>{i+1}</span></div>
