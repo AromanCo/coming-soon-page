@@ -1,0 +1,36 @@
+name: Verify Next.js
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: verify-next-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test-and-build:
+    name: Tests, types, lint and production build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24.21.0
+          cache: npm
+      - name: Install locked dependencies
+        run: npm ci
+      - name: Test, typecheck and lint
+        run: npm test
+      - name: Build production app
+        run: npm run build
