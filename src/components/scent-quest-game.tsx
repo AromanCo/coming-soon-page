@@ -1,5 +1,6 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { AromanEmblem } from "./aroman-emblem";
 import Link from "next/link";
 import quiz from "@/lib/scent-quest/quiz-data.json";
 import { rankScentQuest, type ScentChoice, type ScentAnswers, type ScentPerfume, type ScentResult, type ScentStage } from "@/lib/scent-quest/scoring";
@@ -62,18 +63,39 @@ export function ScentQuestGame(){
   const ids=stage==="quick"?quick:deep;
   const q=quiz.questions.find(item=>item.id===ids[index]);
   const chosen=q?answers[q.id]:undefined;
+  const questionPhotos:Record<string,string[]> = {
+    Q09:["scent-citrus.jpg","path-selected.jpg","invitation-botanical.jpg","scent-woody.jpg"],
+    Q01:["scent-citrus.jpg","scent-floral.jpg","scent-woody.jpg","invitation-botanical.jpg"],
+    Q02:["scent-citrus.jpg","path-selected.jpg","path-discover.jpg","scent-woody.jpg"],
+    Q03:["scent-floral.jpg","path-selected.jpg","path-discover.jpg","scent-woody.jpg"],
+    Q04:["scent-woody.jpg","hero-atelier-composite.png","invitation-botanical.jpg","path-personal.jpg"],
+    Q05:["path-personal.jpg","scent-citrus.jpg","scent-floral.jpg","invitation-botanical.jpg"],
+    Q06:["scent-citrus.jpg","path-discover.jpg","scent-woody.jpg","invitation-botanical.jpg"],
+    Q07:["path-discover.jpg","scent-citrus.jpg","path-selected.jpg","path-personal.jpg"],
+    Q08:["scent-woody.jpg","scent-citrus.jpg","invitation-botanical.jpg","path-selected.jpg"],
+    Q10:["scent-floral.jpg","scent-woody.jpg","path-selected.jpg","hero-atelier-composite.png"],
+    Q11:["path-personal.jpg","scent-citrus.jpg","scent-floral.jpg","invitation-botanical.jpg"],
+    Q12:["scent-floral.jpg","scent-citrus.jpg","scent-woody.jpg","path-discover.jpg"],
+    Q13:["path-personal.jpg","path-selected.jpg","hero-atelier-composite.png","path-discover.jpg"],
+    Q14:["path-selected.jpg","path-personal.jpg","invitation-botanical.jpg","scent-citrus.jpg"],
+    Q15:["invitation-botanical.jpg","scent-floral.jpg","scent-woody.jpg","path-discover.jpg"],
+  };
+  const microcopy=["اولین حست رو دنبال کن.","انتخابی که بهت نزدیک‌تره کدومه؟","هر جواب، یک لایه از قصه توئه.","خودت رو به این فضاها بسپار.","یک قدم به کشف رایحه نزدیک‌تر شدی.","چند انتخاب تا امضای تو مونده.","آخرین انتخاب این فصل!"];
+
   function start(){setMode("question");setStage("quick");setIndex(0);}
-  async function finish(){
+  async function finish(currentAnswers:Partial<ScentAnswers>=answers){
     setMode("loading");
     try{
       const data=await getCatalog();
-      const res=rankScentQuest(quiz,data,answers,stage);
+      const res=rankScentQuest(quiz,data,currentAnswers,stage);
       setResult(res);if(stage==="quick")setQuickResult(res);
       setMode("result");
     }catch{setMode("error");}
   }
-  function next(){if(!q||!chosen)return;if(index<ids.length-1)setIndex(index+1);else void finish();}
+
   function previous(){
+    if(advanceTimer.current)clearTimeout(advanceTimer.current);
+    setTransitioning(false);
     if(index>0)setIndex(index-1);
     else if(stage==="deep"&&quickResult){setResult(quickResult);setStage("quick");setMode("result");}
     else setMode("intro");
@@ -112,20 +134,20 @@ export function ScentQuestGame(){
       </div><aside aria-hidden="true"><span>YOUR SCENT.<br/>YOUR STORY.</span></aside>
     </section>}
     {mode==="question"&&q&&<section className="sq-play" aria-labelledby="sq-title">
-      <div className="sq-progress-head"><span>{stage==="quick"?"فصل اول · کشف سریع":"فصل دوم · کشف عمیق"}</span><span>{index+1} / {ids.length}</span></div>
+      <div className="sq-progress-head"><span>{stage==="quick"?"فصل اول · کشف سریع":"فصل دوم · کشف عمیق"}</span><span>{new Intl.NumberFormat("fa-IR").format(index+1)} از {new Intl.NumberFormat("fa-IR").format(ids.length)}</span></div>
       <div className="sq-progress"><span style={{width:(index+1)/ids.length*100+"%"}}/></div>
       <p className="sq-kicker">{stage==="quick"?"FIRST IMPRESSION":"GO DEEPER"}</p>
       <h2 id="sq-title">{q.id==="Q09"?"کدوم فضا بیشتر شبیه دنیای توئه؟":q.id==="Q15"?"کدوم رایحه رو ترجیح می‌دی کمتر حس کنی؟":q.text}</h2>
-      <p className="sq-muted">به حس اولت اعتماد کن؛ اینجا انتخاب اشتباه وجود نداره.</p>
-      <div className={"sq-options "+(q.id==="Q09"?"sq-visual":"")}>{q.options.map((o,i)=><button key={o.id}
+      <p className="sq-muted">{microcopy[index%microcopy.length]}</p>
+      <div className="sq-options sq-visual">{q.options.map((o,i)=><button key={o.id}
         className={chosen===o.id?"sq-option active":"sq-option"} aria-pressed={chosen===o.id}
-        type="button" onClick={()=>setAnswers(v=>({...v,[q.id]:o.id as ScentChoice}))}>
-        {q.id==="Q09"&&<span aria-hidden="true" className={"sq-photo sq-photo-"+i}/>}
-        <span className="sq-option-label"><i>{String(i+1).padStart(2,"0")}</i>{o.label}<b>{chosen===o.id?"✓":"○"}</b></span>
+        type="button" onClick={()=>pick(o.id as ScentChoice)}>
+        <span aria-hidden="true" className="sq-photo" style={{backgroundImage:`linear-gradient(0deg,rgba(25,18,31,.8),rgba(25,18,31,.12)),url("/images/${questionPhotos[q.id]?.[i] || "scent-citrus.jpg"}")`}}/>
+        <span className="sq-option-label"><i>{new Intl.NumberFormat("fa-IR",{minimumIntegerDigits:2,useGrouping:false}).format(i+1)}</i>{o.label}<b>{chosen===o.id?"✓":"○"}</b></span>
       </button>)}</div>
       <div className="sq-navigation"><button onClick={previous} type="button">→ بازگشت</button>
-        <button className="sq-primary" disabled={!chosen} type="button" onClick={next}>{index===ids.length-1?"دیدن نتیجه ✨":"قدم بعدی ←"}</button></div>
-      <p className="sq-small">پاسخ‌ها فقط برای محاسبه نتیجه در مرورگر استفاده می‌شن.</p>
+        <span className="sq-auto-hint" aria-live="polite">{transitioning?"داریم می‌ریم سؤال بعدی…":"با انتخاب هر گزینه، خودکار ادامه می‌دی."}</span></div>
+      
     </section>}
     {mode==="loading"&&<section className="sq-status" role="status"><span>✧</span><h2>قصه رایحه‌ات داره شکل می‌گیره…</h2></section>}
     {mode==="error"&&<section className="sq-status" role="alert"><h2>کاتالوگ در دسترس نیست.</h2><p>جواب‌ها از بین نرفتن.</p><button className="sq-primary" onClick={()=>void finish()}>تلاش دوباره</button><button onClick={()=>setMode("question")}>بازگشت</button></section>}
@@ -134,19 +156,19 @@ export function ScentQuestGame(){
         <div><p className="sq-kicker">YOUR SCENT IDENTITY</p><p>{stage==="quick"?"کشف اولیه تو":"امضای دقیق‌تر تو"}</p>
           <span className="sq-glyph">{result.archetype.ornament}</span><h2>{result.archetype.title}</h2>
           <p>{result.archetype.subtitle}</p><div className="sq-accords">{result.accords.map(a=><span key={a}>{a}</span>)}</div></div>
-        <aside aria-hidden="true"><span className="sq-bottle">A R O M A N</span></aside>
+        <aside className="sq-result-art" aria-hidden="true"><AromanEmblem /><span>YOUR SCENT. YOUR STORY.</span></aside>
       </div>
-      <div className="sq-rec-head"><h3>سه عطر نزدیک به سلیقه تو</h3><p>پیشنهادها الگوریتمی‌اند و تضمین پسندیدن عطر نیستند.</p></div>
+      {stage==="quick"&&<div className="sq-deep sq-deep-prominent"><div><p className="sq-kicker">ACT II · GO DEEPER</p><h3>قصه رایحه‌ات هنوز ادامه داره…</h3><p>۸ سؤال دیگر؛ شناخت دقیق‌تر نت‌ها، سلیقه و پیشنهادهای تازه‌تر.</p></div><button className="sq-primary" onClick={()=>{setStage("deep");setIndex(0);setMode("question");}}>کشف عمیق ←</button></div>}{stage==="deep"&&<div className="sq-deep sq-deep-complete"><div><p className="sq-kicker">DEEP SCENT PORTRAIT</p><h3>پرتره عمیق رایحه‌ات کامل شد ✦</h3><p>این بار هر ۱۵ انتخاب، از نت‌ها تا سبک و موقعیت استفاده، در نتیجه نقش داشته.</p></div></div>}<div className="sq-rec-head"><h3>سه عطر نزدیک به سلیقه تو</h3><p>پیشنهادها الگوریتمی‌اند و تضمین پسندیدن عطر نیستند.</p></div>
       <div className="sq-recs">{result.recommendations.map((p,i)=><article key={p.id}>
         <div className="sq-rec-image"><img src={p.image} alt={"تصویر "+p.name} loading="lazy" referrerPolicy="no-referrer" onError={e=>{e.currentTarget.style.display="none";}}/><span>{i+1}</span></div>
-        <div className="sq-rec-copy"><small>{p.brand}</small><h4>{p.name}</h4><p>{p.family}</p><a href={p.url} target="_blank" rel="noopener noreferrer">مشاهده عطر ↗</a></div>
+        <div className="sq-rec-copy"><small>{p.brand}</small><h4>{p.name}</h4><p>{p.family}</p><p className="sq-rec-why">چرا به تو نزدیکه؟ هم‌خوانی با {result.dominant} و انتخاب‌های تو.</p><p className="sq-rec-notes">{p.notes?.filter(Boolean).slice(0,1).join("، ").split(/[،,]/).slice(0,3).join(" · ")}</p></div>
       </article>)}</div>
       <div className="sq-share"><div><p className="sq-kicker">YOUR STORY IS WORTH SHARING</p><h3>این قصه رو با دوستات قسمت کن.</h3><p>کارت مخصوص استوری و پست بگیر یا لینک عمومی هویت رایحه رو بفرست.</p></div>
-        <div><button onClick={()=>void download("story")}>کارت استوری ↓</button><button onClick={()=>void download("post")}>کارت پست ↓</button><button onClick={()=>void share()}>اشتراک‌گذاری ↗</button><button onClick={()=>void copy()}>کپی متن و لینک</button><Link href={"/scent-quest/result/"+result.archetype.slug} target="_blank">دیدن لینک اشتراک</Link><p role="status" aria-live="polite">{feedback}</p></div>
+        <div><button onClick={()=>void download("story")}>کارت استوری ↓</button><button onClick={()=>void download("post")}>کارت پست ↓</button><button className="sq-share-primary" onClick={()=>void share()}>اشتراک‌گذاری نتیجه ↗</button><button onClick={()=>void copy()}>کپی متن و لینک</button><Link href={"/scent-quest/result/"+result.archetype.slug} target="_blank">دیدن لینک اشتراک</Link><p role="status" aria-live="polite">{feedback}</p></div>
       </div>
-      {stage==="quick"&&<div className="sq-deep"><div><p className="sq-kicker">ACT II · GO DEEPER</p><h3>فکر می‌کنی عطرت رو شناختی؟</h3><p>۸ انتخاب دیگه، یک لایه عمیق‌تر. جواب‌های قبلیت حفظ می‌شن.</p></div><button className="sq-primary" onClick={()=>{setStage("deep");setIndex(0);setMode("question");}}>کشف عمیق ←</button></div>}
+      
       <div className="sq-join"><h3>قصه آرومان تازه شروع شده.</h3><p>دوست داری از شروع آرومان باخبر بشی؟ عضویت اختیاریه و نتیجه‌ات برای خودته.</p><Link className="sq-primary" href="/#waitlist">عضویت اختیاری در لیست دعوت ←</Link></div>
-      <div className="sq-navigation"><button onClick={()=>{setIndex(0);setMode("question");}}>ویرایش جواب‌ها</button><button onClick={()=>{setStage("quick");setIndex(0);setMode("intro");setAnswers({});setResult(null);setQuickResult(null);}}>شروع دوباره ↺</button></div>
+      <div className="sq-navigation sq-result-tools"><button onClick={()=>{setIndex(0);setMode("question");}}>ویرایش پاسخ‌ها</button><button onClick={()=>{setStage("quick");setIndex(0);setMode("intro");setAnswers({});setResult(null);setQuickResult(null);}}>شروع دوباره ↺</button></div>
       <p className="sq-small">لینک عمومی فقط هویت رایحه رو نشون می‌ده؛ نه جواب‌ها، پیشنهادهای دقیق یا شماره موبایل.</p>
     </section>}
   </main>;
