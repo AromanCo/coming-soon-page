@@ -1,4 +1,5 @@
 import Image from "next/image";
+import Link from "next/link";
 import { BrandMark } from "@/components/brand-mark";
 import { FragrancePaths } from "@/components/fragrance-paths";
 import { HomeFaq } from "@/components/home-faq";
@@ -60,6 +61,10 @@ export default function Home() {
               </div>
 
               <WaitlistForm configured={isWaitlistConfigured()} />
+              <Link href="/scent-quest" className="quest-hero-link">
+                <span>حوصله یه کشف کوتاه داری؟</span>
+                <strong>بازی امضای رایحه · فقط ۷ سؤال <span aria-hidden="true">←</span></strong>
+              </Link>
             </div>
           </div>
 
@@ -81,6 +86,24 @@ export default function Home() {
             </p>
             <figcaption className="concept-label">چیدمان مفهومی رایحه</figcaption>
           </figure>
+        </section>
+
+        <section className="quest-home-teaser section-shell" aria-labelledby="quest-home-title">
+          <div className="quest-home-copy">
+            <p className="kicker light" dir="ltr" lang="en"><span aria-hidden="true" /> AROMAN SCENT QUEST</p>
+            <span className="quest-home-index">یک بازی، یک امضای رایحه</span>
+            <h2 id="quest-home-title">فکر می‌کنی چه عطری شبیه توئه؟</h2>
+            <p>هفت انتخاب ساده، یک قصه شخصی. نتیجه‌ات رو ببین، کارت استوری بگیر و اگر کنجکاو بودی عمیق‌تر برو.</p>
+            <Link href="/scent-quest" className="quest-home-button">
+              کشف رایحه من <span aria-hidden="true">←</span>
+            </Link>
+            <span className="quest-home-note">بدون ثبت‌نام · دو فصل اختیاری · نتیجه قابل اشتراک</span>
+          </div>
+          <div className="quest-home-picture" aria-hidden="true">
+            <Image src="/images/path-personal.jpg" fill sizes="(max-width: 900px) 100vw, 45vw" alt="" />
+            <div className="quest-home-picture-shade" />
+            <span>YOUR SCENT.<br />YOUR STORY.</span>
+          </div>
         </section>
 
         <ScentExplorer />
