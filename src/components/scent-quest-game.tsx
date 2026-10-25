@@ -98,6 +98,26 @@ export function ScentQuestGame(){
     Q14:["path-selected.jpg","path-personal.jpg","invitation-botanical.jpg","scent-citrus.jpg"],
     Q15:["invitation-botanical.jpg","scent-floral.jpg","scent-woody.jpg","path-discover.jpg"],
   };
+  function optionSymbol(label:string){
+    if(/مرکبات|ترنج|لیمو|پرتقال/.test(label))return "🍊";
+    if(/سیب|گلابی|میوه/.test(label))return "🍐";
+    if(/رز|گل|یاس|مریم|شکوفه/.test(label))return "🌸";
+    if(/سبز|گیاه|نعناع|بهار/.test(label))return "🌿";
+    if(/چوب|سدر|صندل|خاک|خس/.test(label))return "🪵";
+    if(/عود|چرم|دود|تنباکو/.test(label))return "◈";
+    if(/کهربا|وانیل|شیرین|خوراکی|تونکا/.test(label))return "🍯";
+    if(/فلفل|هل|ادویه|دارچین|زعفران|زنجبیل/.test(label))return "✺";
+    if(/تمیز|صابونی|پودری|مشک|لباس/.test(label))return "✧";
+    if(/دریا|باران|آب|خنک|تابستان/.test(label))return "≈";
+    if(/گرم|آتش|پاییز|زمستان/.test(label))return "☼";
+    if(/شب|مهمانی|قرار/.test(label))return "☾";
+    if(/روزمره|کار|جلسه/.test(label))return "✦";
+    if(/زنانه/.test(label))return "❀";
+    if(/مردانه/.test(label))return "◇";
+    if(/ساده|کم|خشک/.test(label))return "○";
+    if(/پیچیده|زیاد|عمیق/.test(label))return "❖";
+    return "✶";
+  }
   const microcopy=["اولین حست رو دنبال کن.","انتخابی که بهت نزدیک‌تره کدومه؟","هر جواب، یک لایه از قصه توئه.","خودت رو به این فضاها بسپار.","یک قدم به کشف رایحه نزدیک‌تر شدی.","چند انتخاب تا امضای تو مونده.","آخرین انتخاب این فصل!"];
 
   function start(){setMode("question");setStage("quick");setIndex(0);}
@@ -183,7 +203,7 @@ export function ScentQuestGame(){
         className={chosen===o.id?"sq-option active":"sq-option"} aria-pressed={chosen===o.id}
         type="button" onClick={()=>pick(o.id as ScentChoice)}>
         <span aria-hidden="true" className="sq-photo" style={{backgroundImage:`linear-gradient(0deg,rgba(25,18,31,.8),rgba(25,18,31,.12)),url("/images/${questionPhotos[q.id]?.[i] || "scent-citrus.jpg"}")`}}/>
-        <span className="sq-option-label"><i>{new Intl.NumberFormat("fa-IR",{minimumIntegerDigits:2,useGrouping:false}).format(i+1)}</i>{o.label}<b>{chosen===o.id?"✓":"○"}</b></span>
+        <span className="sq-option-motif" aria-hidden="true">{optionSymbol(o.label)}</span><span className="sq-option-label"><i>{new Intl.NumberFormat("fa-IR",{minimumIntegerDigits:2,useGrouping:false}).format(i+1)}</i>{o.label}<b>{chosen===o.id?"✓":"○"}</b></span>
       </button>)}</div>
       <div className="sq-navigation"><button onClick={previous} type="button">→ بازگشت</button>
         <span className="sq-auto-hint" aria-live="polite">{transitioning?"داریم می‌ریم سؤال بعدی…":"با انتخاب هر گزینه، خودکار ادامه می‌دی."}</span></div>
