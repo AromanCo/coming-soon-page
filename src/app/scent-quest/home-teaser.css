@@ -1,0 +1,19 @@
+/* Scent Quest homepage invitation */
+.quest-hero-link{display:grid;gap:5px;margin-top:18px;padding:15px 18px;border:1px solid #dec5a5;border-radius:12px;background:#fffaf4;color:#39283b}
+.quest-hero-link>span{color:#94704d;font-size:11px}
+.quest-hero-link strong{font-size:14px}
+.quest-hero-link strong span{padding-inline:12px}
+.quest-home-teaser{display:grid;grid-template-columns:1fr 0.8fr;min-height:380px;margin-block:48px;overflow:hidden;border-radius:18px;background:#322338;color:white}
+.quest-home-copy{display:flex;flex-direction:column;align-items:flex-start;justify-content:center;padding:clamp(28px,5vw,60px)}
+.quest-home-copy .kicker{margin-bottom:15px}
+.quest-home-index{font-size:12px;color:#ddb980}
+.quest-home-copy h2{margin:12px 0;font-size:clamp(30px,4vw,47px);line-height:1.5}
+.quest-home-copy>p:not(.kicker){max-width:520px;color:#e0d1db;font-size:13px;line-height:2.1}
+.quest-home-button{display:inline-flex;gap:35px;margin-top:12px;padding:13px 20px;border-radius:8px;background:#ddb981;color:#291b30;font-size:13px;font-weight:800}
+.quest-home-note{margin-top:13px;color:#cbbac6;font-size:11px}
+.quest-home-picture{position:relative;min-height:350px}
+.quest-home-picture img{object-fit:cover}
+.quest-home-picture-shade{position:absolute;inset:0;background:linear-gradient(90deg,rgba(40,24,44,.15),rgba(40,24,44,.5))}
+.quest-home-picture>span{position:absolute;bottom:25px;left:25px;color:#f5e4d4;font:13px Georgia,serif;letter-spacing:.15em}
+@media(max-width:900px){.quest-home-teaser{grid-template-columns:1fr}.quest-home-picture{min-height:240px}}
+@media(max-width:640px){.quest-home-teaser{margin-block:25px}.quest-home-copy{padding:26px 23px}.quest-home-copy h2{font-size:29px}.quest-home-picture{min-height:220px}}
