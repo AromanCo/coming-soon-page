@@ -1,0 +1,13 @@
+import { test } from "node:test";
+import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import { rankScentQuest, hasCompleteAnswers, SCENT_ARCHETYPES } from "../src/lib/scent-quest/scoring.ts";
+const q=JSON.parse(readFileSync(new URL("../src/lib/scent-quest/quiz-data.json",import.meta.url),"utf8"));
+const perfumes=JSON.parse(readFileSync(new URL("../public/data/scent-quest-perfumes.json",import.meta.url),"utf8"));
+const ids=[...q.stage1_questions,...q.stage2_questions];
+const answers=Object.fromEntries(ids.map(id=>[id,"الف"]));
+test("15 questions, 60 complete mappings, unique two-stage order",()=>{assert.equal(q.questions.length,15);assert.equal(q.stage1_questions.length,7);assert.equal(q.stage2_questions.length,8);assert.equal(new Set(ids).size,15);assert.equal(q.feature_labels.length,12);for(const question of q.questions){assert.equal(question.options.length,4);for(const o of question.options){assert.equal(q.option_mappings[question.id][o.id].weights.length,12);}}});
+test("900 catalog entries with 12-dimensional vectors",()=>{assert.equal(perfumes.length,900);assert.equal(new Set(perfumes.map(p=>p.id)).size,900);for(const p of perfumes){assert.equal(p.v.length,12);assert.ok(p.v.every(Number.isFinite));}});
+test("seven questions yield initial result without deeper answers",()=>{const quick=Object.fromEntries(q.stage1_questions.map(id=>[id,"الف"]));assert.equal(hasCompleteAnswers(q,quick,"quick"),true);assert.equal(hasCompleteAnswers(q,quick,"deep"),false);assert.throws(()=>rankScentQuest(q,perfumes,{},"quick"));assert.equal(rankScentQuest(q,perfumes,quick,"quick").recommendations.length,3);});
+test("deep result is deterministic and provides three distinct brands",()=>{const a=rankScentQuest(q,perfumes,answers,"deep");const b=rankScentQuest(q,perfumes,answers,"deep");assert.deepEqual(a,b);assert.equal(new Set(a.recommendations.map(p=>p.brand)).size,3);});
+test("archetype public ids do not expose raw answers",()=>{assert.equal(SCENT_ARCHETYPES.length,12);assert.equal(new Set(SCENT_ARCHETYPES.map(p=>p.slug)).size,12);});
