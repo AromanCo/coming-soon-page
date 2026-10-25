@@ -64,6 +64,18 @@ export function ScentQuestGame(){
   const [result,setResult]=useState<ScentResult|null>(null);
   const [quickResult,setQuickResult]=useState<ScentResult|null>(null);
   const [feedback,setFeedback]=useState("");
+  const advanceTimer = useRef<number | null>(null);
+  const [transitioning, setTransitioning] = useState(false);
+
+  // Avoid advancing after leaving the page or moving backwards.
+  useEffect(() => {
+    return () => {
+      if (advanceTimer.current !== null) {
+        window.clearTimeout(advanceTimer.current);
+      }
+    };
+  }, []);
+
   const ids=stage==="quick"?quick:deep;
   const q=quiz.questions.find(item=>item.id===ids[index]);
   const chosen=q?answers[q.id]:undefined;
@@ -97,8 +109,30 @@ export function ScentQuestGame(){
     }catch{setMode("error");}
   }
 
+  function pick(choice: ScentChoice) {
+    // Only one transition per question; rapid double-clicks must not skip it.
+    if (!q || transitioning || advanceTimer.current !== null) return;
+    const updatedAnswers: Partial<ScentAnswers> = { ...answers, [q.id]: choice };
+    setAnswers(updatedAnswers);
+    setTransitioning(true);
+
+    advanceTimer.current = window.setTimeout(() => {
+      advanceTimer.current = null;
+      setTransitioning(false);
+      if (index < ids.length - 1) {
+        setIndex((current) => current + 1);
+      } else {
+        // Pass the just-selected answer rather than waiting for React state.
+        void finish(updatedAnswers);
+      }
+    }, 340);
+  }
+
   function previous(){
-    if(advanceTimer.current)clearTimeout(advanceTimer.current);
+    if(advanceTimer.current !== null) {
+      window.clearTimeout(advanceTimer.current);
+      advanceTimer.current = null;
+    }
     setTransitioning(false);
     if(index>0)setIndex(index-1);
     else if(stage==="deep"&&quickResult){setResult(quickResult);setStage("quick");setMode("result");}
