@@ -1,6 +1,8 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import { AromanEmblem } from "./aroman-emblem";
+import { DeepScentPortrait } from "./deep-scent-portrait";
+import { buildDeepPortrait } from "@/lib/scent-quest/portrait";
 import Link from "next/link";
 import quiz from "@/lib/scent-quest/quiz-data.json";
 import { rankScentQuest, type ScentChoice, type ScentAnswers, type ScentPerfume, type ScentResult, type ScentStage } from "@/lib/scent-quest/scoring";
@@ -190,13 +192,14 @@ export function ScentQuestGame(){
     {mode==="loading"&&<section className="sq-status" role="status"><span>✧</span><h2>قصه رایحه‌ات داره شکل می‌گیره…</h2></section>}
     {mode==="error"&&<section className="sq-status" role="alert"><h2>کاتالوگ در دسترس نیست.</h2><p>جواب‌ها از بین نرفتن.</p><button className="sq-primary" onClick={()=>void finish()}>تلاش دوباره</button><button onClick={()=>setMode("question")}>بازگشت</button></section>}
     {mode==="result"&&result&&<section className="sq-results">
-      <div className="sq-result-hero">
+      {stage==="deep"&&<DeepScentPortrait result={result} portrait={buildDeepPortrait(quiz,answers,result,quickResult)} onShare={()=>void share()} onStory={()=>void download("story")}/>}
+      {stage==="quick"&&<div className="sq-result-hero">
         <div><p className="sq-kicker">YOUR SCENT IDENTITY</p><p>{stage==="quick"?"کشف اولیه تو":"امضای دقیق‌تر تو"}</p>
           <span className="sq-glyph">{result.archetype.ornament}</span><h2>{result.archetype.title}</h2>
           <p>{result.archetype.subtitle}</p><div className="sq-accords">{result.accords.map(a=><span key={a}>{a}</span>)}</div></div>
         <aside className="sq-result-art" aria-hidden="true"><AromanEmblem /><span>YOUR SCENT. YOUR STORY.</span></aside>
       </div>
-      {stage==="quick"&&<div className="sq-deep sq-deep-prominent"><div><p className="sq-kicker">ACT II · GO DEEPER</p><h3>قصه رایحه‌ات هنوز ادامه داره…</h3><p>۸ سؤال دیگر؛ شناخت دقیق‌تر نت‌ها، سلیقه و پیشنهادهای تازه‌تر.</p></div><button className="sq-primary" onClick={()=>{setStage("deep");setIndex(0);setMode("question");}}>کشف عمیق ←</button></div>}{stage==="deep"&&<div className="sq-deep sq-deep-complete"><div><p className="sq-kicker">DEEP SCENT PORTRAIT</p><h3>پرتره عمیق رایحه‌ات کامل شد ✦</h3><p>این بار هر ۱۵ انتخاب، از نت‌ها تا سبک و موقعیت استفاده، در نتیجه نقش داشته.</p></div></div>}<div className="sq-rec-head"><h3>سه عطر نزدیک به سلیقه تو</h3><p>پیشنهادها الگوریتمی‌اند و تضمین پسندیدن عطر نیستند.</p></div>
+      {stage==="quick"&&<div className="sq-deep sq-deep-prominent"><div><p className="sq-kicker">ACT II · GO DEEPER</p><h3>قصه رایحه‌ات هنوز ادامه داره…</h3><p>۸ سؤال دیگر؛ شناخت دقیق‌تر نت‌ها، سلیقه و پیشنهادهای تازه‌تر.</p></div><button className="sq-primary" onClick={()=>{setStage("deep");setIndex(0);setMode("question");}}>کشف عمیق ←</button></div>}<div className="sq-rec-head"><h3>{stage==="deep"?"سه عطر برگزیده برای پرتره کامل تو":"سه عطر نزدیک به سلیقه تو"}</h3><p>پیشنهادها الگوریتمی‌اند و تضمین پسندیدن عطر نیستند.</p></div>
       <div className="sq-recs">{result.recommendations.map((p,i)=><article key={p.id}>
         <div className="sq-rec-image"><img src={p.image} alt={"تصویر "+p.name} loading="lazy" referrerPolicy="no-referrer" onError={e=>{e.currentTarget.style.display="none";}}/><span>{i+1}</span></div>
         <div className="sq-rec-copy"><small>{p.brand}</small><h4>{p.name}</h4><p>{p.family}</p><p className="sq-rec-why">چرا به تو نزدیکه؟ هم‌خوانی با {result.dominant} و انتخاب‌های تو.</p><p className="sq-rec-notes">{p.notes?.filter(Boolean).slice(0,1).join("، ").split(/[،,]/).slice(0,3).join(" · ")}</p></div>
