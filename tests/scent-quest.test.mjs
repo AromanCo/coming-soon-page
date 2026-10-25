@@ -11,3 +11,19 @@ test("900 catalog entries with 12-dimensional vectors",()=>{assert.equal(perfume
 test("seven questions yield initial result without deeper answers",()=>{const quick=Object.fromEntries(q.stage1_questions.map(id=>[id,"الف"]));assert.equal(hasCompleteAnswers(q,quick,"quick"),true);assert.equal(hasCompleteAnswers(q,quick,"deep"),false);assert.throws(()=>rankScentQuest(q,perfumes,{},"quick"));assert.equal(rankScentQuest(q,perfumes,quick,"quick").recommendations.length,3);});
 test("deep result is deterministic and provides three distinct brands",()=>{const a=rankScentQuest(q,perfumes,answers,"deep");const b=rankScentQuest(q,perfumes,answers,"deep");assert.deepEqual(a,b);assert.equal(new Set(a.recommendations.map(p=>p.brand)).size,3);});
 test("archetype public ids do not expose raw answers",()=>{assert.equal(SCENT_ARCHETYPES.length,12);assert.equal(new Set(SCENT_ARCHETYPES.map(p=>p.slug)).size,12);});
+
+import { buildDeepPortrait } from "../src/lib/scent-quest/portrait.ts";
+test("deep portrait is derived from all 15 answers and never invents match percentages",()=>{
+  const quick=Object.fromEntries(q.stage1_questions.map(id=>[id,"الف"]));
+  const qr=rankScentQuest(q,perfumes,quick,"quick");
+  const dr=rankScentQuest(q,perfumes,answers,"deep");
+  const portrait=buildDeepPortrait(q,answers,dr,qr);
+  assert.equal(portrait.facets.length,12);
+  assert.equal(portrait.top.length,6);
+  assert.ok(portrait.top.every(f=>f.strength>=0&&f.strength<=100));
+  assert.equal(portrait.opening,q.questions.find(x=>x.id==="Q02").options[0].label);
+  assert.equal(portrait.heart,q.questions.find(x=>x.id==="Q03").options[0].label);
+  assert.equal(portrait.base,q.questions.find(x=>x.id==="Q04").options[0].label);
+  assert.equal(portrait.backdrop.length,6);
+  assert.ok(portrait.changingPicks>=0&&portrait.changingPicks<=3);
+});
