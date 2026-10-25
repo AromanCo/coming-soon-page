@@ -159,6 +159,10 @@ Edit the environment file with the real domain, canonical HTTPS URL, privacy
 contact, release image tag (normally the reviewed Git SHA), and official social
 links. Do not print resolved Compose configuration into CI or support logs.
 
+Use an immutable reviewed Git SHA for both the production image tag and its OCI
+revision label. The label makes it possible to confirm the exact checkout in a
+running container without exposing its environment or secrets.
+
 ## Pre-deployment validation
 
 These commands are local and do not contact a production server:
@@ -186,13 +190,19 @@ rollback image have been verified.
 
 ~~~sh
 cd /opt/aroman/app
+release_sha=$(git rev-parse HEAD)
+export AROMAN_IMAGE_TAG="$release_sha"
+export AROMAN_BUILD_REVISION="$release_sha"
 docker compose --env-file /etc/aroman/production.env -f compose.prod.yaml config --quiet
 docker compose --env-file /etc/aroman/production.env -f compose.prod.yaml build web
+docker image inspect --format '{{index .Config.Labels "org.opencontainers.image.revision"}}' "aroman-coming-soon:$AROMAN_IMAGE_TAG"
 docker compose --env-file /etc/aroman/production.env -f compose.prod.yaml up -d --wait db
 AROMAN_ENV_FILE=/etc/aroman/production.env ./scripts/provision-production-db-roles.sh
 docker compose --env-file /etc/aroman/production.env -f compose.prod.yaml run --rm migrate
 docker compose --env-file /etc/aroman/production.env -f compose.prod.yaml up -d --no-build
 docker compose --env-file /etc/aroman/production.env -f compose.prod.yaml ps
+web_container=$(docker compose --env-file /etc/aroman/production.env -f compose.prod.yaml ps -q web)
+docker inspect --format '{{index .Config.Labels "org.opencontainers.image.revision"}}' "$web_container"
 ~~~
 
 Never use `down -v`. For rollback, keep the previous Git checkout and image tag,

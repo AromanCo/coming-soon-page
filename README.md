@@ -81,8 +81,8 @@ docker compose run --rm migrate
 # Restart the application without touching PostgreSQL data
 docker compose restart web
 
-# Rebuild after source changes
-docker compose up -d --build
+# Rebuild and recreate the web container after source changes
+./scripts/rebuild-development-stack.sh
 
 # Stop containers while preserving the named database volume
 docker compose down
@@ -91,6 +91,32 @@ docker compose down
 Do not use docker compose down -v unless permanent database deletion is
 explicitly intended. The postgres_data named volume persists subscriptions and
 rate-limit state across ordinary stops, starts, and container recreation.
+
+`docker compose up -d` and `docker compose restart web` do not rebuild the
+Next.js application. After pulling frontend changes, use the rebuild helper:
+
+~~~sh
+git switch main
+git pull --ff-only origin main
+./scripts/rebuild-development-stack.sh
+~~~
+
+The helper always selects `compose.yaml`, rebuilds `web` from the current
+checkout, starts the existing PostgreSQL volume, applies the idempotent
+migrations, and force-recreates only the web container. It labels the image
+with the Git revision and verifies that the running container uses that label.
+It never runs `down` or removes a volume.
+
+To inspect the revision later without printing environment values:
+
+~~~sh
+container_id=$(docker compose -f compose.yaml ps -q web)
+docker inspect --format '{{index .Config.Labels "org.opencontainers.image.revision"}}' "$container_id"
+~~~
+
+If a different Compose file or `COMPOSE_PROJECT_NAME` is used, it is a separate
+stack with separate image/container selection. Check `docker compose ls` and
+`docker compose -f compose.yaml ps` before diagnosing browser caching.
 
 ## Environment variables
 
