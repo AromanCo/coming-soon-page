@@ -61,3 +61,14 @@
 .sq-share>div:last-child{grid-template-columns:repeat(2,minmax(0,1fr))}
 .sq-share>div:last-child button,.sq-share>div:last-child a{font-size:11px}
 }
+
+.sq-shared-result{min-height:calc(100svh - 180px);padding:45px 20px;background:radial-gradient(circle at 20% 20%,#654558,#251a2c);display:grid;place-items:center}
+.sq-shared-result-card{width:min(740px,100%);min-height:530px;padding:clamp(28px,5vw,60px);border:1px solid rgba(231,189,128,.45);border-radius:24px;background:linear-gradient(135deg,rgba(255,255,255,.07),rgba(255,255,255,.018));display:flex;align-items:center;justify-content:center;flex-direction:column;gap:12px;text-align:center;box-shadow:0 25px 70px rgba(10,5,14,.15)}
+.sq-shared-emblem{width:110px;height:115px;color:#ddb981}
+.sq-shared-result-card h1{font-size:clamp(40px,6vw,72px);margin:0;line-height:1.5}
+.sq-shared-eyebrow{font-size:13px;color:#e6c49c;margin:0}
+.sq-shared-subtitle{font-size:19px;color:#f9ede0;margin:0}
+.sq-shared-ornament{font-size:26px;color:#ddb981}
+.sq-shared-result-card>p:last-of-type{font-size:13px;line-height:2;color:#e6d6e4}
+.sq-shared-result-card .sq-primary{margin-top:10px}
+@media(max-width:640px){.sq-shared-result{padding:22px 16px}.sq-shared-result-card{min-height:520px}}
