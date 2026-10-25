@@ -33,6 +33,10 @@ function card(result: ScentResult, format: "story" | "post") {
   for(let i=0;i<4;i++){g.beginPath();g.ellipse(540,height*.40,220+i*65,290+i*50,0,0,Math.PI*2);g.stroke();}
   g.textAlign="center";g.fillStyle="#f5e8df";g.font="55px Georgia,serif";
   g.fillText("A R O M A N",540,125);
+  g.save();g.translate(540,format==="story"?300:230);g.strokeStyle="#E4BB77";g.lineWidth=5;
+  const hex=(radius:number)=>{g.beginPath();for(let i=0;i<6;i++){const a=-Math.PI/2+i*Math.PI/3,x=Math.cos(a)*radius,y=Math.sin(a)*radius;if(i===0)g.moveTo(x,y);else g.lineTo(x,y);}g.closePath();g.stroke();};
+  hex(65);hex(52);hex(43);g.beginPath();g.moveTo(-15,14);g.lineTo(0,-13);g.lineTo(15,14);g.moveTo(-22,26);g.lineTo(22,26);g.moveTo(-22,39);g.lineTo(22,39);g.stroke();g.restore();
+
   g.fillStyle="#e6bc87";g.font="24px Georgia,serif";g.fillText("YOUR SCENT. YOUR STORY.",540,181);
   const center=height*.45;g.fillStyle="rgba(245,220,186,.3)";
   g.beginPath();g.roundRect(425,center-170,230,280,34);g.fill();
