@@ -34,7 +34,7 @@ Run exactly one worker per provider, and confirm no webhook exists:
     node scripts/run-scent-companion.mjs telegram
     node scripts/run-scent-companion.mjs bale
 
-No service is automatically enabled by Docker Compose.
+No bot service is enabled by default; an opt-in Compose overlay is now available.
 Test commands /start, /help, /privacy, /reset, /result and /forget in a private test chat.
 Check seven answers, eight extra answers, old buttons, image fallback, links and opt-in behavior.
 
@@ -45,3 +45,35 @@ Check seven answers, eight extra answers, old buttons, image fallback, links and
 - No broadcasts or marketing subscription tracking.
 - Update public privacy notice before real users and review retention/deletion obligations.
 - Do not merge or deploy until checks and manual QA pass.
+
+## Docker Compose: local test with isolated bot services
+
+Both Telegram and Bale run in Docker using one shared `Dockerfile.bot` image.
+The bots are **opt-in**, so the normal website deployment is not changed.
+
+Create a local, git-ignored `.env.bots` from `.env.bots.example`. Keep your real bot tokens there. The local stack also needs the existing `.env` with PostgreSQL credentials.
+
+The local Compose overlay is `compose.bots.yaml` and must be used alongside `compose.yaml`:
+
+    docker compose --env-file .env --env-file .env.bots -f compose.yaml -f compose.bots.yaml config --quiet
+    docker compose --env-file .env --env-file .env.bots -f compose.yaml -f compose.bots.yaml --profile telegram build telegram-bot
+    docker compose --env-file .env --env-file .env.bots -f compose.yaml -f compose.bots.yaml --profile telegram up -d db migrate telegram-bot
+
+For Bale, replace `telegram` and `telegram-bot` with `bale` and `bale-bot`.
+For both services, use `--profile bots` and select both workers explicitly.
+Use `docker compose ... logs -f telegram-bot` to inspect the bot worker.
+
+**Important:** Do NOT combine `compose.bots.yaml` with `compose.prod.yaml`.
+The production PostgreSQL roles deliberately restrict direct table reads and writes.
+Before adding production workers, implement and review a dedicated least-privilege bot
+database role, mounted secret files, and a production-only Compose overlay. This
+local overlay must not be used on the VPS.
+
+No ports are published by the workers. They contact the messaging APIs with outbound HTTPS.
+Their processes run as the non-root Node user on a read-only filesystem.
+They are not automatically started by `docker compose up` without bot profiles.
+
+If your local Docker installation still fails with the `dockerme.ir` DNS registry-mirror
+error, that DNS issue must be corrected independently; it is not a bot code issue.
+Avoid `docker compose down -v`: it would delete PostgreSQL data.
+
