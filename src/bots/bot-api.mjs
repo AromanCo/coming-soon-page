@@ -7,7 +7,7 @@ export class BotApi {
   }
   async request(method,payload={},timeout=40000){
     let response;
-    try {response=await this.fetchImpl(this.origin+"/bot"+this.token+"/"+method,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify(payload),signal:AbortSignal.timeout(timeout)});}
+    try {response=await this.fetchImpl(this.origin+"/bot"+this.token+"/"+method,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify(payload),signal:globalThis.AbortSignal.timeout(timeout)});}
     catch{throw Error(this.platform+" "+method+": connection failure");}
     const data=await response.json().catch(()=>null);
     if(!response.ok||data?.ok!==true)throw Error(this.platform+" "+method+": API failure "+response.status);
