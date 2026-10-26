@@ -1,0 +1,45 @@
+# Local/dev-only overlay. Use with compose.yaml, NOT compose.prod.yaml.
+# Bot services are opt-in; standard docker compose up will not start them.
+x-scent-bot-base: &scent-bot-base
+  build:
+    context: .
+    dockerfile: Dockerfile.bot
+  image: aroman-scent-companion:${SCENT_BOT_IMAGE_TAG:-local}
+  restart: unless-stopped
+  init: true
+  read_only: true
+  tmpfs:
+    - /tmp:size=16m,mode=1777
+  depends_on:
+    migrate:
+      condition: service_completed_successfully
+  networks:
+    - backend
+  security_opt:
+    - no-new-privileges:true
+  cap_drop:
+    - ALL
+
+x-scent-bot-env: &scent-bot-env
+  NODE_ENV: production
+  DATABASE_URL: ${DATABASE_URL:?Set DATABASE_URL in your existing .env}
+  DATABASE_SSL: "false"
+  BOT_PUBLIC_SITE_URL: ${BOT_PUBLIC_SITE_URL:-https://aroman.ir}
+  BOT_MEDIA_BASE_URL: ${BOT_MEDIA_BASE_URL:-}
+
+services:
+  telegram-bot:
+    <<: *scent-bot-base
+    profiles: [bots, telegram]
+    command: ["node", "scripts/run-scent-companion.mjs", "telegram"]
+    environment:
+      <<: *scent-bot-env
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
+
+  bale-bot:
+    <<: *scent-bot-base
+    profiles: [bots, bale]
+    command: ["node", "scripts/run-scent-companion.mjs", "bale"]
+    environment:
+      <<: *scent-bot-env
+      BALE_BOT_TOKEN: ${BALE_BOT_TOKEN:-}
