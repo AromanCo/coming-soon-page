@@ -13,6 +13,7 @@ const { fetch, WebSocket, setTimeout, console } = globalThis;
 
 const baseUrl = process.env.BASE_URL ?? "http://localhost:3000";
 const outputDir = process.env.OUTPUT_DIR ?? path.join(os.homedir(), "Dev/Aroman/qa-artifacts/coming-soon/ux-08");
+const layoutCapture = process.env.LAYOUT_CAPTURE ?? "after";
 const widths = [320, 390, 768, 1024, 1440];
 const chromeProfile = await mkdtemp(path.join(os.tmpdir(), "aroman-ux08-chrome-"));
 const chrome = spawn("google-chrome", [
@@ -80,6 +81,7 @@ try {
 
   const results = [];
   const deepMeterEvidence = [];
+  const facetLayoutEvidence = [];
   const waitFor = async (expression, description, attempts = 60) => {
     for (let attempt = 0; attempt < attempts; attempt++) {
       const value = await evaluate(expression);
@@ -203,7 +205,7 @@ try {
     assert.equal(quest.scrollWidth, width, `${width}px Scent Quest has no horizontal overflow`);
     assert.equal(quest.main, 1, `${width}px Scent Quest main target is unique`);
     await screenshot(`${width}-scent-quest.png`);
-    if (width === 390 || width === 1440) {
+    if ([320, 390, 768, 1440].includes(width)) {
       await evaluate("document.querySelector('.sq-intro .sq-primary').click()");
       for (let question = 0; question < 7; question++) {
         await waitFor("Boolean(document.querySelector('.sq-options button'))", `quick question ${question + 1}`);
@@ -220,7 +222,32 @@ try {
       await waitFor("document.querySelectorAll('.sq-portrait-meter[role=\\\"meter\\\"]').length === 6", "deep portrait Scent DNA meters", 100);
       await evaluate("(()=>{const e=document.querySelector('.sq-portrait-facets');window.scrollTo({top:e.getBoundingClientRect().top+window.scrollY-24,behavior:'instant'})})()");
       await new Promise((resolve) => setTimeout(resolve, 100));
-      await screenshot(`${width}-deep-scent-dna-meters.png`);
+      const facetLayout = await evaluate(`(()=>{const row=document.querySelector('.sq-portrait-bar'),rank=row.querySelector('.sq-portrait-rank'),name=row.querySelector('strong'),meter=row.querySelector('.sq-portrait-meter'),value=row.querySelector('.sq-portrait-value'),rect=e=>{const r=e.getBoundingClientRect();return {left:r.left,right:r.right,top:r.top,bottom:r.bottom,width:r.width,height:r.height,centerY:(r.top+r.bottom)/2,scrollWidth:e.scrollWidth,clientWidth:e.clientWidth}},style=getComputedStyle(row);return {width:innerWidth,scrollWidth:document.documentElement.scrollWidth,row:rect(row),rank:rect(rank),name:rect(name),meter:rect(meter),value:rect(value),gridTemplateColumns:style.gridTemplateColumns,gap:style.gap,scrollClient:{scrollWidth:row.scrollWidth,clientWidth:row.clientWidth}}})()`);
+      facetLayoutEvidence.push(facetLayout);
+      const layoutScreenshotSuffix = layoutCapture === "before" && (width === 320 || width === 390) ? "before" : "after";
+      if (width === 320 || width === 390 || layoutCapture === "after") await screenshot(`${width}-deep-scent-dna-${layoutScreenshotSuffix}.png`);
+      if (layoutCapture !== "before") {
+        const firstRowCenters = [facetLayout.rank.centerY, facetLayout.name.centerY, facetLayout.value.centerY];
+        assert.ok(Math.max(...firstRowCenters) - Math.min(...firstRowCenters) <= 4, `${width}px rank, facet name and numeric value align on one row: ${JSON.stringify(facetLayout)}`);
+        const firstRowItems = [facetLayout.rank, facetLayout.name, facetLayout.value];
+        for (let i = 0; i < firstRowItems.length; i++) {
+          for (let j = i + 1; j < firstRowItems.length; j++) {
+            const a = firstRowItems[i], b = firstRowItems[j];
+            assert.ok(a.right <= b.left + 1 || b.right <= a.left + 1, `${width}px facet label row has no horizontal overlap`);
+          }
+        }
+        if (width <= 390) {
+          assert.ok(facetLayout.meter.top >= Math.max(facetLayout.rank.bottom, facetLayout.name.bottom, facetLayout.value.bottom) + 3, `${width}px meter sits below its label row: ${JSON.stringify(facetLayout)}`);
+        } else {
+          assert.ok(Math.abs(facetLayout.meter.centerY - facetLayout.name.centerY) <= 4, `${width}px meter aligns with its label row`);
+        }
+        assert.ok(facetLayout.meter.left >= facetLayout.row.left - 1 && facetLayout.meter.right <= facetLayout.row.right + 1, `${width}px meter stays inside its row container`);
+        assert.ok(facetLayout.name.right <= facetLayout.value.left || facetLayout.value.right <= facetLayout.name.left, `${width}px facet label and value do not overlap`);
+        assert.ok(facetLayout.value.left >= facetLayout.row.left - 1 && facetLayout.value.right <= facetLayout.row.right + 1 && facetLayout.value.scrollWidth <= facetLayout.value.clientWidth, `${width}px numeric value stays inside its row without clipping`);
+        assert.equal(facetLayout.scrollClient.scrollWidth, facetLayout.scrollClient.clientWidth, `${width}px facet row has no internal horizontal overflow`);
+        assert.equal(facetLayout.scrollWidth, width, `${width}px deep portrait has no page overflow`);
+      }
+      if (width === 390 || width === 1440) {
       const domMeters = await evaluate(`([...document.querySelectorAll('.sq-portrait-meter[role="meter"]')].map((e)=>({
         name:e.getAttribute('aria-label'), min:Number(e.getAttribute('aria-valuemin')), max:Number(e.getAttribute('aria-valuemax')),
         now:Number(e.getAttribute('aria-valuenow')), description:document.getElementById(e.getAttribute('aria-describedby'))?.innerText,
@@ -245,6 +272,7 @@ try {
       assert.equal(axMeters.length, 6, `${width}px Chrome accessibility tree exposes six meter roles`);
       assert.ok(axMeters.every((meter) => meter.name && meter.properties.valuemin === 0 && meter.properties.valuemax === 100 && typeof meter.value === "number" && meter.description?.includes("از ۱۰۰") && meter.description?.includes("اندازه‌گیری علمی نیست") && meter.description?.includes("امتیاز سازگاری با عطر")), `${width}px accessibility tree exposes meter name, range, current value and Persian relative-value description: ${JSON.stringify(rawAxMeters)}`);
       deepMeterEvidence.push({ width, domMeters, axMeters });
+      }
     }
     results.push({ width, home: homeState, quest });
   }
@@ -279,7 +307,7 @@ try {
       assert.ok(sample.ratio >= (large ? 3 : 4.5), `${sample.selector} computed contrast ${sample.ratio} meets ${large ? "large-text" : "normal-text"} AA`);
     }
   }
-  await writeFile(path.join(outputDir, "browser-checks.json"), JSON.stringify({ baseUrl, widths: results, deepMeterEvidence, computedContrastSamples: contrast, computedDarkPanelContrastSamples: darkContrast }, null, 2));
+  await writeFile(path.join(outputDir, "browser-checks.json"), JSON.stringify({ baseUrl, widths: results, facetLayoutEvidence, deepMeterEvidence, computedContrastSamples: contrast, computedDarkPanelContrastSamples: darkContrast }, null, 2));
   console.log(JSON.stringify({ widths: results.map((r) => r.width), deepMeterEvidence, computedContrastSamples: contrast, computedDarkPanelContrastSamples: darkContrast, screenshotDirectory: outputDir }, null, 2));
 } finally {
   ws?.close();
