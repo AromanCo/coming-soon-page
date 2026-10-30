@@ -273,6 +273,7 @@ cd /opt/aroman/app
 release_sha=$(git rev-parse HEAD)
 export AROMAN_IMAGE_TAG="$release_sha"
 export AROMAN_BUILD_REVISION="$release_sha"
+./scripts/validate-production-caddy-image.sh
 docker compose --env-file /etc/aroman/production.env -f compose.prod.yaml config --quiet
 docker compose --env-file /etc/aroman/production.env -f compose.prod.yaml build web
 docker image inspect --format '{{index .Config.Labels "org.opencontainers.image.revision"}}' "aroman-coming-soon:$AROMAN_IMAGE_TAG"

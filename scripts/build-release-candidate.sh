@@ -32,13 +32,20 @@ if [[ "${AROMAN_BUILD_REVISION:-$revision}" != "$revision" ]]; then
 fi
 export AROMAN_BUILD_REVISION="$revision"
 export AROMAN_IMAGE_TAG="$revision"
-compose=(docker compose -f compose.prod.yaml)
-
-# Validate required Compose interpolation and service structure before any build.
-# --quiet avoids printing resolved configuration, including runtime environment.
-"${compose[@]}" config --quiet
-"${compose[@]}" build web
 image="aroman-coming-soon:$AROMAN_IMAGE_TAG"
+
+# A local web candidate does not need a published Caddy derivative. Build the
+# production web Dockerfile directly so production Compose still requires its
+# separately approved immutable Caddy registry digest.
+docker build \
+  --build-arg "AROMAN_BUILD_REVISION=$revision" \
+  --build-arg "NEXT_PUBLIC_SITE_URL=$NEXT_PUBLIC_SITE_URL" \
+  --build-arg "NEXT_PUBLIC_INSTAGRAM_URL=${NEXT_PUBLIC_INSTAGRAM_URL:-}" \
+  --build-arg "NEXT_PUBLIC_TELEGRAM_URL=${NEXT_PUBLIC_TELEGRAM_URL:-}" \
+  --build-arg "NEXT_PUBLIC_LINKEDIN_URL=${NEXT_PUBLIC_LINKEDIN_URL:-}" \
+  --build-arg "NEXT_PUBLIC_PRIVACY_EMAIL=$NEXT_PUBLIC_PRIVACY_EMAIL" \
+  --tag "$image" \
+  --file Dockerfile .
 label=$(docker image inspect --format '{{index .Config.Labels "org.opencontainers.image.revision"}}' "$image")
 image_id=$(docker image inspect --format '{{.Id}}' "$image")
 [[ "$label" == "$revision" ]] || {
