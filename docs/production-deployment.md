@@ -233,6 +233,11 @@ Use an immutable reviewed Git SHA for both the production image tag and its OCI
 revision label. The label makes it possible to confirm the exact checkout in a
 running container without exposing its environment or secrets.
 
+Set `AROMAN_CADDY_IMAGE` to an approved immutable registry digest in the
+production environment file. The local derived Caddy candidate is not a
+production reference; production Compose intentionally refuses to resolve
+without an explicitly approved image digest.
+
 ## Pre-deployment validation
 
 These commands are local and do not contact a production server:
@@ -242,9 +247,14 @@ npm ci
 npm test
 npm run build
 npm audit
+release_sha=$(git rev-parse HEAD)
+docker build --platform linux/amd64 \
+  --build-arg "AROMAN_BUILD_REVISION=$release_sha" \
+  -t aroman-caddy:2.11.7-alpine-brotli1.2.1-r0 \
+  -f deploy/caddy/Dockerfile deploy/caddy
 docker run --rm -e AROMAN_DOMAIN=http://localhost \
   -v "$PWD/deploy/caddy/Caddyfile:/etc/caddy/Caddyfile:ro" \
-  caddy:2.11.4-alpine@sha256:6aeddd44c3078b0f9a35206472a11420648a79c184603ef95957d0a20044cb2b \
+  aroman-caddy:2.11.7-alpine-brotli1.2.1-r0 \
   caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile
 npm run test:production
 ~~~
