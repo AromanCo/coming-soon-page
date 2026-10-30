@@ -2,7 +2,7 @@ name: ${COMPOSE_PROJECT_NAME:-aroman-coming-soon}
 
 services:
   db:
-    image: postgres:16-alpine
+    image: postgres:16.15-alpine@sha256:cbf42f0edc946c0bc1b8eeed62403734e1f25dc67a3491455d07a92fdb558b28
     restart: unless-stopped
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-aroman}
@@ -25,7 +25,7 @@ services:
       - backend
 
   migrate:
-    image: postgres:16-alpine
+    image: postgres:16.15-alpine@sha256:cbf42f0edc946c0bc1b8eeed62403734e1f25dc67a3491455d07a92fdb558b28
     restart: "no"
     depends_on:
       db:

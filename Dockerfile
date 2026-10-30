@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 
-FROM node:24.21.0-alpine@sha256:ebfe2f90462722a7a4de65e91990e97fe0d401c70e0e762c5b53302f905ec1c1 AS base
+FROM node:24.22.2-alpine@sha256:4eefa1bfce4197942661ef9148247d779ddf1bb0ee006d3294a467609de60724 AS base
 WORKDIR /app
 ENV NEXT_TELEMETRY_DISABLED=1
 
@@ -42,6 +42,10 @@ LABEL org.opencontainers.image.revision=$AROMAN_BUILD_REVISION
 COPY --from=builder --chown=node:node /app/public ./public
 COPY --from=builder --chown=node:node /app/.next/standalone ./
 COPY --from=builder --chown=node:node /app/.next/static ./.next/static
+
+# npm is only needed in the build stage. Removing its bundled CLI dependency
+# tree from the runtime image avoids shipping unused vulnerable packages.
+RUN rm -rf /usr/local/lib/node_modules/npm /usr/local/bin/npm /usr/local/bin/npx
 
 USER node
 EXPOSE 3000

@@ -29,6 +29,7 @@ done
 
 cat >"$env_file" <<EOF
 COMPOSE_PROJECT_NAME=$test_project
+AROMAN_CADDY_IMAGE=aroman-caddy:2.11.7-alpine-brotli1.2.1-r0
 AROMAN_DOMAIN=http://localhost
 NEXT_PUBLIC_SITE_URL=http://localhost:8080
 NEXT_PUBLIC_PRIVACY_EMAIL=privacy@example.test
@@ -42,12 +43,21 @@ EOF
 chmod 0600 "$env_file"
 
 cd "$repo_dir"
-export AROMAN_BUILD_REVISION="$(git rev-parse HEAD)"
+if [[ -z "$(git status --porcelain)" ]]; then
+  export AROMAN_BUILD_REVISION="$(git rev-parse HEAD)"
+else
+  export AROMAN_BUILD_REVISION=local-uncommitted
+fi
+
+docker build --platform linux/amd64 \
+  --build-arg "AROMAN_BUILD_REVISION=$AROMAN_BUILD_REVISION" \
+  --tag aroman-caddy:2.11.7-alpine-brotli1.2.1-r0 \
+  --file "$repo_dir/deploy/caddy/Dockerfile" "$repo_dir/deploy/caddy"
 
 docker run --rm \
   --env AROMAN_DOMAIN=http://localhost \
   --volume "$repo_dir/deploy/caddy/Caddyfile:/etc/caddy/Caddyfile:ro" \
-  caddy:2.11.4-alpine@sha256:6aeddd44c3078b0f9a35206472a11420648a79c184603ef95957d0a20044cb2b \
+  aroman-caddy:2.11.7-alpine-brotli1.2.1-r0 \
   caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile
 
 "${compose[@]}" config --quiet

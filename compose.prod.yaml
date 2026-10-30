@@ -8,7 +8,8 @@ x-logging: &default-logging
 
 services:
   caddy:
-    image: caddy:2.11.4-alpine@sha256:6aeddd44c3078b0f9a35206472a11420648a79c184603ef95957d0a20044cb2b
+    image: ${AROMAN_CADDY_IMAGE:?Set AROMAN_CADDY_IMAGE to an approved immutable image digest}
+    platform: linux/amd64
     restart: unless-stopped
     depends_on:
       web:
@@ -116,7 +117,7 @@ services:
     logging: *default-logging
 
   db:
-    image: postgres:16.11-alpine@sha256:4327b9fd295502f326f44153a1045a7170ddbfffed1c3829798328556cfd09e2
+    image: postgres:16.15-alpine@sha256:cbf42f0edc946c0bc1b8eeed62403734e1f25dc67a3491455d07a92fdb558b28
     restart: unless-stopped
     environment:
       POSTGRES_USER: ${POSTGRES_ADMIN_USER:-aroman_admin}
@@ -152,7 +153,7 @@ services:
     logging: *default-logging
 
   migrate:
-    image: postgres:16.11-alpine@sha256:4327b9fd295502f326f44153a1045a7170ddbfffed1c3829798328556cfd09e2
+    image: postgres:16.15-alpine@sha256:cbf42f0edc946c0bc1b8eeed62403734e1f25dc67a3491455d07a92fdb558b28
     restart: "no"
     depends_on:
       db:

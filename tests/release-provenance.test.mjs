@@ -7,6 +7,7 @@ import { dirname, resolve } from "node:path";
 const repoDir = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const readRepoFile = (path) => readFile(resolve(repoDir, path), "utf8");
 const dockerfile = await readRepoFile("Dockerfile");
+const caddyDockerfile = await readRepoFile("deploy/caddy/Dockerfile");
 const productionCompose = await readRepoFile("compose.prod.yaml");
 const localCompose = await readRepoFile("compose.prod.local.yaml");
 const developmentCompose = await readRepoFile("compose.yaml");
@@ -14,11 +15,16 @@ const candidateBuilder = await readRepoFile("scripts/build-release-candidate.sh"
 const provenanceChecker = await readRepoFile("scripts/check-release-provenance.sh");
 
 test("Node build stages share the verified multi-platform digest", () => {
-  assert.match(dockerfile, /FROM node:24\.21\.0-alpine@sha256:ebfe2f90462722a7a4de65e91990e97fe0d401c70e0e762c5b53302f905ec1c1 AS base/);
+  assert.match(dockerfile, /FROM node:24\.22\.2-alpine@sha256:4eefa1bfce4197942661ef9148247d779ddf1bb0ee006d3294a467609de60724 AS base/);
   assert.match(dockerfile, /FROM base AS revision-check/);
   assert.match(dockerfile, /FROM revision-check AS dependencies/);
   assert.match(dockerfile, /FROM base AS builder/);
   assert.match(dockerfile, /FROM revision-check AS runner/);
+  assert.match(dockerfile, /rm -rf \/usr\/local\/lib\/node_modules\/npm/);
+  assert.match(caddyDockerfile, /FROM caddy:2\.11\.7-alpine@sha256:04913b1da43339a40ad1ea87827d70a576ac5aa6cf674c6e24fdca675887533a/);
+  assert.match(caddyDockerfile, /brotli-libs-1\.2\.1-r0\.apk/);
+  assert.match(productionCompose, /postgres:16\.15-alpine@sha256:cbf42f0edc946c0bc1b8eeed62403734e1f25dc67a3491455d07a92fdb558b28/);
+  assert.match(productionCompose, /AROMAN_CADDY_IMAGE:\?Set AROMAN_CADDY_IMAGE to an approved immutable image digest/);
 });
 
 test("release builds require a full revision and local simulation is explicitly isolated", () => {
