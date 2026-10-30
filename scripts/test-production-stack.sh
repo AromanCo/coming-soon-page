@@ -3,7 +3,9 @@ set -Eeuo pipefail
 
 repo_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 temp_dir=$(mktemp -d)
-test_project="aroman-prod-sim-${RANDOM}-$$"
+test_id=$(basename "$temp_dir" | tr -cd '[:alnum:]' | tr '[:upper:]' '[:lower:]')
+test_project="aroman-prod-sim-$test_id"
+caddy_image="aroman-caddy:simulation-$test_id"
 env_file="$temp_dir/production.env"
 compose=(docker compose --env-file "$env_file" -f compose.prod.yaml -f compose.prod.local.yaml)
 
@@ -29,7 +31,7 @@ done
 
 cat >"$env_file" <<EOF
 COMPOSE_PROJECT_NAME=$test_project
-AROMAN_CADDY_IMAGE=aroman-caddy:2.11.7-alpine-brotli1.2.1-r0
+AROMAN_CADDY_IMAGE=$caddy_image
 AROMAN_DOMAIN=http://localhost
 NEXT_PUBLIC_SITE_URL=http://localhost:8080
 NEXT_PUBLIC_PRIVACY_EMAIL=privacy@example.test
@@ -51,13 +53,13 @@ fi
 
 docker build --platform linux/amd64 \
   --build-arg "AROMAN_BUILD_REVISION=$AROMAN_BUILD_REVISION" \
-  --tag aroman-caddy:2.11.7-alpine-brotli1.2.1-r0 \
+  --tag "$caddy_image" \
   --file "$repo_dir/deploy/caddy/Dockerfile" "$repo_dir/deploy/caddy"
 
 docker run --rm \
   --env AROMAN_DOMAIN=http://localhost \
   --volume "$repo_dir/deploy/caddy/Caddyfile:/etc/caddy/Caddyfile:ro" \
-  aroman-caddy:2.11.7-alpine-brotli1.2.1-r0 \
+  "$caddy_image" \
   caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile
 
 "${compose[@]}" config --quiet
