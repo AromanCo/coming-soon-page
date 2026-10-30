@@ -16,7 +16,6 @@ export function renderSession(s,{quiz,catalog,siteUrl}){
   return {text:(s.phase==="quick"?"فصل اول · کشف سریع":"فصل دوم · کشف عمیق")+"\nسؤال "+numeral(s.position+1)+" از "+numeral(list.length)+"\n\n"+q.text+"\n\nبا حس خودت انتخاب کن.",rows:[...q.options.map((o,i)=>[btn(numeral(i+1)+" · "+o.label,"a:"+id+":"+i)]),[btn("↩ بازگشت","n:back")]],photo:"/images/path-discover.jpg"};
  }
  const deep=s.phase==="deep_result",result=rankScentQuest(quiz,catalog,s.answers,deep?"deep":"quick");
- const url=new URL("/scent-quest/result/"+result.archetype.slug,base).toString();
  const head=(deep?"✧ پرتره عمیق رایحه تو\n۱۵ پاسخ":"✨ نتیجه اولیه رایحه تو\n۷ پاسخ")+"\n\n"+result.archetype.title+"\n"+result.archetype.subtitle+"\n\n"+result.accords.join(" · ");
  const extra=deep?"\n\nپیشنهادها پس از بررسی تمام ۱۵ پاسخ:\n"+summary(result):"\n\nسه عطر پیشنهادی:\n"+summary(result)+"\n\nاگر خواستی ۸ سؤال دیگر عمیق‌تر برو.";
  return {text:head+extra,rows:[...(deep?[]:[[btn("🔮 کشف عمیق","n:deep")]]),[btn("🎁 اشتراک نتیجه","n:share")],[link("عضویت اختیاری در لیست دعوت",base+"/#waitlist")],[btn("شروع دوباره","n:reset")]],photo:"/scent-quest/result/"+result.archetype.slug+"/opengraph-image"};

@@ -31,8 +31,25 @@ test("forget clears answers and resume preserves state",()=>{
  const erased=transitionSession(s,"/forget",deps);
  assert.equal(erased.erase,true);assert.deepEqual(erased.session.answers,{});
 });
+test("back, reset, and sharing preserve the intended session boundaries",()=>{
+ let s=transitionSession(newSession(),"n:quick",deps).session;
+ s=transitionSession(s,"a:Q09:0",deps).session;
+ s=transitionSession(s,"n:back",deps).session;
+ assert.equal(s.phase,"quick");assert.equal(s.position,0);
+ s=transitionSession(s,"n:quick",deps).session;
+ for(const id of quiz.stage1_questions)s=transitionSession(s,"a:"+id+":0",deps).session;
+ const shared=transitionSession(s,"n:share",deps);
+ assert.equal(shared.session.phase,"quick_result");
+ assert.match(shared.view.text,/aroman\.ir\/scent-quest\/result\//);
+ s=transitionSession(s,"n:deep",deps).session;
+ s=transitionSession(s,"n:back",deps).session;
+ assert.equal(s.phase,"quick_result");
+ const reset=transitionSession(s,"n:reset",deps).session;
+ assert.equal(reset.phase,"welcome");assert.deepEqual(reset.answers,{});
+});
 test("group chat ignored and callback normalized",()=>{
  assert.equal(parseUpdate({message:{chat:{id:1,type:"group"},text:"/start"}}),null);
+ assert.equal(parseUpdate({callback_query:{id:"x",data:"n:quick",message:{chat:{id:1,type:"group"},message_id:3}}}),null);
  assert.equal(parseUpdate({callback_query:{id:"x",data:"n:quick",message:{chat:{id:1,type:"private"},message_id:3}}}).action,"n:quick");
 });
 test("stateful runtime persists private chat and handles callbacks",async()=>{
@@ -42,6 +59,13 @@ test("stateful runtime persists private chat and handles callbacks",async()=>{
  await processUpdate({platform:"telegram",update:{message:{chat:{id:1,type:"private"},text:"/start"}},api,store,engineConfig:deps});
  await processUpdate({platform:"telegram",update:{callback_query:{id:"x",data:"n:quick",message:{chat:{id:1,type:"private"},message_id:1}}},api,store,engineConfig:deps});
  assert.equal(state.phase,"quick");assert.equal(sent.length,2);
+});
+test("forget command deletes persisted state",async()=>{
+ let state={phase:"quick",position:2,answers:{Q09:"الف"}};let deleted=false;
+ const store={get:async()=>state,put:async(_,__,s)=>{state=s;},forget:async()=>{state=null;deleted=true;}};
+ const api={sendMessage:async(_,view)=>assert.match(view.text,/حذف شد/),acknowledge:async()=>{},clearButtons:async()=>{}};
+ await processUpdate({platform:"bale",update:{message:{chat:{id:2,type:"private"},text:"/forget"}},api,store,engineConfig:deps});
+ assert.equal(deleted,true);assert.equal(state,null);
 });
 test("both platform adapters send consistent callback buttons",async()=>{
  const requests=[];const fetchImpl=async(url,options)=>{requests.push([url,JSON.parse(options.body)]);return {ok:true,status:200,json:async()=>({ok:true,result:true})};};

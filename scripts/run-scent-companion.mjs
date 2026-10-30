@@ -1,4 +1,5 @@
 import pg from "pg";
+import console from "node:console";
 import process from "node:process";
 import {readFileSync} from "node:fs";
 import {setTimeout as sleep} from "node:timers/promises";

@@ -12,11 +12,11 @@ export async function processUpdate({platform,update,api,store,engineConfig,medi
  const event=parseUpdate(update);if(!event)return {ignored:true};
  const state=await store.get(platform,event.chatId);
  const outcome=transitionSession(state,event.action,engineConfig);
- if(event.callbackId)try{await api.acknowledge(event.callbackId,outcome.stale?"این دکمه قدیمی شده 🌿":"");}catch{}
+ if(event.callbackId)try{await api.acknowledge(event.callbackId,outcome.stale?"این دکمه قدیمی شده 🌿":"");}catch{/* Callback acknowledgements must not block state processing. */}
  if(outcome.stale)return {ignored:true,stale:true};
  if(outcome.erase)await store.forget(platform,event.chatId);
  else if(outcome.changed)await store.put(platform,event.chatId,outcome.session);
  if(outcome.view)await api.sendMessage(event.chatId,outcome.view,mediaOrigin);
- if(event.callbackId&&outcome.changed&&event.messageId)try{await api.clearButtons(event.chatId,event.messageId);}catch{}
+ if(event.callbackId&&outcome.changed&&event.messageId)try{await api.clearButtons(event.chatId,event.messageId);}catch{/* Old buttons remain harmless because state validation rejects them. */}
  return {ignored:false};
 }
