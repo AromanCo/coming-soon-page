@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 
-FROM node:24.21.0-alpine AS base
+FROM node:24.21.0-alpine@sha256:ebfe2f90462722a7a4de65e91990e97fe0d401c70e0e762c5b53302f905ec1c1 AS base
 WORKDIR /app
 ENV NEXT_TELEMETRY_DISABLED=1
 
@@ -24,7 +24,14 @@ COPY . .
 RUN npm run build
 
 FROM base AS runner
-ARG AROMAN_BUILD_REVISION=unknown
+ARG AROMAN_BUILD_REVISION
+ARG AROMAN_RELEASE_CANDIDATE=true
+RUN if [ "$AROMAN_RELEASE_CANDIDATE" = "true" ]; then \
+      case "$AROMAN_BUILD_REVISION" in \
+        ''|unknown|local|*[!0-9a-f]*) echo "Release candidates require a full lowercase Git SHA" >&2; exit 1 ;; \
+      esac; \
+      [ "${#AROMAN_BUILD_REVISION}" -eq 40 ] || { echo "Release candidates require a 40-character Git SHA" >&2; exit 1; }; \
+    fi
 ENV NODE_ENV=production
 ENV HOSTNAME=0.0.0.0
 ENV PORT=3000

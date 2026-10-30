@@ -347,3 +347,32 @@ reviewed incident procedure.
 - PostgreSQL privileges: <https://www.postgresql.org/docs/16/sql-grant.html>
 - Ubuntu automatic updates:
   <https://ubuntu.com/server/docs/how-to/software/automatic-updates/>
+
+## Local release candidate identity (no registry push)
+
+A release candidate must be built from a clean checkout, tagged with that
+checkout's full 40-character Git SHA, and carry the same SHA in
+`org.opencontainers.image.revision`. `scripts/build-release-candidate.sh`
+checks those conditions, builds the production web service locally, and prints
+the local image ID and revision label. Supply only public build settings; the
+`NEXT_PUBLIC_*` values are embedded in browser assets and are not runtime
+secrets. Runtime credentials continue to come from Compose secret files.
+
+~~~sh
+NEXT_PUBLIC_SITE_URL=https://www.example.test \\
+NEXT_PUBLIC_PRIVACY_EMAIL=privacy@example.test \\
+NEXT_PUBLIC_INSTAGRAM_URL= \\
+NEXT_PUBLIC_TELEGRAM_URL= \\
+NEXT_PUBLIC_LINKEDIN_URL= \\
+./scripts/build-release-candidate.sh
+~~~
+
+The reported `sha256:` local image ID identifies the image in the local Docker
+daemon. It is not a registry digest and cannot prove what a remote registry or
+production host serves. After an authorized push, record the registry's
+immutable digest from the push output or query it with
+`docker buildx imagetools inspect REGISTRY/IMAGE:TAG`; retain that digest with
+the release record. This repository task does not authorize a push. Do not use
+a dirty checkout or a placeholder revision for a release candidate. The
+isolated development and production simulation Compose configurations opt out
+of the release-candidate SHA gate explicitly.
