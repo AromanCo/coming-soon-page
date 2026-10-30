@@ -205,3 +205,20 @@
 .sq-option .sq-photo{opacity:.78}
 .sq-option.active .sq-photo{opacity:.95}
 @media(max-width:640px){.sq-option-motif{left:10px;top:10px;font-size:32px}}
+
+/* Recommendation cards: clear editorial hierarchy and a branded image failure state. */
+.sq-rec-brand{display:block;font-size:12px;font-weight:700;line-height:1.8;letter-spacing:.02em}
+.sq-rec-copy h4{font-size:16px;line-height:1.8;color:#fff8f0;overflow-wrap:anywhere}
+.sq-rec-family{color:#e5cdaa!important;font-size:12px!important;line-height:1.8}
+.sq-rec-why{overflow-wrap:anywhere}
+.sq-rec-notes{overflow-wrap:anywhere}
+.sq-rec-notes strong{color:#f1d5a8}
+.sq-rec-fallback{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:16px;background:radial-gradient(circle at 50% 42%,#fff9f0,#e9ddd0 70%);color:#573d51;text-align:center}
+.sq-rec-fallback{padding-top:48px}
+.sq-rec-image .sq-rec-rank{position:absolute;z-index:2;top:10px;right:10px;display:grid;place-items:center;min-width:26px;height:26px;padding:0 5px;border:1px solid #b99a78;border-radius:50%;background:#f7eee4;color:#392b3d;font-size:12px;line-height:1;font-variant-numeric:tabular-nums}
+.sq-rec-fallback svg{width:54px;height:58px;color:#a77d58}
+.sq-rec-fallback>span{position:static;inset:auto;font:11px Georgia,serif;letter-spacing:.2em;color:#694b60}
+.sq-rec-fallback small{font-size:11px;color:#625460;line-height:1.6}
+.sq-portrait-end{padding:26px 20px}
+.sq-portrait-end p:not(.sq-kicker){font-size:13px;line-height:1.8}
+@media(max-width:390px){.sq-recs article{grid-template-columns:minmax(92px,31%) minmax(0,1fr)}.sq-rec-image{min-height:190px}.sq-rec-copy{padding:11px}.sq-rec-copy h4{font-size:13px}.sq-rec-brand,.sq-rec-family,.sq-rec-why,.sq-rec-notes{font-size:10px!important;line-height:1.75}.sq-rec-fallback{padding:8px}.sq-rec-fallback svg{width:42px;height:46px}.sq-rec-fallback small{font-size:9px}}

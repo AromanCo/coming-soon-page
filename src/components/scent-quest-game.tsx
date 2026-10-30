@@ -8,6 +8,18 @@ import quiz from "@/lib/scent-quest/quiz-data.json";
 import { rankScentQuest, type ScentChoice, type ScentAnswers, type ScentPerfume, type ScentResult, type ScentStage } from "@/lib/scent-quest/scoring";
 import { SHARE_CARD_LAYOUT } from "@/lib/scent-quest/share-card-layout";
 
+function RecommendationCard({ perfume, index, result }: { perfume: ScentPerfume; index: number; result: ScentResult }) {
+  const [imageFailed, setImageFailed] = useState(false);
+  return <article>
+    <div className="sq-rec-image">
+      {!imageFailed && <img src={perfume.image} alt={`تصویر ${perfume.name}`} loading="lazy" referrerPolicy="no-referrer" onError={() => setImageFailed(true)} />}
+      {imageFailed && <div className="sq-rec-fallback" role="img" aria-label={`تصویر ${perfume.name} در دسترس نیست`}><AromanEmblem aria-hidden="true"/><span>AROMAN</span><small>تصویر عطر در دسترس نیست</small></div>}
+      <span className="sq-rec-rank" aria-hidden="true">{index + 1}</span>
+    </div>
+    <div className="sq-rec-copy"><small className="sq-rec-brand">{perfume.brand}</small><h4>{perfume.name}</h4><p className="sq-rec-family">{perfume.family}</p><p className="sq-rec-why">چرا در این فهرست است؟ هم‌خوانی الگوریتمی با {result.dominant} و انتخاب‌های تو.</p><p className="sq-rec-notes"><strong>نت‌ها:</strong> {perfume.notes?.filter(Boolean).slice(0,1).join("، ").split(/[،,]/).slice(0,3).join(" · ") || "در کاتالوگ ثبت نشده"}</p></div>
+  </article>;
+}
+
 const quick = quiz.stage1_questions;
 const deep = quiz.stage2_questions;
 let catalogPromise: Promise<ScentPerfume[]> | undefined;
@@ -214,20 +226,17 @@ export function ScentQuestGame(){
     {mode==="loading"&&<section className="sq-status" role="status"><span>✧</span><h2>قصه رایحه‌ات داره شکل می‌گیره…</h2></section>}
     {mode==="error"&&<section className="sq-status" role="alert"><h2>کاتالوگ در دسترس نیست.</h2><p>جواب‌ها از بین نرفتن.</p><button className="sq-primary" onClick={()=>void finish()}>تلاش دوباره</button><button onClick={()=>setMode("question")}>بازگشت</button></section>}
     {mode==="result"&&result&&<section className="sq-results">
-      {stage==="deep"&&<DeepScentPortrait result={result} portrait={buildDeepPortrait(quiz,answers,result,quickResult)} onShare={()=>void share()} onStory={()=>void download("story")}/>}
+      {stage==="deep"&&<DeepScentPortrait result={result} portrait={buildDeepPortrait(quiz,answers,result,quickResult)}/>}
       {stage==="quick"&&<div className="sq-result-hero">
         <div><p className="sq-kicker">YOUR SCENT IDENTITY</p><p>{stage==="quick"?"کشف اولیه تو":"امضای دقیق‌تر تو"}</p>
           <span className="sq-glyph">{result.archetype.ornament}</span><h2>{result.archetype.title}</h2>
           <p>{result.archetype.subtitle}</p><div className="sq-accords">{result.accords.map(a=><span key={a}>{a}</span>)}</div></div>
         <aside className="sq-result-art" aria-hidden="true"><AromanEmblem /><span>YOUR SCENT. YOUR STORY.</span></aside>
       </div>}
-      {stage==="quick"&&<div className="sq-deep sq-deep-prominent"><div><p className="sq-kicker">ACT II · GO DEEPER</p><h3>قصه رایحه‌ات هنوز ادامه داره…</h3><p>۸ سؤال دیگر؛ شناخت دقیق‌تر نت‌ها، سلیقه و پیشنهادهای تازه‌تر.</p></div><button className="sq-primary" onClick={()=>{setStage("deep");setIndex(0);setMode("question");}}>کشف عمیق ←</button></div>}<div className="sq-rec-head"><h3>{stage==="deep"?"سه عطر برگزیده برای پرتره کامل تو":"سه عطر نزدیک به سلیقه تو"}</h3><p>پیشنهادها الگوریتمی‌اند و تضمین پسندیدن عطر نیستند.</p></div>
-      <div className="sq-recs">{result.recommendations.map((p,i)=><article key={p.id}>
-        <div className="sq-rec-image"><img src={p.image} alt={"تصویر "+p.name} loading="lazy" referrerPolicy="no-referrer" onError={e=>{e.currentTarget.style.display="none";}}/><span>{i+1}</span></div>
-        <div className="sq-rec-copy"><small>{p.brand}</small><h4>{p.name}</h4><p>{p.family}</p><p className="sq-rec-why">چرا به تو نزدیکه؟ هم‌خوانی با {result.dominant} و انتخاب‌های تو.</p><p className="sq-rec-notes">{p.notes?.filter(Boolean).slice(0,1).join("، ").split(/[،,]/).slice(0,3).join(" · ")}</p></div>
-      </article>)}</div>
+      {stage==="quick"&&<div className="sq-deep sq-deep-prominent"><div><p className="sq-kicker">ACT II · GO DEEPER</p><h3>قصه رایحه‌ات هنوز ادامه داره…</h3><p>۸ سؤال دیگر؛ شناخت دقیق‌تر نت‌ها، سلیقه و پیشنهادهای تازه‌تر.</p></div><button className="sq-primary" onClick={()=>{setStage("deep");setIndex(0);setMode("question");}}>کشف عمیق ←</button></div>}<div className="sq-rec-head"><h3>{stage==="deep"?"سه عطر برگزیده برای پرتره کامل تو":"سه عطر نزدیک به سلیقه تو"}</h3><p>این پیشنهادها با یک الگوریتم از روی انتخاب‌های تو مرتب شده‌اند؛ امتیاز سازگاری علمی یا تضمین پسندیدن نیستند.</p></div>
+      <div className="sq-recs">{result.recommendations.map((p,i)=><RecommendationCard key={p.id} perfume={p} index={i} result={result}/>)}</div>
       <div className="sq-share"><div><p className="sq-kicker">YOUR STORY IS WORTH SHARING</p><h3>این قصه رو با دوستات قسمت کن.</h3><p>کارت مخصوص استوری و پست بگیر یا لینک عمومی هویت رایحه رو بفرست.</p></div>
-        <div><button onClick={()=>void download("story")}>کارت استوری ↓</button><button onClick={()=>void download("post")}>کارت پست ↓</button><button className="sq-share-primary" onClick={()=>void share()}>اشتراک‌گذاری نتیجه ↗</button><button onClick={()=>void copy()}>کپی متن و لینک</button><Link href={"/scent-quest/result/"+result.archetype.slug} target="_blank">دیدن لینک اشتراک</Link><p role="status" aria-live="polite">{feedback}</p></div>
+        <div><button onClick={()=>void download("story")}>کارت استوری ↓</button><button onClick={()=>void download("post")}>کارت پست ↓</button><button className="sq-share-primary" onClick={()=>void share()}>اشتراک‌گذاری نتیجه ↗</button><button onClick={()=>void copy()}>کپی متن و لینک عمومی</button><p role="status" aria-live="polite">{feedback}</p></div>
       </div>
       
       <div className="sq-join"><h3>قصه آرومان تازه شروع شده.</h3><p>دوست داری از شروع آرومان باخبر بشی؟ عضویت اختیاریه و نتیجه‌ات برای خودته.</p><Link className="sq-primary" href="/#waitlist">عضویت اختیاری در لیست دعوت ←</Link></div>

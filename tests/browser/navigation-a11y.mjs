@@ -12,7 +12,7 @@ import { URL } from "node:url";
 const { fetch, WebSocket, setTimeout, console } = globalThis;
 
 const baseUrl = process.env.BASE_URL ?? "http://localhost:3000";
-const outputDir = process.env.OUTPUT_DIR ?? path.join(os.homedir(), "Dev/Aroman/qa-artifacts/coming-soon/ux-08");
+const outputDir = process.env.OUTPUT_DIR ?? path.join(os.homedir(), "Dev/Aroman/qa-artifacts/coming-soon/ux-09");
 const layoutCapture = process.env.LAYOUT_CAPTURE ?? "after";
 const widths = [320, 390, 768, 1024, 1440];
 const chromeProfile = await mkdtemp(path.join(os.tmpdir(), "aroman-ux08-chrome-"));
@@ -82,6 +82,7 @@ try {
   const results = [];
   const deepMeterEvidence = [];
   const facetLayoutEvidence = [];
+  const imageRenderEvidence = [];
   const waitFor = async (expression, description, attempts = 60) => {
     for (let attempt = 0; attempt < attempts; attempt++) {
       const value = await evaluate(expression);
@@ -213,6 +214,25 @@ try {
         await new Promise((resolve) => setTimeout(resolve, 390));
       }
       await waitFor("Boolean(document.querySelector('.sq-deep-prominent .sq-primary'))", "quick result and deep-mode action");
+      await screenshot(`${width}-quick-result.png`);
+      await evaluate("document.querySelector('.sq-recs').scrollIntoView({block:'start',behavior:'instant'})");
+      await evaluate("document.querySelectorAll('.sq-rec-image img').forEach(img=>img.loading='eager')");
+      await waitFor("[...document.querySelectorAll('.sq-rec-image img')].every(img=>img.complete)", "recommendation images to load or fail");
+      const imageMetrics = await evaluate(`([...document.querySelectorAll('.sq-rec-image img')].map(img=>{const r=img.getBoundingClientRect();return {src:img.currentSrc,complete:img.complete,naturalWidth:img.naturalWidth,naturalHeight:img.naturalHeight,renderedWidth:r.width,renderedHeight:r.height,objectFit:getComputedStyle(img).objectFit,display:getComputedStyle(img).display}}))`);
+      assert.ok(imageMetrics[0].complete && imageMetrics[0].naturalWidth > 0 && imageMetrics[0].naturalHeight > 0, `${width}px first recommendation image has decoded intrinsic dimensions: ${JSON.stringify(imageMetrics[0])}`);
+      assert.equal(imageMetrics[0].objectFit, "contain", `${width}px product image preserves source aspect ratio`);
+      imageRenderEvidence.push({ width, images: imageMetrics });
+      assert.equal(await evaluate("document.querySelector('.sq-recs').previousElementSibling.className"), "sq-rec-head", "recommendation heading precedes recommendation cards");
+      await screenshot(`${width}-quick-recommendations.png`);
+      await evaluate("(()=>{const img=document.querySelector('.sq-rec-image img');img.src='/missing-ux09-perfume-image.jpg'})()");
+      await waitFor("Boolean(document.querySelector('.sq-rec-fallback'))", "perfume image fallback");
+      const fallbackLayout = await evaluate(`(()=>{const card=document.querySelector('.sq-rec-image'),fallback=card.querySelector('.sq-rec-fallback'),rank=card.querySelector('.sq-rec-rank'),rect=e=>{const r=e.getBoundingClientRect();return {left:r.left,right:r.right,top:r.top,bottom:r.bottom}},overlap=(a,b)=>a.left<b.right&&a.right>b.left&&a.top<b.bottom&&a.bottom>b.top;const badge=rect(rank),items=[...fallback.children].map(e=>({tag:e.tagName,rect:rect(e),overlap:overlap(rect(e),badge)}));return {width:innerWidth,badge,items}})()`);
+      assert.ok(fallbackLayout.items.every((item) => !item.overlap), `${width}px fallback icon, wordmark, and label clear the rank badge: ${JSON.stringify(fallbackLayout)}`);
+      assert.ok(fallbackLayout.items[0].rect.top > fallbackLayout.badge.bottom, `${width}px fallback wordmark starts below the rank badge: ${JSON.stringify(fallbackLayout)}`);
+      await screenshot(`${width}-image-fallback.png`);
+      await evaluate("document.querySelector('.sq-share').scrollIntoView({block:'start',behavior:'instant'})");
+      await new Promise((resolve) => setTimeout(resolve, 100));
+      await screenshot(`${width}-sharing.png`);
       await evaluate("document.querySelector('.sq-deep-prominent .sq-primary').click()");
       for (let question = 0; question < 8; question++) {
         await waitFor("Boolean(document.querySelector('.sq-options button'))", `deep question ${question + 1}`);
@@ -220,6 +240,10 @@ try {
         await new Promise((resolve) => setTimeout(resolve, 390));
       }
       await waitFor("document.querySelectorAll('.sq-portrait-meter[role=\\\"meter\\\"]').length === 6", "deep portrait Scent DNA meters", 100);
+      await evaluate("document.querySelector('.sq-portrait-hero').scrollIntoView({block:'start',behavior:'instant'})");
+      await new Promise((resolve) => setTimeout(resolve, 100));
+      await screenshot(`${width}-deep-portrait.png`);
+      assert.equal(await evaluate("document.querySelectorAll('.sq-portrait-end button').length"), 0, "deep portrait has no competing share controls before recommendations");
       await evaluate("(()=>{const e=document.querySelector('.sq-portrait-facets');window.scrollTo({top:e.getBoundingClientRect().top+window.scrollY-24,behavior:'instant'})})()");
       await new Promise((resolve) => setTimeout(resolve, 100));
       const facetLayout = await evaluate(`(()=>{const row=document.querySelector('.sq-portrait-bar'),rank=row.querySelector('.sq-portrait-rank'),name=row.querySelector('strong'),meter=row.querySelector('.sq-portrait-meter'),value=row.querySelector('.sq-portrait-value'),rect=e=>{const r=e.getBoundingClientRect();return {left:r.left,right:r.right,top:r.top,bottom:r.bottom,width:r.width,height:r.height,centerY:(r.top+r.bottom)/2,scrollWidth:e.scrollWidth,clientWidth:e.clientWidth}},style=getComputedStyle(row);return {width:innerWidth,scrollWidth:document.documentElement.scrollWidth,row:rect(row),rank:rect(rank),name:rect(name),meter:rect(meter),value:rect(value),gridTemplateColumns:style.gridTemplateColumns,gap:style.gap,scrollClient:{scrollWidth:row.scrollWidth,clientWidth:row.clientWidth}}})()`);
@@ -307,7 +331,7 @@ try {
       assert.ok(sample.ratio >= (large ? 3 : 4.5), `${sample.selector} computed contrast ${sample.ratio} meets ${large ? "large-text" : "normal-text"} AA`);
     }
   }
-  await writeFile(path.join(outputDir, "browser-checks.json"), JSON.stringify({ baseUrl, widths: results, facetLayoutEvidence, deepMeterEvidence, computedContrastSamples: contrast, computedDarkPanelContrastSamples: darkContrast }, null, 2));
+  await writeFile(path.join(outputDir, "browser-checks.json"), JSON.stringify({ baseUrl, widths: results, facetLayoutEvidence, imageRenderEvidence, deepMeterEvidence, computedContrastSamples: contrast, computedDarkPanelContrastSamples: darkContrast }, null, 2));
   console.log(JSON.stringify({ widths: results.map((r) => r.width), deepMeterEvidence, computedContrastSamples: contrast, computedDarkPanelContrastSamples: darkContrast, screenshotDirectory: outputDir }, null, 2));
 } finally {
   ws?.close();

@@ -35,6 +35,30 @@ test("auto-advanced question prompt is announced atomically to assistive technol
   assert.match(source,/<h2 id="sq-title" aria-live="polite" aria-atomic="true">/);
 });
 
+test("recommendations appear before one final sharing panel with an accessible image fallback",()=>{
+  const game=readFileSync(new URL("../src/components/scent-quest-game.tsx",import.meta.url),"utf8");
+  const portrait=readFileSync(new URL("../src/components/deep-scent-portrait.tsx",import.meta.url),"utf8");
+  assert.ok(game.indexOf("<div className=\"sq-recs\">") < game.indexOf("<div className=\"sq-share\">"));
+  assert.match(game,/aria-label={`تصویر \$\{perfume\.name\} در دسترس نیست`}/);
+  assert.match(game,/onError=\{\(\) => setImageFailed\(true\)\}/);
+  assert.match(game,/امتیاز سازگاری علمی یا تضمین پسندیدن نیستند/);
+  assert.match(game,/className="sq-share-primary"/);
+  assert.doesNotMatch(game,/دیدن لینک اشتراک/);
+  assert.doesNotMatch(portrait,/onShare|onStory|اشتراک‌گذاری نتیجه/);
+  assert.match(game,/result\/" \+ result\.archetype\.slug/);
+  assert.doesNotMatch(game,/answers.*URL|URL.*answers/);
+});
+
+test("recommendation fallback reserves a rank-safe area and product images keep contain sizing",()=>{
+  const component=readFileSync(new URL("../src/components/scent-quest-game.tsx",import.meta.url),"utf8");
+  const css=readFileSync(new URL("../src/app/scent-quest/scent-quest.css",import.meta.url),"utf8");
+  assert.match(component,/className="sq-rec-rank"/);
+  assert.match(component,/className="sq-rec-fallback" role="img"/);
+  assert.match(css,/\.sq-rec-fallback\{padding-top:48px\}/);
+  assert.match(css,/\.sq-rec-image \.sq-rec-rank\{[^}]*z-index:2/);
+  assert.match(css,/\.sq-rec-image img\{object-fit:contain;padding:16px\}/);
+});
+
 test("story and post taglines clear the top edge of the monogram",()=>{
   for(const layout of Object.values(SHARE_CARD_LAYOUT)) assert.ok(layout.taglineY+6<layout.emblemY-layout.emblemRadius);
   assert.equal(SHARE_CARD_LAYOUT.post.ellipseStart,2);
