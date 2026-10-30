@@ -1,14 +1,24 @@
 "use client";
 
-import type { MouseEvent, ReactNode } from "react";
+import type { MouseEvent, MouseEventHandler, ReactNode } from "react";
 
 type WaitlistLinkProps = {
   children: ReactNode;
   className?: string;
+  ariaLabel?: string;
+  onClick?: MouseEventHandler<HTMLAnchorElement>;
 };
 
-export function WaitlistLink({ children, className }: WaitlistLinkProps) {
+export function WaitlistLink({
+  children,
+  className,
+  ariaLabel,
+  onClick,
+}: WaitlistLinkProps) {
   function handleClick(event: MouseEvent<HTMLAnchorElement>) {
+    onClick?.(event);
+    if (event.defaultPrevented) return;
+
     const form = document.getElementById("waitlist");
     const phoneInput = form?.querySelector<HTMLInputElement>('input[name="phone"]');
 
@@ -35,7 +45,12 @@ export function WaitlistLink({ children, className }: WaitlistLinkProps) {
   }
 
   return (
-    <a className={className} href="#waitlist" onClick={handleClick}>
+    <a
+      className={className}
+      href="#waitlist"
+      aria-label={ariaLabel}
+      onClick={handleClick}
+    >
       {children}
     </a>
   );

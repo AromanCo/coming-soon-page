@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { BrandMark } from "@/components/brand-mark";
 import { SiteFooter } from "@/components/site-footer";
+import { SiteHeader } from "@/components/site-header";
 
 export const metadata: Metadata = {
   title: "حریم خصوصی لیست دعوت | آرومان",
@@ -39,16 +39,9 @@ const privacyJourney = [
 export default function PrivacyPage() {
   return (
     <div className="site-shell privacy-shell">
-      <header className="site-header">
-        <div className="header-inner">
-          <BrandMark compact />
-          <Link className="back-link" href="/">
-            بازگشت به صفحه اصلی
-          </Link>
-        </div>
-      </header>
+      <SiteHeader variant="subpage" backLabel="بازگشت به صفحه اصلی" />
 
-      <main className="privacy-main">
+      <main className="privacy-main" id="main-content" tabIndex={-1}>
         <section className="privacy-hero page-frame" aria-labelledby="privacy-title">
           <div className="privacy-heading">
             <p className="kicker" dir="ltr" lang="en">

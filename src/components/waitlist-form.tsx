@@ -146,6 +146,7 @@ export function WaitlistForm({ configured }: { configured: boolean }) {
       <form
         className="waitlist-form"
         id="waitlist"
+        tabIndex={-1}
         onSubmit={handleSubmit}
         aria-busy={isSubmitting}
         noValidate

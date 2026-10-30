@@ -73,6 +73,52 @@
 .sq-shared-result-card .sq-primary{margin-top:10px}
 @media(max-width:640px){.sq-shared-result{padding:22px 16px}.sq-shared-result-card{min-height:520px}}
 
+/* Accessibility context overrides: keep champagne on plum, use brass ink on ivory. */
+.sq-intro .sq-kicker,
+.sq-deep .sq-kicker,
+.sq-join .sq-kicker,
+.sq-portrait-story .sq-kicker {
+  color: #80552c;
+}
+
+.sq-intro .sq-small {
+  color: #645761;
+}
+
+.sq-portrait-bars {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.sq-portrait-bar .sq-portrait-value {
+  color: #f3d39c;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.sq-page button:focus-visible,
+.sq-page a:focus-visible {
+  outline: 3px solid #382a3d;
+  outline-offset: 3px;
+}
+
+.sq-play button:focus-visible,
+.sq-play a:focus-visible,
+.sq-results button:focus-visible,
+.sq-results a:focus-visible,
+.sq-status button:focus-visible,
+.sq-status a:focus-visible {
+  outline-color: #f3d39c;
+}
+
+.sq-results .sq-deep button:focus-visible,
+.sq-results .sq-deep a:focus-visible,
+.sq-results .sq-join button:focus-visible,
+.sq-results .sq-join a:focus-visible {
+  outline-color: #382a3d;
+}
 
 /* Deep mode is a distinct editorial portrait, not a repeat of the quick result. */
 .sq-portrait{display:grid;gap:26px;color:#f9f0e7}
@@ -98,7 +144,7 @@
 .sq-portrait-sectionhead{margin-bottom:25px}
 .sq-portrait-sectionhead p:not(.sq-kicker){color:#d6c9d4;font-size:13px;line-height:2}
 .sq-portrait-bars{display:grid;gap:14px}
-.sq-portrait-bar{display:grid;grid-template-columns:28px minmax(135px,1fr) minmax(120px,2fr);gap:15px;align-items:center}
+.sq-portrait-bar{display:grid;grid-template-columns:28px minmax(135px,1fr) minmax(120px,2fr) auto;gap:15px;align-items:center}
 .sq-portrait-bar span{color:#d1af85;font:15px Georgia,serif}
 .sq-portrait-bar strong{font-size:13px}
 .sq-portrait-bar>div{height:8px;background:#6a5268;border-radius:99px;overflow:hidden}
@@ -117,7 +163,41 @@
 .sq-portrait-end p:not(.sq-kicker){color:#e1d1dc}
 .sq-portrait-end button{margin:8px;padding:12px 17px;border:1px solid #e0bc8a;border-radius:9px;background:transparent;color:#fff2e0}
 .sq-portrait-end .sq-primary{background:#d6ad72;color:#281b2d}
-@media(max-width:700px){.sq-portrait-hero{grid-template-columns:1fr}.sq-portrait-heading{padding:32px 24px}.sq-portrait-emblem{min-height:210px}.sq-portrait-emblem svg{height:150px;width:150px}.sq-portrait-story{grid-template-columns:1fr;padding:24px}.sq-portrait-story>div:last-child{text-align:right}.sq-portrait-story strong{font-size:45px}.sq-portrait-bar{grid-template-columns:25px minmax(100px,1fr) minmax(55px,1fr);gap:8px}.sq-portrait-bar strong{font-size:11px}.sq-portrait-notes{grid-template-columns:1fr}.sq-portrait-notes article{min-height:150px}.sq-portrait-grid{grid-template-columns:1fr 1fr}.sq-portrait-grid strong{font-size:12px}}
+@media(max-width:700px){.sq-portrait-hero{grid-template-columns:1fr}.sq-portrait-heading{padding:32px 24px}.sq-portrait-emblem{min-height:210px}.sq-portrait-emblem svg{height:150px;width:150px}.sq-portrait-story{grid-template-columns:1fr;padding:24px}.sq-portrait-story>div:last-child{text-align:right}.sq-portrait-story strong{font-size:45px}.sq-portrait-bar strong{font-size:11px}.sq-portrait-notes{grid-template-columns:1fr}.sq-portrait-notes article{min-height:150px}.sq-portrait-grid{grid-template-columns:1fr 1fr}.sq-portrait-grid strong{font-size:12px}}
+
+/* Give narrow facet rows two levels so every label and value stays readable. */
+@media (max-width: 700px) {
+  .sq-portrait-bar {
+    grid-template-columns: 25px minmax(0, 1fr) auto;
+    grid-template-rows: auto 8px;
+    gap: 8px;
+  }
+
+  .sq-portrait-bar .sq-portrait-rank {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .sq-portrait-bar strong {
+    grid-column: 2;
+    grid-row: 1;
+    min-width: 0;
+    font-size: 11px;
+  }
+
+  .sq-portrait-bar .sq-portrait-value {
+    grid-column: 3;
+    grid-row: 1;
+    font-size: 10px;
+  }
+
+  .sq-portrait-bar .sq-portrait-meter {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    width: 100%;
+    min-width: 0;
+  }
+}
 
 
 .sq-option-motif{position:absolute;z-index:1;left:22px;top:15px;font-size:clamp(38px,4vw,58px);font-family:Georgia,serif;line-height:1;color:#f0c58b;opacity:.86;filter:drop-shadow(0 5px 12px rgba(15,8,19,.25));pointer-events:none}

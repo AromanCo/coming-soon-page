@@ -187,7 +187,7 @@ export function ScentQuestGame(){
     }catch(e){if(e instanceof DOMException&&e.name==="AbortError")return;}
     await copy();
   }
-  return <main className="sq-page">
+  return <main className="sq-page" id="main-content" tabIndex={-1}>
     {mode==="intro"&&<section className="sq-intro">
       <div><p className="sq-kicker">AROMAN — SCENT QUEST</p><h1>هر رایحه،<br/><em>یک داستان.</em><br/>داستان تو چیه؟</h1>
         <p>با ۷ انتخاب ساده امضای رایحه‌ات رو کشف کن. اگر کنجکاو شدی، ۸ سؤال دیگه عمیق‌تر برو.</p>

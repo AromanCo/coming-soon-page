@@ -24,7 +24,7 @@ const paths = [
 
 export function FragrancePaths() {
   return (
-    <section className="paths" id="paths" aria-labelledby="paths-title">
+    <section className="paths" id="paths" tabIndex={-1} aria-labelledby="paths-title">
       <div className="section-shell">
         <div className="section-heading">
           <p className="kicker centered" dir="ltr" lang="en">

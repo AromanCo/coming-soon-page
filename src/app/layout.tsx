@@ -52,7 +52,12 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="fa" dir="rtl">
-      <body>{children}</body>
+      <body>
+        <a className="skip-link" href="#main-content">
+          پرش به محتوای اصلی
+        </a>
+        {children}
+      </body>
     </html>
   );
 }

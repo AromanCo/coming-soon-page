@@ -207,6 +207,7 @@ export function ScentExplorer({
     <section
       ref={explorerRef}
       id="explorer"
+      tabIndex={-1}
       className={`explorer mood-${selected.id}`}
       aria-labelledby={titleId}
       onMouseEnter={() => setIsHovering(true)}
