@@ -1,4 +1,7 @@
 import { URL } from "node:url";
+export class BotApiError extends Error {
+  constructor(message,{rejected=false}={}) { super(message); this.name="BotApiError"; this.rejected=rejected; }
+}
 export class BotApi {
   constructor({platform,token,fetchImpl=globalThis.fetch}) {
     if(!["telegram","bale"].includes(platform)||!token)throw Error("Invalid platform or missing token");
@@ -8,15 +11,15 @@ export class BotApi {
   async request(method,payload={},timeout=40000){
     let response;
     try {response=await this.fetchImpl(this.origin+"/bot"+this.token+"/"+method,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify(payload),signal:globalThis.AbortSignal.timeout(timeout)});}
-    catch{throw Error(this.platform+" "+method+": connection failure");}
+    catch{throw new BotApiError(this.platform+" "+method+": connection failure; delivery may be unknown");}
     const data=await response.json().catch(()=>null);
-    if(!response.ok||data?.ok!==true)throw Error(this.platform+" "+method+": API failure "+response.status);
+    if(!response.ok||data?.ok!==true)throw new BotApiError(this.platform+" "+method+": API failure "+response.status,{rejected:data?.ok===false});
     return data.result;
   }
   async sendMessage(id,view,origin=""){
     const reply_markup={inline_keyboard:view.rows.map(row=>row.map(b=>b.url?{text:b.text,url:b.url}:{text:b.text,callback_data:b.data}))};
     if(origin&&view.photo&&view.text.length<900){
-      try{await this.request("sendPhoto",{chat_id:id,photo:new URL(view.photo,origin).toString(),caption:view.text,reply_markup});return;}catch{/* text fallback */}
+      try{await this.request("sendPhoto",{chat_id:id,photo:new URL(view.photo,origin).toString(),caption:view.text,reply_markup});return;}catch(error){if(!(error instanceof BotApiError)||!error.rejected)throw error;}
     }
     await this.request("sendMessage",{chat_id:id,text:view.text,reply_markup});
   }
