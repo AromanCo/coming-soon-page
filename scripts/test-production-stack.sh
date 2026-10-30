@@ -42,6 +42,7 @@ EOF
 chmod 0600 "$env_file"
 
 cd "$repo_dir"
+export AROMAN_BUILD_REVISION="$(git rev-parse HEAD)"
 
 docker run --rm \
   --env AROMAN_DOMAIN=http://localhost \
