@@ -79,6 +79,26 @@ test(
       assert.deepEqual(await response.json(), { status: "ok" });
     });
 
+    await t.test("Caddy keeps image CSP first-party and serves scent fallbacks", async () => {
+      const page = await globalThis.fetch(`${baseUrl}/scent-quest`);
+      assert.equal(page.status, 200);
+      const csp = page.headers.get("content-security-policy");
+      assert.match(csp ?? "", /img-src 'self' data:/);
+      assert.doesNotMatch(csp ?? "", /atrafshan|https:/i);
+      const catalog = await globalThis.fetch(`${baseUrl}/data/scent-quest-perfumes.json`);
+      assert.equal(catalog.status, 200);
+      const records = await catalog.json();
+      assert.equal(records.length, 900);
+      assert.ok(records.every((record) => record.image.startsWith("https://atrafshan.net/")));
+    });
+
+    await t.test("cleanup has no unauthenticated HTTP entry point", async () => {
+      const response = await globalThis.fetch(baseUrl + "/api/retention-cleanup", {
+        method: "POST",
+      });
+      assert.equal(response.status, 404);
+    });
+
     await t.test("valid and duplicate registrations are indistinguishable", async () => {
       psql("TRUNCATE TABLE waitlist_rate_limits");
       const first = await register();
@@ -88,6 +108,16 @@ test(
       assert.equal(duplicate.response.status, 202);
       assert.deepEqual(duplicate.payload, first.payload);
       assert.equal(first.response.headers.get("cache-control"), "no-store");
+      assert.equal(
+        psql("SELECT count(*) FROM waitlist_subscriptions WHERE phone_e164='+989120009999' AND marketing_consent IS TRUE AND consented_at IS NOT NULL AND user_agent='aroman-production-proxy-test'"),
+        "1",
+        "registration stores consent time and bounded user-agent metadata",
+      );
+      assert.equal(
+        psql("SELECT count(*) FROM waitlist_rate_limits"),
+        "1",
+        "registration attempt creates its rate-limit record",
+      );
     });
 
     await t.test("invalid phone and missing consent remain rejected", async () => {

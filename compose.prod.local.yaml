@@ -1,4 +1,7 @@
 services:
+  db:
+    volumes:
+      - ./scripts/cleanup-waitlist-retention.sh:/opt/aroman/cleanup-waitlist-retention.sh:ro
   caddy:
     environment:
       AROMAN_DOMAIN: http://localhost

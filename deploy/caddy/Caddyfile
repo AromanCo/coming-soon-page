@@ -22,6 +22,7 @@
 			request>headers>X-Real-Ip delete
 			request>headers>Forwarded delete
 			request>headers>X-Aroman-Client-Ip delete
+			request>headers>User-Agent delete
 			wrap json
 		}
 	}

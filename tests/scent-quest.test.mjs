@@ -35,12 +35,13 @@ test("auto-advanced question prompt is announced atomically to assistive technol
   assert.match(source,/<h2 id="sq-title" aria-live="polite" aria-atomic="true">/);
 });
 
-test("recommendations appear before one final sharing panel with an accessible image fallback",()=>{
+test("recommendations appear before one final sharing panel with a branded no-request fallback",()=>{
   const game=readFileSync(new URL("../src/components/scent-quest-game.tsx",import.meta.url),"utf8");
   const portrait=readFileSync(new URL("../src/components/deep-scent-portrait.tsx",import.meta.url),"utf8");
   assert.ok(game.indexOf("<div className=\"sq-recs\">") < game.indexOf("<div className=\"sq-share\">"));
   assert.match(game,/aria-label={`تصویر \$\{perfume\.name\} در دسترس نیست`}/);
-  assert.match(game,/onError=\{\(\) => setImageFailed\(true\)\}/);
+  assert.doesNotMatch(game,/<img[^>]+src=\{perfume\.image\}/);
+  assert.match(game,/<div className="sq-rec-fallback" role="img"/);
   assert.match(game,/امتیاز سازگاری علمی یا تضمین پسندیدن نیستند/);
   assert.match(game,/className="sq-share-primary"/);
   assert.doesNotMatch(game,/دیدن لینک اشتراک/);

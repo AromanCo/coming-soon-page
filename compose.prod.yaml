@@ -172,6 +172,7 @@ services:
     entrypoint: ["/bin/sh", "-ec"]
     command:
       - |
+        export LC_ALL=C
         export PGPASSWORD="$$(cat "$${PGPASSWORD_FILE}")"
         found=0
         for migration in /migrations/*.sql; do
