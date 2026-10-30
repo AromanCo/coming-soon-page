@@ -29,7 +29,9 @@ load balancer in front of it. It derives `X-Aroman-Client-IP` from
 and `X-Real-IP`, and removes `Forwarded`. The application accepts only the
 canonical header when `CLIENT_IP_MODE=caddy`; a missing, comma-separated, or
 syntactically invalid IP is rejected. The origin has no published port, so an
-Internet client cannot provide the trusted header directly.
+Internet client cannot provide the trusted header directly. Caddy access logs
+mask network addresses and remove forwarding headers and `User-Agent`; the
+application persists the bounded user-agent value only with registration data.
 
 NAT can legitimately group many users under one IPv4 address, so a shared
 network can reach the five-attempt limit. IPv6 clients are keyed by their
@@ -80,6 +82,74 @@ only two fixed-purpose functions for registration and rate limiting. It has no
 direct table or sequence privileges. It cannot read phone numbers, delete
 registrations, create schema objects, create databases, create roles, or become
 superuser.
+
+Migration files are applied in filename order. The retention audit is numbered
+`005_retention_cleanup_audit.sql`, leaving slots `003` and `004` available for
+the separate scent-bot sessions/outbox migrations. If those migrations are
+merged, the order is `001`, `002`, bot `003`, bot `004`, then retention `005`.
+This website branch does not include or modify the bot migrations.
+
+## Waitlist retention and deletion
+
+No retention period is approved by this repository. Before collecting public
+registrations, the product/privacy owner must approve separate periods for
+registration records and rate-limit records, and an operator must record that
+approval. `scripts/cleanup-waitlist-retention.sh` is an operator-run tool, not
+an HTTP endpoint or scheduled job. It defaults to `--dry-run`, which reports
+counts only. Execution requires valid `REGISTRATION_RETENTION_DAYS` and
+`RATE_LIMIT_RETENTION_DAYS`, `--execute`, and
+`RETENTION_CLEANUP_APPROVED=YES`; use a migration/admin maintenance connection,
+never the web runtime credentials. Each invocation removes at most the
+configured batch (maximum 500) from each table in one transaction and writes
+counts and policy values to `waitlist_retention_cleanup_audit`. A failed
+transaction rolls back both deletions and the audit row. Repeat the command to
+drain eligible rows. Keep the script disabled until policy approval and an
+operator change record exist. The cutoff uses one transaction-start timestamp
+in UTC, and only timestamps strictly earlier than the cutoff expire; equality
+at the boundary is retained. Each invocation commits at most one batch, so an
+operator can stop between invocations. An interrupted transaction rolls back
+the in-progress batch and its audit row.
+
+Deletion requests still require an authorized human workflow: verify the
+requester without sending phone numbers through logs or tickets, locate the
+registration using a restricted operator connection, delete it, record a
+minimal non-identifying completion note, and explain that encrypted backups
+may retain the prior record until their separately approved expiry. A restore
+can reintroduce deleted rows; after restoring, replay deletion records or run
+the approved cleanup before making restored data available. Backup rotation
+and off-site object lifecycle are independent of SQL cleanup and are not
+controlled by this script. No backup retention period is approved here.
+
+The registration row includes phone, consent flag/time, source, creation time,
+HMAC IP hash and user-agent (up to 500 characters). Rate-limit rows contain an
+HMAC IP hash, window start and attempt count. Consent metadata is part of the
+registration record and expires with it. IP hashes and user-agent remain
+security/personal metadata; they are not exempt from the approved schedule.
+
+## Scent Quest imagery
+
+All 900 current catalog image references point to `atrafshan.net`; production
+CSP permits only same-origin and data images. Recommendation cards currently
+render a branded fallback and initiate no catalog image request. Keep this
+behavior until each replacement image has documented redistribution and
+commercial-use permission, required attribution, and an approved local asset
+path. Add approved files under a version-controlled first-party public asset
+directory and change only the matching record's image presentation mapping;
+do not change perfume IDs, names, notes, vectors, scores or ranking. Product
+names, descriptions, notes, and source page URLs have separate provenance and
+redistribution questions; the image fallback does not clear those rights.
+
+## UX-12 release status
+
+**NO-GO for public production deployment.** The cleanup mechanism is reviewable
+but remains disabled until approved registration, rate-limit and backup
+retention periods plus operator approval are recorded. Scent Quest no longer
+requests unapproved catalog imagery and keeps the existing restrictive CSP;
+written rights for catalog data, provisional site photography and the master
+brand mark are still unresolved. Production DNS/TLS, secrets, backup/restore
+operations, monitoring, rollback, container scanning, final privacy/legal
+copy and remaining manual accessibility checks are also unverified. Local
+stack validation is not evidence that production infrastructure has passed.
 
 For a fresh volume, PostgreSQL runs `create-roles.sh` once during initialization.
 Docker initialization scripts do not rerun for an existing volume. For an

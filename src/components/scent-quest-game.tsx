@@ -9,11 +9,9 @@ import { rankScentQuest, type ScentChoice, type ScentAnswers, type ScentPerfume,
 import { SHARE_CARD_LAYOUT } from "@/lib/scent-quest/share-card-layout";
 
 function RecommendationCard({ perfume, index, result }: { perfume: ScentPerfume; index: number; result: ScentResult }) {
-  const [imageFailed, setImageFailed] = useState(false);
   return <article>
     <div className="sq-rec-image">
-      {!imageFailed && <img src={perfume.image} alt={`تصویر ${perfume.name}`} loading="lazy" referrerPolicy="no-referrer" onError={() => setImageFailed(true)} />}
-      {imageFailed && <div className="sq-rec-fallback" role="img" aria-label={`تصویر ${perfume.name} در دسترس نیست`}><AromanEmblem aria-hidden="true"/><span>AROMAN</span><small>تصویر عطر در دسترس نیست</small></div>}
+      <div className="sq-rec-fallback" role="img" aria-label={`تصویر ${perfume.name} در دسترس نیست`}><AromanEmblem aria-hidden="true"/><span>AROMAN</span><small>تصویر عطر در دسترس نیست</small></div>
       <span className="sq-rec-rank" aria-hidden="true">{index + 1}</span>
     </div>
     <div className="sq-rec-copy"><small className="sq-rec-brand">{perfume.brand}</small><h4>{perfume.name}</h4><p className="sq-rec-family">{perfume.family}</p><p className="sq-rec-why">چرا در این فهرست است؟ هم‌خوانی الگوریتمی با {result.dominant} و انتخاب‌های تو.</p><p className="sq-rec-notes"><strong>نت‌ها:</strong> {perfume.notes?.filter(Boolean).slice(0,1).join("، ").split(/[،,]/).slice(0,3).join(" · ") || "در کاتالوگ ثبت نشده"}</p></div>

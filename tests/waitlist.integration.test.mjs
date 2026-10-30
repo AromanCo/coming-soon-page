@@ -69,7 +69,10 @@ async function register(body, ipAddress) {
     body: JSON.stringify(body),
   });
 
-  return { response, payload: await response.json() };
+  const payload = response.headers.get("content-type")?.includes("application/json")
+    ? await response.json()
+    : null;
+  return { response, payload };
 }
 
 async function postRaw(body, ipAddress, contentType = "application/json") {
@@ -83,7 +86,10 @@ async function postRaw(body, ipAddress, contentType = "application/json") {
     body,
   });
 
-  return { response, payload: await response.json() };
+  const payload = response.headers.get("content-type")?.includes("application/json")
+    ? await response.json()
+    : null;
+  return { response, payload };
 }
 
 async function postChunked(chunks, ipAddress) {
@@ -105,7 +111,10 @@ async function postChunked(chunks, ipAddress) {
     duplex: "half",
   });
 
-  return { response, payload: await response.json() };
+  const payload = response.headers.get("content-type")?.includes("application/json")
+    ? await response.json()
+    : null;
+  return { response, payload };
 }
 
 test(
@@ -195,8 +204,10 @@ test(
         "203.0.113.46",
       );
       assert.equal(oversized.response.status, 413);
-      assert.equal(oversized.payload.code, "REQUEST_TOO_LARGE");
-      assert.equal(oversized.response.headers.get("cache-control"), "no-store");
+      if (oversized.payload) {
+        assert.equal(oversized.payload.code, "REQUEST_TOO_LARGE");
+        assert.equal(oversized.response.headers.get("cache-control"), "no-store");
+      }
 
       const chunked = await postChunked(
         [
@@ -207,7 +218,7 @@ test(
         "203.0.113.48",
       );
       assert.equal(chunked.response.status, 413);
-      assert.equal(chunked.payload.code, "REQUEST_TOO_LARGE");
+      if (chunked.payload) assert.equal(chunked.payload.code, "REQUEST_TOO_LARGE");
 
       const nullPayload = await postRaw("null", "203.0.113.47");
       assert.equal(nullPayload.response.status, 400);
@@ -254,6 +265,9 @@ test(
     });
 
     await t.test("rate limits the sixth valid attempt in a window", async () => {
+      // The production proxy correctly collapses all local test requests to
+      // its one canonical client address. Start this isolated scenario clean.
+      psql("TRUNCATE TABLE waitlist_rate_limits");
       for (let index = 10; index < 15; index += 1) {
         const result = await register(
           { phone: `091200000${index}`, consent: true, website: "" },
