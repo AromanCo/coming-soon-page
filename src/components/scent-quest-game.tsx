@@ -6,6 +6,7 @@ import { buildDeepPortrait } from "@/lib/scent-quest/portrait";
 import Link from "next/link";
 import quiz from "@/lib/scent-quest/quiz-data.json";
 import { rankScentQuest, type ScentChoice, type ScentAnswers, type ScentPerfume, type ScentResult, type ScentStage } from "@/lib/scent-quest/scoring";
+import { SHARE_CARD_LAYOUT } from "@/lib/scent-quest/share-card-layout";
 
 const quick = quiz.stage1_questions;
 const deep = quiz.stage2_questions;
@@ -28,18 +29,19 @@ function card(result: ScentResult, format: "story" | "post") {
   const g = canvas.getContext("2d");
   if (!g) throw new Error("No canvas");
   const height = canvas.height;
+  const layout=SHARE_CARD_LAYOUT[format];
   const grad = g.createLinearGradient(0,0,1080,height);
   grad.addColorStop(0,"#291b2e");grad.addColorStop(.6,"#52374b");grad.addColorStop(1,"#977262");
   g.fillStyle = grad;g.fillRect(0,0,1080,height);
   g.strokeStyle = "rgba(236,185,129,.55)";
-  for(let i=0;i<4;i++){g.beginPath();g.ellipse(540,height*.40,220+i*65,290+i*50,0,0,Math.PI*2);g.stroke();}
+  for(let i=layout.ellipseStart;i<4;i++){g.beginPath();g.ellipse(540,height*.40,220+i*65,290+i*50,0,0,Math.PI*2);g.stroke();}
   g.textAlign="center";g.fillStyle="#f5e8df";g.font="55px Georgia,serif";
   g.fillText("A R O M A N",540,125);
-  g.save();g.translate(540,format==="story"?300:230);g.strokeStyle="#E4BB77";g.lineWidth=5;
+  g.save();g.translate(540,layout.emblemY);g.strokeStyle="#E4BB77";g.lineWidth=5;
   const hex=(radius:number)=>{g.beginPath();for(let i=0;i<6;i++){const a=-Math.PI/2+i*Math.PI/3,x=Math.cos(a)*radius,y=Math.sin(a)*radius;if(i===0)g.moveTo(x,y);else g.lineTo(x,y);}g.closePath();g.stroke();};
-  hex(65);hex(52);hex(43);g.beginPath();g.moveTo(-15,14);g.lineTo(0,-13);g.lineTo(15,14);g.moveTo(-22,26);g.lineTo(22,26);g.moveTo(-22,39);g.lineTo(22,39);g.stroke();g.restore();
+  hex(layout.emblemRadius);hex(52);hex(43);g.beginPath();g.moveTo(-15,14);g.lineTo(0,-13);g.lineTo(15,14);g.moveTo(-22,26);g.lineTo(22,26);g.moveTo(-22,39);g.lineTo(22,39);g.stroke();g.restore();
 
-  g.fillStyle="#e6bc87";g.font="24px Georgia,serif";g.fillText("YOUR SCENT. YOUR STORY.",540,181);
+  g.fillStyle="#e6bc87";g.font="24px Georgia,serif";g.fillText("YOUR SCENT. YOUR STORY.",540,layout.taglineY);
   const center=height*.45;g.fillStyle="rgba(245,220,186,.3)";
   g.beginPath();g.roundRect(425,center-170,230,280,34);g.fill();
   g.fillStyle="#eed0a6";g.fillRect(498,center-208,84,35);
@@ -197,7 +199,7 @@ export function ScentQuestGame(){
       <div className="sq-progress-head"><span>{stage==="quick"?"فصل اول · کشف سریع":"فصل دوم · کشف عمیق"}</span><span>{new Intl.NumberFormat("fa-IR").format(index+1)} از {new Intl.NumberFormat("fa-IR").format(ids.length)}</span></div>
       <div className="sq-progress"><span style={{width:(index+1)/ids.length*100+"%"}}/></div>
       <p className="sq-kicker">{stage==="quick"?"FIRST IMPRESSION":"GO DEEPER"}</p>
-      <h2 id="sq-title">{q.id==="Q09"?"کدوم فضا بیشتر شبیه دنیای توئه؟":q.id==="Q15"?"کدوم رایحه رو ترجیح می‌دی کمتر حس کنی؟":q.text}</h2>
+      <h2 id="sq-title" aria-live="polite" aria-atomic="true">{q.id==="Q09"?"کدوم فضا بیشتر شبیه دنیای توئه؟":q.id==="Q15"?"کدوم رایحه رو ترجیح می‌دی کمتر حس کنی؟":q.text}</h2>
       <p className="sq-muted">{microcopy[index%microcopy.length]}</p>
       <div className="sq-options sq-visual">{q.options.map((o,i)=><button key={o.id}
         className={chosen===o.id?"sq-option active":"sq-option"} aria-pressed={chosen===o.id}

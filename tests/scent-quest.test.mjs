@@ -14,6 +14,7 @@ test("deep result is deterministic and provides three distinct brands",()=>{cons
 test("archetype public ids do not expose raw answers",()=>{assert.equal(SCENT_ARCHETYPES.length,12);assert.equal(new Set(SCENT_ARCHETYPES.map(p=>p.slug)).size,12);});
 
 import { buildDeepPortrait } from "../src/lib/scent-quest/portrait.ts";
+import { SHARE_CARD_LAYOUT } from "../src/lib/scent-quest/share-card-layout.ts";
 test("deep portrait is derived from all 15 answers and never invents match percentages",()=>{
   const quick=Object.fromEntries(q.stage1_questions.map(id=>[id,"الف"]));
   const qr=rankScentQuest(q,perfumes,quick,"quick");
@@ -27,4 +28,14 @@ test("deep portrait is derived from all 15 answers and never invents match perce
   assert.equal(portrait.base,q.questions.find(x=>x.id==="Q04").options[0].label);
   assert.equal(portrait.backdrop.length,6);
   assert.ok(portrait.changingPicks>=0&&portrait.changingPicks<=3);
+});
+
+test("auto-advanced question prompt is announced atomically to assistive technology",()=>{
+  const source=readFileSync(new URL("../src/components/scent-quest-game.tsx",import.meta.url),"utf8");
+  assert.match(source,/<h2 id="sq-title" aria-live="polite" aria-atomic="true">/);
+});
+
+test("story and post taglines clear the top edge of the monogram",()=>{
+  for(const layout of Object.values(SHARE_CARD_LAYOUT)) assert.ok(layout.taglineY+6<layout.emblemY-layout.emblemRadius);
+  assert.equal(SHARE_CARD_LAYOUT.post.ellipseStart,2);
 });
