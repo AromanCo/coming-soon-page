@@ -353,19 +353,31 @@ reviewed incident procedure.
 A release candidate must be built from a clean checkout, tagged with that
 checkout's full 40-character Git SHA, and carry the same SHA in
 `org.opencontainers.image.revision`. `scripts/build-release-candidate.sh`
-checks those conditions, builds the production web service locally, and prints
-the local image ID and revision label. Supply only public build settings; the
+requires the actual approved `AROMAN_DOMAIN`, `NEXT_PUBLIC_SITE_URL`, and
+`NEXT_PUBLIC_PRIVACY_EMAIL` settings, validates the production Compose
+configuration with `docker compose config --quiet`, checks the clean checkout,
+builds the production web service locally, and prints the local image ID and
+revision label. It supplies no fallback or example domain. Export the real,
+approved non-secret values in the shell (or source the repository's
+non-secret production environment file with automatic export enabled) before
+running it:
+
+~~~sh
+set -a
+. /etc/aroman/production.env
+set +a
+~~~
+
+Supply only public build settings; the
 `NEXT_PUBLIC_*` values are embedded in browser assets and are not runtime
 secrets. Runtime credentials continue to come from Compose secret files.
 
 ~~~sh
-NEXT_PUBLIC_SITE_URL=https://www.example.test \\
-NEXT_PUBLIC_PRIVACY_EMAIL=privacy@example.test \\
-NEXT_PUBLIC_INSTAGRAM_URL= \\
-NEXT_PUBLIC_TELEGRAM_URL= \\
-NEXT_PUBLIC_LINKEDIN_URL= \\
 ./scripts/build-release-candidate.sh
 ~~~
+
+The example assumes the three required variables are already set to their
+approved values; it intentionally includes no dummy production values.
 
 The reported `sha256:` local image ID identifies the image in the local Docker
 daemon. It is not a registry digest and cannot prove what a remote registry or
