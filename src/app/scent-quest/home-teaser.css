@@ -17,3 +17,18 @@
 .quest-home-picture>span{position:absolute;bottom:25px;left:25px;color:#f5e4d4;font:13px Georgia,serif;letter-spacing:.15em}
 @media(max-width:900px){.quest-home-teaser{grid-template-columns:1fr}.quest-home-picture{min-height:240px}}
 @media(max-width:640px){.quest-home-teaser{margin-block:25px}.quest-home-copy{padding:26px 23px}.quest-home-copy h2{font-size:29px}.quest-home-picture{min-height:220px}}
+
+
+/* Blend the game invitation into the Coming Soon editorial rhythm. */
+.quest-hero-link{position:relative;margin-top:20px;padding:14px 18px;border-color:#ddc7ae;background:linear-gradient(105deg,#fff9f2,#f4eae0);transition:box-shadow .2s,transform .2s}
+.quest-hero-link:hover{box-shadow:0 10px 28px rgba(56,42,61,.09);transform:translateY(-2px)}
+.quest-home-teaser{margin-block:64px 54px;grid-template-columns:1.05fr .95fr;min-height:340px;background:#322437;box-shadow:0 22px 45px rgba(42,28,45,.09)}
+.quest-home-copy{padding:clamp(28px,4vw,55px)}
+.quest-home-copy h2{font-size:clamp(28px,3.4vw,41px);line-height:1.45}
+.quest-home-copy>p:not(.kicker){max-width:480px;line-height:2}
+.quest-home-picture img{object-position:center 56%}
+.quest-home-picture-shade{background:linear-gradient(90deg,rgba(40,24,44,.16),rgba(40,24,44,.16))}
+.quest-home-button{padding:15px 22px;min-height:50px;font-weight:800;transition:background .2s,transform .2s}
+.quest-home-button:hover{background:#f0c992;transform:translateY(-2px)}
+@media(max-width:900px){.quest-home-teaser{margin-block:44px 35px;grid-template-columns:1fr}.quest-home-picture{min-height:250px}}
+@media(max-width:640px){.quest-home-teaser{margin-block:28px 30px}.quest-home-copy{padding:28px 23px}.quest-home-copy h2{font-size:28px}.quest-home-picture{min-height:210px}}
