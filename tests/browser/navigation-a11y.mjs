@@ -151,6 +151,7 @@ try {
     const homeState = await evaluate(`(() => ({
       width:innerWidth, scrollWidth:document.documentElement.scrollWidth,
       dir:document.documentElement.dir, main:document.querySelectorAll('main#main-content').length,
+      heroImageMinHeight:getComputedStyle(document.querySelector('.hero-image')).minHeight,
       trigger:(()=>{const e=document.querySelector('.mobile-nav-toggle');if(!e)return null;const r=e.getBoundingClientRect();return {display:getComputedStyle(e).display,width:r.width,height:r.height,expanded:e.getAttribute('aria-expanded'),label:e.getAttribute('aria-label')}})(),
       cta:(()=>{const e=document.querySelector('.header-cta');return e?{name:e.getAttribute('aria-label'),text:e.innerText,rect:(()=>{const r=e.getBoundingClientRect();return {width:r.width,height:r.height}})()}:null})()
     }))()`);
@@ -158,6 +159,9 @@ try {
     assert.equal(homeState.dir, "rtl", `${width}px page stays RTL`);
     assert.equal(homeState.main, 1, `${width}px homepage main target is unique`);
     assert.ok(homeState.cta, `${width}px waitlist CTA remains visible`);
+    const waitlistUi = await evaluate(`(()=>{const form=document.querySelector('#waitlist'),phone=form?.querySelector('input[name="phone"]'),consent=form?.querySelector('input[name="consent"]'),submit=form?.querySelector('button[type="submit"]');return {form:Boolean(form),phone:Boolean(phone&&phone.labels?.length),consent:Boolean(consent&&consent.labels?.length),submit:Boolean(submit),phoneDisabled:phone?.disabled,consentDisabled:consent?.disabled}})()`);
+    assert.ok(waitlistUi.form && waitlistUi.phone && waitlistUi.consent && waitlistUi.submit, `${width}px waitlist UI renders labeled phone and consent controls`);
+    assert.equal(homeState.heroImageMinHeight, width <= 640 ? "360px" : width <= 900 ? "520px" : "650px", `${width}px hero image keeps its responsive height`);
     if (width <= 900) {
       assert.equal(homeState.trigger.display, "flex", `${width}px mobile menu is visible`);
       assert.ok(homeState.trigger.width >= 44 && homeState.trigger.height >= 44, `${width}px menu target is at least 44x44`);
@@ -298,7 +302,7 @@ try {
       deepMeterEvidence.push({ width, domMeters, axMeters });
       }
     }
-    results.push({ width, home: homeState, quest });
+    results.push({ width, home: homeState, waitlistUi, quest });
   }
 
   // Capture actual browser-computed foreground/background pairs used by common text and controls.

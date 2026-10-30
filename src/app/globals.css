@@ -2455,7 +2455,7 @@ input:focus-visible {
   }
 
   .hero-image {
-    min-height: 440px;
+    min-height: 360px;
   }
 
   .hero-image > img {
