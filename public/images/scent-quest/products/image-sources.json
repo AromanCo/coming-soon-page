@@ -2,6 +2,21 @@
   "schemaVersion": 1,
   "downloadDate": null,
   "images": [],
+  "remoteCatalogEmbedding": {
+    "catalogFile": "public/data/scent-quest-perfumes.json",
+    "field": "image",
+    "host": "atrafshan.net",
+    "pathPrefix": "/static/v2/related/w445/",
+    "allowedFileTypes": [".jpg", ".jpeg"],
+    "delivery": "Direct browser embedding from the existing catalog URL; images are not downloaded, cached by AROMAN, or re-hosted.",
+    "permissionStatus": "Owner-confirmed for displaying the existing image URLs on AROMAN.",
+    "permissionEvidence": "Project owner confirmation in the UX-14C implementation request, recorded 2026-10-31. No separate written license or contract reference was provided.",
+    "scope": "Permission recorded for direct display of these existing catalog URLs on AROMAN only; no broader redistribution, re-hosting, alteration, or sublicensing permission is inferred.",
+    "visitorPrivacy": "Images are requested by the visitor browser with crossorigin=anonymous and referrerPolicy=no-referrer. The host can still receive the request URL, Origin, visitor IP and technical request metadata.",
+    "excludedProductIds": {
+      "14185": "Miss Dior exact edition is unverified; keep the AROMAN fallback until confirmed."
+    }
+  },
   "reviewedCandidates": [
     {
       "productId": 10157,

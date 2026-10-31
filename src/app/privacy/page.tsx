@@ -6,7 +6,7 @@ import { SiteHeader } from "@/components/site-header";
 export const metadata: Metadata = {
   title: "حریم خصوصی لیست دعوت | آرومان",
   description:
-    "مسیر پردازش شماره موبایل و اطلاعات حریم خصوصی لیست دعوت آرومان.",
+    "اطلاعات حریم خصوصی لیست دعوت آرومان و بارگذاری تصاویر عطر در تجربه رایحه.",
   robots: { index: true, follow: true },
 };
 
@@ -181,6 +181,28 @@ export default function PrivacyPage() {
             </section>
           </aside>
         </div>
+
+        <section className="privacy-details page-frame" aria-labelledby="scent-image-privacy-title">
+          <article className="privacy-policy">
+            <div className="privacy-section-heading dark">
+              <h2 id="scent-image-privacy-title">بارگذاری تصویر عطر در تجربه رایحه</h2>
+              <p>
+                برای نمایش عکس عطرهای پیشنهادی، مرورگر مستقیماً تصویر را از
+                دامنه atrafshan.net دریافت می‌کند. این درخواست ممکن است نشانی
+                شبکه، زمان درخواست، اطلاعات فنی مرورگر و نشانی فایل تصویرِ
+                محصول پیشنهادی را برای ارائه‌دهنده تصویر آشکار کند؛ بنابراین
+                ممکن است از روی فایل درخواست‌شده، محصول پیشنهادی قابل حدس باشد.
+              </p>
+              <p>
+                درخواست تصویر مسیر صفحه را در سربرگ Referer نمی‌فرستد و برای
+                بارگذاری بدون کوکی از CORS ناشناس استفاده می‌کند. مبدأ
+                aroman.ir برای بررسی CORS ارسال می‌شود. پاسخ‌های کوییز و
+                اطلاعات لیست دعوت در این درخواست گنجانده نمی‌شوند. اگر تصویر
+                بارگذاری نشود، تجربه از نشان آرومان استفاده می‌کند.
+              </p>
+            </div>
+          </article>
+        </section>
 
         <section className="privacy-faq page-frame" aria-labelledby="faq-title">
           <div className="privacy-section-heading dark">

@@ -199,6 +199,7 @@ export function ScentQuestGame(){
           <span className="sq-result-brand">YOUR SCENT · YOUR STORY</span>
           <div className="sq-result-featured">
             <p className="sq-product-feature-label">عطر پیشنهادی اول</p>
+            <ScentProductImage className="sq-result-feature-image" perfume={result.recommendations[0]}/>
             <strong>{result.recommendations[0].name}</strong><small>{result.recommendations[0].brand}</small>
             <span>جزئیات هر سه پیشنهاد در ادامه</span>
           </div>

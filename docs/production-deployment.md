@@ -128,25 +128,48 @@ security/personal metadata; they are not exempt from the approved schedule.
 
 ## Scent Quest imagery
 
-All 900 current catalog image references point to `atrafshan.net`; production
-CSP permits only same-origin and data images. Recommendation cards currently
-render a branded fallback and initiate no catalog image request. Keep this
-behavior until each replacement image has documented redistribution and
-commercial-use permission, required attribution, and an approved local asset
-path. Add approved files under a version-controlled first-party public asset
-directory and change only the matching record's image presentation mapping;
-do not change perfume IDs, names, notes, vectors, scores or ranking. Product
-names, descriptions, notes, and source page URLs have separate provenance and
-redistribution questions; the image fallback does not clear those rights.
+All 900 current catalog image references point to `atrafshan.net`. UX-14C uses
+the existing HTTPS `perfume.image` URL directly in the visitor browser, limited
+to JPG/JPEG files below `/static/v2/related/w445/`; it does not download,
+cache, or re-host them. The project owner confirmed permission to display the
+existing URLs on AROMAN in the UX-14C request, recorded 2026-10-31. This records
+that scope only; it does not imply broader redistribution or sublicensing
+rights. Product `14185` (Miss Dior) remains on the branded fallback until its
+exact edition is confirmed. See
+`public/images/scent-quest/products/image-sources.json` for the source and
+permission record.
+
+Direct loading lets `atrafshan.net` observe the requested image URL, visitor IP,
+request time, Origin and technical browser/network metadata. Images set
+`crossOrigin="anonymous"` and `referrerPolicy="no-referrer"`: the cross-origin
+request omits credentials/cookies and the page path, while sending the AROMAN
+origin for CORS validation. The privacy page discloses that the requested
+product image may reveal the recommendation.
+
+The checked public production responses (`https://aroman.ir/` and
+`/scent-quest`, 2026-10-31) identify host Nginx 1.24.0 and returned no
+Content-Security-Policy header or CSP meta element. The repository Caddy policy
+is not the effective policy observed on those routes. The image-only Nginx CSP
+example at `deploy/nginx/aroman-csp.conf.example` is optional security
+hardening, not a UX-14C release requirement, and has not been applied. If the
+active Afra configuration has no CSP, no CSP change is needed for UX-14C. If an
+existing CSP blocks Atrafshan, preserve that policy and add the approved
+third-party host only within its `img-src` directive; keep all other directives
+and avoid a second CSP header. The operator should inspect `nginx -T` before an
+approved CSP change. Run `nginx -t`, reload only under an approved change
+process, and verify headers, image loads and branded fallbacks. Do not change
+waitlist, database or other application policies as part of this image-source
+change.
 
 ## UX-12 release status
 
 **NO-GO for public production deployment.** The cleanup mechanism is reviewable
 but remains disabled until approved registration, rate-limit and backup
-retention periods plus operator approval are recorded. Scent Quest no longer
-requests unapproved catalog imagery and keeps the existing restrictive CSP;
-written rights for catalog data, provisional site photography and the master
-brand mark are still unresolved. Production DNS/TLS, secrets, backup/restore
+retention periods plus operator approval are recorded. The owner confirmed
+direct Atrafshan URL display for UX-14C; the optional Nginx CSP hardening
+example is prepared but not deployed and Miss Dior stays on fallback. Written
+rights for catalog data, provisional site photography and the master brand
+mark are still unresolved. Production DNS/TLS, secrets, backup/restore
 operations, monitoring, rollback, container scanning, final privacy/legal
 copy and remaining manual accessibility checks are also unverified. Local
 stack validation is not evidence that production infrastructure has passed.
