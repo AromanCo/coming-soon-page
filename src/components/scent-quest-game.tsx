@@ -183,7 +183,7 @@ export function ScentQuestGame(){
       </button>)}</div>
       <div className="sq-navigation"><button onClick={previous} type="button">→ بازگشت</button>
         <span className="sq-auto-hint" aria-live="polite">{transitioning?"داریم می‌ریم سؤال بعدی…":"با انتخاب هر گزینه، خودکار ادامه می‌دی."}</span></div>
-      
+
     </section>}
     {mode==="loading"&&<section className="sq-status" role="status"><span>✧</span><h2>قصه رایحه‌ات داره شکل می‌گیره…</h2></section>}
     {mode==="error"&&<section className="sq-status" role="alert"><h2>کاتالوگ در دسترس نیست.</h2><p>جواب‌ها از بین نرفتن.</p><button className="sq-primary" onClick={()=>void finish()}>تلاش دوباره</button><button onClick={()=>setMode("question")}>بازگشت</button></section>}
@@ -200,7 +200,7 @@ export function ScentQuestGame(){
       <div className="sq-share"><div><p className="sq-kicker">YOUR STORY IS WORTH SHARING</p><h3>این قصه رو با دوستات قسمت کن.</h3><p>کارت مخصوص استوری و پست بگیر یا لینک عمومی هویت رایحه رو بفرست.</p></div>
         <div><button onClick={()=>void download("story")}>کارت استوری ↓</button><button onClick={()=>void download("post")}>کارت پست ↓</button><button className="sq-share-primary" onClick={()=>void share()}>اشتراک‌گذاری نتیجه ↗</button><button onClick={()=>void copy()}>کپی متن و لینک عمومی</button><p role="status" aria-live="polite">{feedback}</p></div>
       </div>
-      
+
       <div className="sq-join"><h3>قصه آرومان تازه شروع شده.</h3><p>دوست داری از شروع آرومان باخبر بشی؟ عضویت اختیاریه و نتیجه‌ات برای خودته.</p><Link className="sq-primary" href="/#waitlist">عضویت اختیاری در لیست دعوت ←</Link></div>
       <div className="sq-navigation sq-result-tools"><button onClick={()=>{setIndex(0);setMode("question");}}>ویرایش پاسخ‌ها</button><button onClick={()=>{setStage("quick");setIndex(0);setMode("intro");setAnswers({});setResult(null);setQuickResult(null);}}>شروع دوباره ↺</button></div>
       <p className="sq-small">لینک عمومی فقط هویت رایحه رو نشون می‌ده؛ نه جواب‌ها، پیشنهادهای دقیق یا شماره موبایل.</p>
