@@ -2,6 +2,7 @@
 import type { DeepPortrait } from "@/lib/scent-quest/portrait";
 import type { ScentResult } from "@/lib/scent-quest/scoring";
 import { AromanEmblem } from "./aroman-emblem";
+import { ScentProductImage } from "./scent-product-image";
 const digits=(n:number)=>new Intl.NumberFormat("fa-IR").format(n);
 export function DeepScentPortrait({result,portrait}:{result:ScentResult;portrait:DeepPortrait}){
  const relativeDescription = (name: string, strength: number) =>
@@ -13,6 +14,7 @@ export function DeepScentPortrait({result,portrait}:{result:ScentResult;portrait
     <AromanEmblem aria-hidden="true"/><span>YOUR SCENT · YOUR STORY</span>
     <div className="sq-result-featured">
      <p className="sq-product-feature-label">عطر پیشنهادی اول</p>
+     <ScentProductImage className="sq-result-feature-image" perfume={result.recommendations[0]}/>
      <strong>{result.recommendations[0].name}</strong><small>{result.recommendations[0].brand}</small>
      <span>جزئیات هر سه پیشنهاد در ادامه</span>
     </div>

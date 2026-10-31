@@ -26,6 +26,9 @@ await mkdir(outputDir, { recursive: true });
 let ws;
 let nextId = 0;
 const pending = new Map();
+const catalogImageRequests = [];
+const failedCatalogImageRequests = [];
+const catalogRequestById = new Map();
 try {
   let targets;
   for (let attempt = 0; attempt < 80; attempt++) {
@@ -44,6 +47,14 @@ try {
   });
   ws.addEventListener("message", (event) => {
     const message = JSON.parse(event.data);
+    if (message.method === "Network.requestWillBeSent" && message.params.request.url.startsWith("https://atrafshan.net/")) {
+      const request = { requestId: message.params.requestId, url: message.params.request.url, headers: message.params.request.headers };
+      catalogImageRequests.push(request);
+      catalogRequestById.set(request.requestId, request.url);
+    }
+    if (message.method === "Network.loadingFailed" && catalogRequestById.has(message.params.requestId)) {
+      failedCatalogImageRequests.push({ url: catalogRequestById.get(message.params.requestId), blockedReason: message.params.blockedReason ?? null, errorText: message.params.errorText });
+    }
     if (message.id && pending.has(message.id)) {
       pending.get(message.id)(message);
       pending.delete(message.id);
@@ -55,9 +66,13 @@ try {
     ws.send(JSON.stringify({ id, method, params }));
   });
   const evaluate = async (expression) => {
-    const result = await command("Runtime.evaluate", { expression, awaitPromise: true, returnByValue: true });
-    if (result.exceptionDetails) throw new Error(result.exceptionDetails.text);
-    return result.result.value;
+    try {
+      const result = await command("Runtime.evaluate", { expression, awaitPromise: true, returnByValue: true });
+      if (result.exceptionDetails) throw new Error(result.exceptionDetails.text);
+      return result.result.value;
+    } catch (error) {
+      throw new Error(`Browser evaluation failed for ${expression}: ${error instanceof Error ? error.message : error}`, { cause: error });
+    }
   };
   const screenshot = async (name) => {
     const { data } = await command("Page.captureScreenshot", { format: "png", captureBeyondViewport: false });
@@ -71,6 +86,7 @@ try {
   await command("Page.enable");
   await command("Runtime.enable");
   await command("Accessibility.enable");
+  await command("Network.enable");
   await command("Emulation.setDeviceMetricsOverride", { width: 390, height: 844, deviceScaleFactor: 1, mobile: true });
   await command("Page.navigate", { url: baseUrl });
   for (let attempt = 0; attempt < 40; attempt++) {
@@ -211,6 +227,9 @@ try {
     assert.equal(quest.main, 1, `${width}px Scent Quest main target is unique`);
     await screenshot(`${width}-scent-quest.png`);
     if ([320, 390, 768, 1024, 1440].includes(width)) {
+      if (width === 320) {
+        await evaluate(`(()=>{const meta=document.createElement('meta');meta.httpEquiv='Content-Security-Policy';meta.content="img-src 'self' data: https://atrafshan.net";document.head.append(meta)})()`);
+      }
       await evaluate("document.querySelector('.sq-intro .sq-primary').click()");
       const quickChoiceIndexes = [3, 1, 1, 2, 0, 0, 0];
       for (let question = 0; question < 7; question++) {
@@ -219,23 +238,42 @@ try {
         await new Promise((resolve) => setTimeout(resolve, 390));
       }
       await waitFor("Boolean(document.querySelector('.sq-deep-prominent .sq-primary'))", "quick result and deep-mode action");
+      await waitFor("(()=>{const e=document.querySelector('.sq-result-art .sq-result-feature-image');return Boolean(e&&(e.querySelector('.sq-rec-fallback')||e.querySelector('img')?.complete))})()", `${width}px top-ranked quick photo settles`);
+      await waitFor("(()=>{const slots=[...document.querySelectorAll('.sq-rec-image')];return slots.length===3&&slots.every(slot=>Boolean(slot.querySelector('.sq-rec-fallback')||slot.querySelector('img')?.complete))})()", `${width}px top recommendation images settle`);
       await screenshot(`${width}-quick-result.png`);
       await evaluate("document.querySelector('.sq-recs').scrollIntoView({block:'start',behavior:'instant'})");
-      const imageMetrics = await evaluate(`(()=>({imageElements:document.querySelectorAll('.sq-rec-image img').length,loadedLocal:[...document.querySelectorAll('.sq-rec-image img')].filter(e=>e.complete&&e.naturalWidth>0).length,fallbacks:document.querySelectorAll('.sq-rec-image .sq-rec-fallback').length,externalRequests:performance.getEntriesByType('resource').filter(e=>/^https?:/.test(e.name)&&!e.name.startsWith(location.origin)).map(e=>e.name),labels:[...document.querySelectorAll('.sq-rec-image img')].map(e=>e.alt)}))()`);
-      assert.equal(imageMetrics.imageElements, 0, `${width}px no product image renders without exact licensed permission`);
-      assert.equal(imageMetrics.loadedLocal, 0, `${width}px no unapproved local product image loads`);
-      assert.equal(imageMetrics.fallbacks, 3, `${width}px screenshot recommendations retain branded fallbacks`);
-      assert.equal(imageMetrics.externalRequests.length, 0, `${width}px no external requests occurred: ${JSON.stringify(imageMetrics.externalRequests)}`);
-      assert.equal(imageMetrics.labels.length,0,"no misleading product image alt labels render");
-      imageRenderEvidence.push({ width, ...imageMetrics });
+      await waitFor("(()=>[...document.querySelectorAll('.sq-rec-image')].every(slot=>slot.querySelector('.sq-rec-fallback')||slot.querySelector('img')?.complete&&slot.querySelector('img')?.naturalWidth>0))()", `${width}px recommendation image success or fallback`);
+      const imageMetrics = await evaluate(`(()=>({imageElements:document.querySelectorAll('.sq-rec-image img').length,loaded:[...document.querySelectorAll('.sq-rec-image img')].filter(e=>e.complete&&e.naturalWidth>0).length,fallbacks:document.querySelectorAll('.sq-rec-image .sq-rec-fallback').length,externalRequests:performance.getEntriesByType('resource').filter(e=>/^https?:/.test(e.name)&&!e.name.startsWith(location.origin)).map(e=>e.name),sources:[...document.querySelectorAll('.sq-rec-image img')].map(e=>({src:e.currentSrc,alt:e.alt,referrerPolicy:e.referrerPolicy,crossOrigin:e.crossOrigin}))}))()`);
+      assert.equal(imageMetrics.loaded+imageMetrics.fallbacks,3,`${width}px each recommendation photo either loads or falls back`);
+      assert.equal(imageMetrics.loaded,2,`${width}px two permitted photos load while unverified Miss Dior stays on fallback`);
+      assert.equal(imageMetrics.fallbacks,1,`${width}px unverified Miss Dior uses the branded fallback`);
+      assert.ok(imageMetrics.externalRequests.every(url=>new URL(url).hostname==="atrafshan.net"),`${width}px only approved catalog image host was requested`);
+      assert.ok(imageMetrics.sources.every(image=>image.src.startsWith("https://atrafshan.net/static/v2/related/w445/")&&image.alt.length>0&&image.referrerPolicy==="no-referrer"&&image.crossOrigin==="anonymous"),`${width}px rendered image URLs, alt text, CORS and referrer policy are constrained`);
+      assert.ok(await evaluate("Boolean(document.querySelectorAll('.sq-rec-image')[2].querySelector('.sq-rec-fallback'))"),`${width}px Miss Dior is explicitly excluded from catalog image requests`);
+      const quickTopEvidence=await evaluate(`(()=>{const e=document.querySelector('.sq-result-art .sq-result-feature-image'),i=e.querySelector('img');return {loaded:!!i?.naturalWidth,fallback:!!e.querySelector('.sq-rec-fallback'),src:i?.getAttribute('src'),referrerPolicy:i?.referrerPolicy,crossOrigin:i?.crossOrigin,alt:i?.alt}})()`);
+      assert.ok(quickTopEvidence.loaded||quickTopEvidence.fallback,`${width}px quick top-ranked photo loads or uses branded fallback`);
+      assert.ok(quickTopEvidence.src===undefined||new URL(quickTopEvidence.src).hostname==="atrafshan.net",`${width}px quick top feature only uses the catalog image host`);
+      assert.equal(quickTopEvidence.loaded,true,`${width}px candidate CSP permits the quick top CK2 image`);
+      assert.equal(quickTopEvidence.referrerPolicy,"no-referrer");
+      assert.equal(quickTopEvidence.crossOrigin,"anonymous");
+      assert.ok(quickTopEvidence.alt.length>0,"quick top product image has accessible alt text");
+      imageMetrics.quickTop=quickTopEvidence;
+      imageMetrics.catalogRequests=catalogImageRequests.map(request=>({url:request.url,referer:(request.headers.Referer??request.headers.referer)||null,hasCookie:Boolean(request.headers.Cookie??request.headers.cookie),origin:request.headers.Origin??request.headers.origin??null}));
+      assert.ok(imageMetrics.catalogRequests.every(request=>request.referer===null&&!request.hasCookie),`${width}px image requests omit Referer and cookies`);
+      const viewportImageEvidence={ width, ...imageMetrics };
+      imageRenderEvidence.push(viewportImageEvidence);
       assert.equal(await evaluate("document.querySelector('.sq-recs').previousElementSibling.className"), "sq-rec-head", "recommendation heading precedes recommendation cards");
       await screenshot(`${width}-quick-recommendations.png`);
-      const fallbackLayout = await evaluate(`(()=>{const card=[...document.querySelectorAll('.sq-rec-image')].find(e=>e.querySelector('.sq-rec-fallback')),fallback=card.querySelector('.sq-rec-fallback'),rank=card.querySelector('.sq-rec-rank'),rect=e=>{const r=e.getBoundingClientRect();return {left:r.left,right:r.right,top:r.top,bottom:r.bottom}},overlap=(a,b)=>a.left<b.right&&a.right>b.left&&a.top<b.bottom&&a.bottom>b.top;const badge=rect(rank),items=[...fallback.children].map(e=>({tag:e.tagName,rect:rect(e),overlap:overlap(rect(e),badge)}));return {width:innerWidth,badge,items}})()`);
-      assert.ok(fallbackLayout.items.every((item) => !item.overlap), `${width}px fallback wordmark, emblem, and product label clear the rank badge: ${JSON.stringify(fallbackLayout)}`);
-      assert.ok(await evaluate("document.querySelector('.sq-rec-fallback small')?.textContent.trim() === 'قصهٔ رایحه، به روایت آرومان'"), `${width}px approved AROMAN caption is visible`);
+      if(width===390){
+        await evaluate("document.querySelector('.sq-rec-image img').src='data:image/png;base64,broken'");
+        await waitFor("Boolean(document.querySelector('.sq-rec-image .sq-rec-fallback'))","broken remote image falls back to AROMAN");
+        assert.ok(await evaluate("document.querySelector('.sq-rec-image .sq-rec-fallback')?.getAttribute('role')==='img'&&document.querySelector('.sq-rec-image .sq-rec-fallback')?.getAttribute('aria-label')?.includes('کالوین کلین')"),"broken image displays an accessible AROMAN fallback");
+        await screenshot("390-image-error-fallback.png");
+      }
+      const fallbackLayout = await evaluate(`(()=>{const card=[...document.querySelectorAll('.sq-rec-image')].find(e=>e.querySelector('.sq-rec-fallback'));if(!card)return null;const fallback=card.querySelector('.sq-rec-fallback'),rank=card.querySelector('.sq-rec-rank'),rect=e=>{const r=e.getBoundingClientRect();return {left:r.left,right:r.right,top:r.top,bottom:r.bottom}},overlap=(a,b)=>a.left<b.right&&a.right>b.left&&a.top<b.bottom&&a.bottom>b.top;const badge=rect(rank),items=[...fallback.children].map(e=>({tag:e.tagName,rect:rect(e),overlap:overlap(rect(e),badge)}));return {width:innerWidth,badge,items}})()`);
+      if(fallbackLayout){assert.ok(fallbackLayout.items.every((item) => !item.overlap), `${width}px fallback wordmark, emblem, and caption clear the rank badge: ${JSON.stringify(fallbackLayout)}`);assert.ok(await evaluate("Boolean(document.querySelector('.sq-rec-fallback small'))"),`${width}px branded fallback caption is visible`);}
       assert.ok(await evaluate("document.querySelector('.sq-rec-copy .sq-rec-brand')?.textContent.trim().length > 0 && document.querySelector('.sq-rec-copy .sq-rec-notes')?.textContent.trim().length > 0"), `${width}px brand and notes remain visible beside the fallback`);
-      assert.ok(await evaluate("Boolean(document.querySelector('.sq-result-art>svg'))"), `${width}px quick result preserves the scent identity artwork`);
-      await screenshot(`${width}-product-recommendations.png`);
+      assert.ok(await evaluate("Boolean(document.querySelector('.sq-result-art>svg'))&&Boolean(document.querySelector('.sq-result-art .sq-result-feature-image'))"), `${width}px quick result preserves identity artwork and top-ranked product image slot`);
       await evaluate("document.querySelector('.sq-share').scrollIntoView({block:'start',behavior:'instant'})");
       await new Promise((resolve) => setTimeout(resolve, 100));
       await screenshot(`${width}-sharing.png`);
@@ -247,15 +285,30 @@ try {
         await new Promise((resolve) => setTimeout(resolve, 390));
       }
       await waitFor("document.querySelectorAll('.sq-portrait-meter[role=\\\"meter\\\"]').length === 6", "deep portrait Scent DNA meters", 100);
+      await waitFor("(()=>{const e=document.querySelector('.sq-portrait-featured .sq-result-feature-image');return Boolean(e&&(e.querySelector('.sq-rec-fallback')||e.querySelector('img')?.complete))})()", `${width}px deep top-ranked photo settles`);
       await evaluate("document.querySelector('.sq-portrait-hero').scrollIntoView({block:'start',behavior:'instant'})");
       await new Promise((resolve) => setTimeout(resolve, 100));
       await screenshot(`${width}-deep-portrait.png`);
-      const deepProductEvidence = await evaluate(`(()=>({heroSrc:document.querySelector('.sq-portrait-featured img')?.getAttribute('src'),heroLoaded:!!document.querySelector('.sq-portrait-featured img')?.naturalWidth,recImages:[...document.querySelectorAll('.sq-recs .sq-rec-image img')].map(x=>x.getAttribute('src')),identityArtwork:!!document.querySelector('.sq-portrait-featured>svg'),scrollWidth:document.documentElement.scrollWidth}))()`);
-      assert.equal(deepProductEvidence.heroSrc,undefined,`${width}px edition-mismatched Miss Dior photo stays disabled in the deep top feature`);
-      assert.equal(deepProductEvidence.heroLoaded,false,`${width}px top-feature fallback remains active`);
-      assert.equal(deepProductEvidence.recImages.length,0,`${width}px no product photos appear in the deep recommendations`);
+      await evaluate("document.querySelector('.sq-recs').scrollIntoView({block:'start',behavior:'instant'})");
+      await waitFor("(()=>[...document.querySelectorAll('.sq-rec-image')].every(slot=>Boolean(slot.querySelector('.sq-rec-fallback')||slot.querySelector('img')?.complete&&slot.querySelector('img')?.naturalWidth>0)))()", `${width}px deep recommendation image success or fallback`);
+      const deepProductEvidence = await evaluate(`(()=>({heroSrc:document.querySelector('.sq-portrait-featured .sq-result-feature-image img')?.getAttribute('src'),heroLoaded:!!document.querySelector('.sq-portrait-featured .sq-result-feature-image img')?.naturalWidth,heroFallback:!!document.querySelector('.sq-portrait-featured .sq-result-feature-image .sq-rec-fallback'),heroReferrerPolicy:document.querySelector('.sq-portrait-featured .sq-result-feature-image img')?.referrerPolicy,heroCrossOrigin:document.querySelector('.sq-portrait-featured .sq-result-feature-image img')?.crossOrigin,recSlots:[...document.querySelectorAll('.sq-recs .sq-rec-image')].map(slot=>({loaded:!!slot.querySelector('img')?.naturalWidth,fallback:!!slot.querySelector('.sq-rec-fallback'),src:slot.querySelector('img')?.getAttribute('src')})),identityArtwork:!!document.querySelector('.sq-portrait-featured>svg'),scrollWidth:document.documentElement.scrollWidth}))()`);
+      assert.ok(deepProductEvidence.heroLoaded||deepProductEvidence.heroFallback,`${width}px deep top-ranked photo loads or uses branded fallback`);
+      assert.ok(deepProductEvidence.heroSrc===undefined||new URL(deepProductEvidence.heroSrc).hostname==="atrafshan.net",`${width}px deep top feature only uses the catalog image host`);
+      assert.ok(deepProductEvidence.recSlots.length===3&&deepProductEvidence.recSlots.every(slot=>slot.loaded||slot.fallback),`${width}px deep recommendation photos load or fall back`);
+      assert.ok(deepProductEvidence.recSlots.every(slot=>slot.src===undefined||new URL(slot.src).hostname==="atrafshan.net"),`${width}px deep cards use only catalog image URLs`);
+      assert.equal(deepProductEvidence.heroFallback,true,`${width}px Miss Dior's unverified edition remains on fallback in deep top feature`);
+      assert.equal(deepProductEvidence.heroReferrerPolicy,undefined,"unverified Miss Dior does not initiate a remote request");
+      assert.equal(deepProductEvidence.recSlots.filter(slot=>slot.loaded).length,2,`${width}px two supported deep-result photos load`);
+      assert.equal(deepProductEvidence.recSlots.filter(slot=>slot.fallback).length,1,`${width}px deep Miss Dior card uses the branded fallback`);
       assert.equal(deepProductEvidence.identityArtwork,true,`${width}px deep result preserves the scent identity artwork`);
       assert.equal(deepProductEvidence.scrollWidth,width,`${width}px deep result has no horizontal overflow`);
+      if(width===320){assert.equal(deepProductEvidence.recSlots.filter(slot=>slot.loaded).length,2,"candidate CSP permits the two verified deep photos");assert.equal(deepProductEvidence.recSlots.filter(slot=>slot.fallback).length,1,"candidate CSP keeps the unverified Miss Dior photo disabled");}
+      viewportImageEvidence.deep=deepProductEvidence;
+      if(width===390||width===1440){
+        await evaluate("document.querySelector('.sq-recs').scrollIntoView({block:'start',behavior:'instant'})");
+        await new Promise((resolve)=>setTimeout(resolve,150));
+        await screenshot(`${width}-deep-recommendations.png`);
+      }
       assert.equal(await evaluate("document.querySelectorAll('.sq-portrait-end button').length"), 0, "deep portrait has no competing share controls before recommendations");
       await evaluate("(()=>{const e=document.querySelector('.sq-portrait-facets');window.scrollTo({top:e.getBoundingClientRect().top+window.scrollY-24,behavior:'instant'})})()");
       await new Promise((resolve) => setTimeout(resolve, 100));
@@ -352,7 +405,7 @@ try {
       assert.ok(sample.ratio >= (large ? 3 : 4.5), `${sample.selector} computed contrast ${sample.ratio} meets ${large ? "large-text" : "normal-text"} AA`);
     }
   }
-  await writeFile(path.join(outputDir, "browser-checks.json"), JSON.stringify({ baseUrl, widths: results, facetLayoutEvidence, imageRenderEvidence, deepMeterEvidence, computedContrastSamples: contrast, computedDarkPanelContrastSamples: darkContrast }, null, 2));
+  await writeFile(path.join(outputDir, "browser-checks.json"), JSON.stringify({ baseUrl, widths: results, facetLayoutEvidence, imageRenderEvidence, deepMeterEvidence, computedContrastSamples: contrast, computedDarkPanelContrastSamples: darkContrast, catalogImageRequests: catalogImageRequests.map(({url,headers})=>({url,referer:(headers.Referer??headers.referer)||null,hasCookie:Boolean(headers.Cookie??headers.cookie),origin:headers.Origin??headers.origin??null})), failedCatalogImageRequests }, null, 2));
   console.log(JSON.stringify({ widths: results.map((r) => r.width), deepMeterEvidence, computedContrastSamples: contrast, computedDarkPanelContrastSamples: darkContrast, screenshotDirectory: outputDir }, null, 2));
 } finally {
   ws?.close();

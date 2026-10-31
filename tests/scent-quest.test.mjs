@@ -4,6 +4,7 @@ import { readFileSync } from "node:fs";
 import { URL } from "node:url";
 import { existsSync } from "node:fs";
 import { rankScentQuest, hasCompleteAnswers, SCENT_ARCHETYPES } from "../src/lib/scent-quest/scoring.ts";
+import { canUseCatalogProductImage, isAllowedCatalogImageUrl } from "../src/lib/scent-quest/catalog-image-url.ts";
 const q=JSON.parse(readFileSync(new URL("../src/lib/scent-quest/quiz-data.json",import.meta.url),"utf8"));
 const perfumes=JSON.parse(readFileSync(new URL("../public/data/scent-quest-perfumes.json",import.meta.url),"utf8"));
 const ids=[...q.stage1_questions,...q.stage2_questions];
@@ -36,13 +37,17 @@ test("auto-advanced question prompt is announced atomically to assistive technol
   assert.match(source,/<h2 id="sq-title" aria-live="polite" aria-atomic="true">/);
 });
 
-test("recommendations appear before one final sharing panel with a branded no-request fallback",()=>{
+test("recommendations appear before sharing and use catalog image URLs with a branded load-error fallback",()=>{
   const game=readFileSync(new URL("../src/components/scent-quest-game.tsx",import.meta.url),"utf8");
   const portrait=readFileSync(new URL("../src/components/deep-scent-portrait.tsx",import.meta.url),"utf8");
   const imageComponent=readFileSync(new URL("../src/components/scent-product-image.tsx",import.meta.url),"utf8");
   assert.ok(game.indexOf("<div className=\"sq-recs\">") < game.indexOf("<div className=\"sq-share\">"));
-  assert.doesNotMatch(imageComponent,/perfume\.image/);
-  assert.match(imageComponent,/scentQuestProductImages\[perfume\.id\]/);
+  assert.match(imageComponent,/canUseCatalogProductImage\(perfume\.id, perfume\.image\)/);
+  assert.match(imageComponent,/onError=\{\(\) => setFailed\(true\)\}/);
+  assert.match(imageComponent,/crossOrigin="anonymous"/);
+  assert.match(imageComponent,/referrerPolicy="no-referrer"/);
+  assert.match(imageComponent,/key=\{imageKey\}/);
+  assert.match(imageComponent,/const imageKey = `\$\{perfume\.id\}:\$\{src \?\? "fallback"\}`/);
   assert.match(imageComponent,/نشان هویت رایحه آرومان؛ \$\{perfume\.brand\}/);
   assert.match(imageComponent,/className="sq-rec-fallback" role="img"/);
   assert.match(imageComponent,/قصهٔ رایحه، به روایت آرومان/);
@@ -57,6 +62,37 @@ test("recommendations appear before one final sharing panel with a branded no-re
   assert.doesNotMatch(portrait,/onShare|onStory|اشتراک‌گذاری نتیجه/);
   assert.match(game,/result\/" \+ result\.archetype\.slug/);
   assert.doesNotMatch(game,/answers.*URL|URL.*answers/);
+  assert.match(game,/ScentProductImage className="sq-result-feature-image" perfume=\{result\.recommendations\[0\]\}/);
+  assert.match(portrait,/ScentProductImage className="sq-result-feature-image" perfume=\{result\.recommendations\[0\]\}/);
+});
+
+test("catalog image URLs use HTTPS on the approved third-party image host only",()=>{
+  assert.equal(perfumes.length,900);
+  for(const perfume of perfumes){
+    assert.ok(isAllowedCatalogImageUrl(perfume.image),`catalog image URL for ${perfume.id} is in the approved format`);
+    assert.equal(canUseCatalogProductImage(perfume.id,perfume.image),perfume.id!==14185,`image usage policy for catalog product ${perfume.id}`);
+  }
+  assert.equal(canUseCatalogProductImage(14185,perfumes.find(p=>p.id===14185).image),false,"Miss Dior remains on fallback until its catalog edition is verified");
+  const valid="https://atrafshan.net/static/v2/related/w445/12345678-1234-1234-1234-123456789abc.jpg";
+  for(const invalid of ["http://atrafshan.net/static/v2/related/w445/a.jpg","https://evil.example/static/v2/related/w445/a.jpg","https://atrafshan.net.evil.example/static/v2/related/w445/a.jpg","https://atrafshan.net:444/static/v2/related/w445/a.jpg",`${valid}?x=1`,"javascript:alert(1)","//atrafshan.net/static/v2/related/w445/a.jpg"]){
+    assert.equal(isAllowedCatalogImageUrl(invalid),false,`reject ${invalid}`);
+  }
+  assert.equal(isAllowedCatalogImageUrl(valid),true);
+});
+
+test("direct image permission scope, privacy disclosure, and Nginx CSP candidate are documented",()=>{
+  const manifest=JSON.parse(readFileSync(new URL("../public/images/scent-quest/products/image-sources.json",import.meta.url),"utf8"));
+  const privacy=readFileSync(new URL("../src/app/privacy/page.tsx",import.meta.url),"utf8");
+  const nginx=readFileSync(new URL("../deploy/nginx/aroman-csp.conf.example",import.meta.url),"utf8");
+  assert.match(manifest.remoteCatalogEmbedding.permissionStatus,/Owner-confirmed/);
+  assert.match(manifest.remoteCatalogEmbedding.scope,/existing catalog URLs on AROMAN only/);
+  assert.equal(manifest.remoteCatalogEmbedding.excludedProductIds["14185"].includes("edition"),true);
+  assert.ok(privacy.includes("atrafshan.net"));
+  assert.ok(privacy.includes("Referer"));
+  assert.ok(privacy.includes("CORS ناشناس"));
+  assert.ok(privacy.includes("شبکه")&&privacy.includes("زمان درخواست"));
+  const nginxCsp=nginx.match(/Content-Security-Policy "([^"]+)"/)[1];
+  assert.equal(nginxCsp,"img-src 'self' data: https://atrafshan.net","candidate is limited to image loading, matching the observed absence of a production CSP");
 });
 
 test("recommendation fallback reserves a rank-safe area and product images keep contain sizing",()=>{

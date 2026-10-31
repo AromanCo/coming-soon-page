@@ -1,0 +1,5 @@
+# Optional image-only CSP hardening example; not required for UX-14C.
+# Do not apply automatically. If Afra's active config has no CSP, UX-14C needs
+# no CSP change. If a CSP exists, preserve it and add atrafshan.net only to its
+# img-src directive when needed. No production configuration was changed.
+add_header Content-Security-Policy "img-src 'self' data: https://atrafshan.net" always;
