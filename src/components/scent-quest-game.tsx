@@ -1,6 +1,5 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
-import { AromanEmblem } from "./aroman-emblem";
 import { DeepScentPortrait } from "./deep-scent-portrait";
 import { buildDeepPortrait } from "@/lib/scent-quest/portrait";
 import Link from "next/link";
@@ -8,11 +7,13 @@ import quiz from "@/lib/scent-quest/quiz-data.json";
 import { rankScentQuest, type ScentChoice, type ScentAnswers, type ScentPerfume, type ScentResult, type ScentStage } from "@/lib/scent-quest/scoring";
 import { SHARE_CARD_LAYOUT } from "@/lib/scent-quest/share-card-layout";
 import { scentQuestOptionImages } from "@/lib/scent-quest/option-images";
+import { ScentProductImage } from "./scent-product-image";
+import { AromanEmblem } from "./aroman-emblem";
 
 function RecommendationCard({ perfume, index, result }: { perfume: ScentPerfume; index: number; result: ScentResult }) {
   return <article>
     <div className="sq-rec-image">
-      <div className="sq-rec-fallback" role="img" aria-label={`تصویر ${perfume.name} در دسترس نیست`}><AromanEmblem aria-hidden="true"/><span>AROMAN</span><small>تصویر عطر در دسترس نیست</small></div>
+      <ScentProductImage perfume={perfume}/>
       <span className="sq-rec-rank" aria-hidden="true">{index + 1}</span>
     </div>
     <div className="sq-rec-copy"><small className="sq-rec-brand">{perfume.brand}</small><h4>{perfume.name}</h4><p className="sq-rec-family">{perfume.family}</p><p className="sq-rec-why">چرا در این فهرست است؟ هم‌خوانی الگوریتمی با {result.dominant} و انتخاب‌های تو.</p><p className="sq-rec-notes"><strong>نت‌ها:</strong> {perfume.notes?.filter(Boolean).slice(0,1).join("، ").split(/[،,]/).slice(0,3).join(" · ") || "در کاتالوگ ثبت نشده"}</p></div>
@@ -193,7 +194,15 @@ export function ScentQuestGame(){
         <div><p className="sq-kicker">YOUR SCENT IDENTITY</p><p>{stage==="quick"?"کشف اولیه تو":"امضای دقیق‌تر تو"}</p>
           <span className="sq-glyph">{result.archetype.ornament}</span><h2>{result.archetype.title}</h2>
           <p>{result.archetype.subtitle}</p><div className="sq-accords">{result.accords.map(a=><span key={a}>{a}</span>)}</div></div>
-        <aside className="sq-result-art" aria-hidden="true"><AromanEmblem /><span>YOUR SCENT. YOUR STORY.</span></aside>
+        <aside className="sq-result-art">
+          <AromanEmblem aria-hidden="true"/>
+          <span className="sq-result-brand">YOUR SCENT · YOUR STORY</span>
+          <div className="sq-result-featured">
+            <p className="sq-product-feature-label">عطر پیشنهادی اول</p>
+            <strong>{result.recommendations[0].name}</strong><small>{result.recommendations[0].brand}</small>
+            <span>جزئیات هر سه پیشنهاد در ادامه</span>
+          </div>
+        </aside>
       </div>}
       {stage==="quick"&&<div className="sq-deep sq-deep-prominent"><div><p className="sq-kicker">ACT II · GO DEEPER</p><h3>قصه رایحه‌ات هنوز ادامه داره…</h3><p>۸ سؤال دیگر؛ شناخت دقیق‌تر نت‌ها، سلیقه و پیشنهادهای تازه‌تر.</p></div><button className="sq-primary" onClick={()=>{setStage("deep");setIndex(0);setMode("question");}}>کشف عمیق ←</button></div>}<div className="sq-rec-head"><h3>{stage==="deep"?"سه عطر برگزیده برای پرتره کامل تو":"سه عطر نزدیک به سلیقه تو"}</h3><p>این پیشنهادها با یک الگوریتم از روی انتخاب‌های تو مرتب شده‌اند؛ امتیاز سازگاری علمی یا تضمین پسندیدن نیستند.</p></div>
       <div className="sq-recs">{result.recommendations.map((p,i)=><RecommendationCard key={p.id} perfume={p} index={i} result={result}/>)}</div>

@@ -210,41 +210,52 @@ try {
     assert.equal(quest.scrollWidth, width, `${width}px Scent Quest has no horizontal overflow`);
     assert.equal(quest.main, 1, `${width}px Scent Quest main target is unique`);
     await screenshot(`${width}-scent-quest.png`);
-    if ([320, 390, 768, 1440].includes(width)) {
+    if ([320, 390, 768, 1024, 1440].includes(width)) {
       await evaluate("document.querySelector('.sq-intro .sq-primary').click()");
+      const quickChoiceIndexes = [3, 1, 1, 2, 0, 0, 0];
       for (let question = 0; question < 7; question++) {
         await waitFor("Boolean(document.querySelector('.sq-options button'))", `quick question ${question + 1}`);
-        await evaluate("document.querySelector('.sq-options button').click()");
+        await evaluate(`document.querySelectorAll('.sq-options button')[${quickChoiceIndexes[question]}].click()`);
         await new Promise((resolve) => setTimeout(resolve, 390));
       }
       await waitFor("Boolean(document.querySelector('.sq-deep-prominent .sq-primary'))", "quick result and deep-mode action");
       await screenshot(`${width}-quick-result.png`);
       await evaluate("document.querySelector('.sq-recs').scrollIntoView({block:'start',behavior:'instant'})");
-      const imageMetrics = await evaluate(`(()=>({imageElements:document.querySelectorAll('.sq-rec-image img').length,fallbacks:document.querySelectorAll('.sq-rec-image .sq-rec-fallback').length,externalRequests:performance.getEntriesByType('resource').filter(e=>/atrafshan\\.net/i.test(e.name)).length,labels:[...document.querySelectorAll('.sq-rec-image [role=img]')].map(e=>e.getAttribute('aria-label'))}))()`);
-      assert.equal(imageMetrics.imageElements, 0, `${width}px unapproved catalog images are not requested`);
-      assert.equal(imageMetrics.fallbacks, 3, `${width}px all recommendations have branded fallbacks`);
-      assert.equal(imageMetrics.externalRequests, 0, `${width}px no external perfume image requests occurred`);
-      assert.ok(imageMetrics.labels.every(label=>label?.includes("تصویر")&&label?.includes("در دسترس نیست")), "fallbacks expose accessible unavailable-image names");
+      const imageMetrics = await evaluate(`(()=>({imageElements:document.querySelectorAll('.sq-rec-image img').length,loadedLocal:[...document.querySelectorAll('.sq-rec-image img')].filter(e=>e.complete&&e.naturalWidth>0).length,fallbacks:document.querySelectorAll('.sq-rec-image .sq-rec-fallback').length,externalRequests:performance.getEntriesByType('resource').filter(e=>/^https?:/.test(e.name)&&!e.name.startsWith(location.origin)).map(e=>e.name),labels:[...document.querySelectorAll('.sq-rec-image img')].map(e=>e.alt)}))()`);
+      assert.equal(imageMetrics.imageElements, 0, `${width}px no product image renders without exact licensed permission`);
+      assert.equal(imageMetrics.loadedLocal, 0, `${width}px no unapproved local product image loads`);
+      assert.equal(imageMetrics.fallbacks, 3, `${width}px screenshot recommendations retain branded fallbacks`);
+      assert.equal(imageMetrics.externalRequests.length, 0, `${width}px no external requests occurred: ${JSON.stringify(imageMetrics.externalRequests)}`);
+      assert.equal(imageMetrics.labels.length,0,"no misleading product image alt labels render");
       imageRenderEvidence.push({ width, ...imageMetrics });
       assert.equal(await evaluate("document.querySelector('.sq-recs').previousElementSibling.className"), "sq-rec-head", "recommendation heading precedes recommendation cards");
       await screenshot(`${width}-quick-recommendations.png`);
-      const fallbackLayout = await evaluate(`(()=>{const card=document.querySelector('.sq-rec-image'),fallback=card.querySelector('.sq-rec-fallback'),rank=card.querySelector('.sq-rec-rank'),rect=e=>{const r=e.getBoundingClientRect();return {left:r.left,right:r.right,top:r.top,bottom:r.bottom}},overlap=(a,b)=>a.left<b.right&&a.right>b.left&&a.top<b.bottom&&a.bottom>b.top;const badge=rect(rank),items=[...fallback.children].map(e=>({tag:e.tagName,rect:rect(e),overlap:overlap(rect(e),badge)}));return {width:innerWidth,badge,items}})()`);
-      assert.ok(fallbackLayout.items.every((item) => !item.overlap), `${width}px fallback icon, wordmark, and label clear the rank badge: ${JSON.stringify(fallbackLayout)}`);
-      assert.ok(fallbackLayout.items[0].rect.top > fallbackLayout.badge.bottom, `${width}px fallback wordmark starts below the rank badge: ${JSON.stringify(fallbackLayout)}`);
-      await screenshot(`${width}-image-fallback.png`);
+      const fallbackLayout = await evaluate(`(()=>{const card=[...document.querySelectorAll('.sq-rec-image')].find(e=>e.querySelector('.sq-rec-fallback')),fallback=card.querySelector('.sq-rec-fallback'),rank=card.querySelector('.sq-rec-rank'),rect=e=>{const r=e.getBoundingClientRect();return {left:r.left,right:r.right,top:r.top,bottom:r.bottom}},overlap=(a,b)=>a.left<b.right&&a.right>b.left&&a.top<b.bottom&&a.bottom>b.top;const badge=rect(rank),items=[...fallback.children].map(e=>({tag:e.tagName,rect:rect(e),overlap:overlap(rect(e),badge)}));return {width:innerWidth,badge,items}})()`);
+      assert.ok(fallbackLayout.items.every((item) => !item.overlap), `${width}px fallback wordmark, emblem, and product label clear the rank badge: ${JSON.stringify(fallbackLayout)}`);
+      assert.ok(await evaluate("document.querySelector('.sq-rec-fallback small')?.textContent.trim() === 'قصهٔ رایحه، به روایت آرومان'"), `${width}px approved AROMAN caption is visible`);
+      assert.ok(await evaluate("document.querySelector('.sq-rec-copy .sq-rec-brand')?.textContent.trim().length > 0 && document.querySelector('.sq-rec-copy .sq-rec-notes')?.textContent.trim().length > 0"), `${width}px brand and notes remain visible beside the fallback`);
+      assert.ok(await evaluate("Boolean(document.querySelector('.sq-result-art>svg'))"), `${width}px quick result preserves the scent identity artwork`);
+      await screenshot(`${width}-product-recommendations.png`);
       await evaluate("document.querySelector('.sq-share').scrollIntoView({block:'start',behavior:'instant'})");
       await new Promise((resolve) => setTimeout(resolve, 100));
       await screenshot(`${width}-sharing.png`);
       await evaluate("document.querySelector('.sq-deep-prominent .sq-primary').click()");
+      const deepChoiceIndexes = [2, 1, 2, 0, 0, 0, 3, 0];
       for (let question = 0; question < 8; question++) {
         await waitFor("Boolean(document.querySelector('.sq-options button'))", `deep question ${question + 1}`);
-        await evaluate("document.querySelector('.sq-options button').click()");
+        await evaluate(`document.querySelectorAll('.sq-options button')[${deepChoiceIndexes[question]}].click()`);
         await new Promise((resolve) => setTimeout(resolve, 390));
       }
       await waitFor("document.querySelectorAll('.sq-portrait-meter[role=\\\"meter\\\"]').length === 6", "deep portrait Scent DNA meters", 100);
       await evaluate("document.querySelector('.sq-portrait-hero').scrollIntoView({block:'start',behavior:'instant'})");
       await new Promise((resolve) => setTimeout(resolve, 100));
       await screenshot(`${width}-deep-portrait.png`);
+      const deepProductEvidence = await evaluate(`(()=>({heroSrc:document.querySelector('.sq-portrait-featured img')?.getAttribute('src'),heroLoaded:!!document.querySelector('.sq-portrait-featured img')?.naturalWidth,recImages:[...document.querySelectorAll('.sq-recs .sq-rec-image img')].map(x=>x.getAttribute('src')),identityArtwork:!!document.querySelector('.sq-portrait-featured>svg'),scrollWidth:document.documentElement.scrollWidth}))()`);
+      assert.equal(deepProductEvidence.heroSrc,undefined,`${width}px edition-mismatched Miss Dior photo stays disabled in the deep top feature`);
+      assert.equal(deepProductEvidence.heroLoaded,false,`${width}px top-feature fallback remains active`);
+      assert.equal(deepProductEvidence.recImages.length,0,`${width}px no product photos appear in the deep recommendations`);
+      assert.equal(deepProductEvidence.identityArtwork,true,`${width}px deep result preserves the scent identity artwork`);
+      assert.equal(deepProductEvidence.scrollWidth,width,`${width}px deep result has no horizontal overflow`);
       assert.equal(await evaluate("document.querySelectorAll('.sq-portrait-end button').length"), 0, "deep portrait has no competing share controls before recommendations");
       await evaluate("(()=>{const e=document.querySelector('.sq-portrait-facets');window.scrollTo({top:e.getBoundingClientRect().top+window.scrollY-24,behavior:'instant'})})()");
       await new Promise((resolve) => setTimeout(resolve, 100));
@@ -299,6 +310,14 @@ try {
       assert.ok(axMeters.every((meter) => meter.name && meter.properties.valuemin === 0 && meter.properties.valuemax === 100 && typeof meter.value === "number" && meter.description?.includes("از ۱۰۰") && meter.description?.includes("اندازه‌گیری علمی نیست") && meter.description?.includes("امتیاز سازگاری با عطر")), `${width}px accessibility tree exposes meter name, range, current value and Persian relative-value description: ${JSON.stringify(rawAxMeters)}`);
       deepMeterEvidence.push({ width, domMeters, axMeters });
       }
+      await command("Page.navigate", { url: `${baseUrl}/scent-quest/result/morning-light` });
+      await new Promise((resolve) => setTimeout(resolve, 300));
+      const sharedResult = await evaluate(`(()=>({width:innerWidth,scrollWidth:document.documentElement.scrollWidth,recommendations:document.querySelectorAll('.sq-recs').length,productImages:document.querySelectorAll('.sq-product-image').length,images:[...document.images].map(x=>x.currentSrc)}))()`);
+      assert.equal(sharedResult.scrollWidth,width,`${width}px shared result has no horizontal overflow`);
+      assert.equal(sharedResult.recommendations,0,`${width}px shared result does not expose private recommendations`);
+      assert.equal(sharedResult.productImages,0,`${width}px shared result does not expose product imagery`);
+      assert.equal(sharedResult.images.length,0,`${width}px shared result has no image network requests`);
+      await screenshot(`${width}-shared-result.png`);
     }
     results.push({ width, home: homeState, waitlistUi, quest });
   }

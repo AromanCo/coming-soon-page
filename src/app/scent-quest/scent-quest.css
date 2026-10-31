@@ -234,3 +234,54 @@
 .sq-portrait-end{padding:26px 20px}
 .sq-portrait-end p:not(.sq-kicker){font-size:13px;line-height:1.8}
 @media(max-width:390px){.sq-recs article{grid-template-columns:minmax(92px,31%) minmax(0,1fr)}.sq-rec-image{min-height:190px}.sq-rec-copy{padding:11px}.sq-rec-copy h4{font-size:13px}.sq-rec-brand,.sq-rec-family,.sq-rec-why,.sq-rec-notes{font-size:10px!important;line-height:1.75}.sq-rec-fallback{padding:8px}.sq-rec-fallback svg{width:42px;height:46px}.sq-rec-fallback small{font-size:9px}}
+
+/* Product photos are local, exact-ID matches and always show the whole bottle. */
+.sq-rec-image{background:radial-gradient(ellipse at 50% 48%,#fffaf3,#e8ddd1 76%,#d9cabc)}
+.sq-rec-image>.sq-product-image{position:absolute;inset:0;width:100%;height:100%}
+.sq-product-image{position:relative;display:grid;place-items:center;min-width:0;min-height:0;overflow:hidden}
+.sq-product-image img{display:block;width:100%;height:100%;object-fit:contain;object-position:center;padding:14px}
+.sq-product-unavailable .sq-rec-fallback{inset:0}
+.sq-result-art{gap:7px;padding:20px 24px;text-align:center}
+.sq-result-art .sq-product-image{width:min(72%,310px);height:235px;min-height:0;border:1px solid #d7b99155;border-radius:16px;background:radial-gradient(ellipse at 50% 45%,#fff8f0,#c2a397 88%);box-shadow:0 16px 40px #1b122b55}
+.sq-result-art .sq-product-image img{padding:10px}
+.sq-result-art .sq-product-unavailable{background:transparent;border:0;box-shadow:none;width:100%;height:235px}
+.sq-result-art .sq-product-unavailable .sq-rec-fallback{position:absolute}
+.sq-result-art .sq-product-feature-label,.sq-portrait-product .sq-product-feature-label{margin:0;color:#e6c393;font-size:12px;font-weight:700}
+.sq-result-art>strong,.sq-portrait-product>strong{max-width:100%;color:#fff7ef;font-size:15px;line-height:1.8}
+.sq-result-art>small,.sq-portrait-product>small{color:#e7c89a;font-size:12px}
+.sq-result-art>.sq-result-brand,.sq-portrait-product>span{color:#e7c89a;font:10px Georgia,serif;letter-spacing:.14em}
+.sq-portrait-product{display:flex;min-width:0;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:26px;background:radial-gradient(circle,#dcb27d2c,transparent 67%);text-align:center}
+.sq-portrait-product>.sq-product-image{width:min(76%,330px);height:275px;border:1px solid #d7b99155;border-radius:16px;background:radial-gradient(ellipse at 50% 45%,#fff8f0,#c2a397 88%);box-shadow:0 16px 40px #1b122b55}
+.sq-portrait-product>.sq-product-unavailable{background:transparent;border:0;box-shadow:none}
+@media(max-width:700px){.sq-portrait-product{min-height:270px;padding:22px}.sq-portrait-product>.sq-product-image{height:190px;width:min(72%,280px)}}
+
+/* Product-image fallback: recognizable AROMAN identity, exact product name, no bottle-shaped stand-in. */
+.sq-rec-fallback{gap:6px;padding:14px 8px 10px;background:radial-gradient(ellipse at 50% 26%,#fffdf9 0,#f5eee5 48%,#e4d6c8 100%);}
+.sq-rec-fallback::before,.sq-rec-fallback::after{position:absolute;left:14%;right:14%;height:1px;background:linear-gradient(90deg,transparent,#b89470aa,transparent);content:""}
+.sq-rec-fallback::before{top:13px}.sq-rec-fallback::after{bottom:13px}
+.sq-rec-fallback .sq-fallback-brand{position:static;color:#61455b;font:10px Georgia,serif;letter-spacing:.2em}
+.sq-rec-fallback svg{width:46px;height:49px;color:#a77d58}
+.sq-rec-fallback small{max-width:100%;font-size:9px;line-height:1.5;color:#6c5a66}
+.sq-rec-image>.sq-product-image{z-index:0}
+.sq-rec-image .sq-rec-rank{z-index:3}
+.sq-result-art{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:11px;padding:25px}
+.sq-result-art>svg{width:clamp(125px,17vw,190px);height:auto;color:#e2b77d;filter:drop-shadow(0 0 26px rgba(214,173,114,.17))}
+.sq-result-art>.sq-result-brand{color:#e7c89a;font:12px Georgia,serif;letter-spacing:.16em}
+.sq-result-featured{display:flex;width:min(100%,340px);flex-direction:column;align-items:center;gap:3px;padding:13px 16px;border:1px solid rgba(215,185,145,.28);border-radius:12px;background:rgba(35,24,39,.38);text-align:center}
+.sq-result-featured .sq-product-feature-label{font-size:11px}
+.sq-result-featured strong{max-width:100%;color:#fff7ef;font-size:14px;line-height:1.7;overflow-wrap:anywhere}
+.sq-result-featured small{color:#e7c89a;font-size:11px}
+.sq-result-featured>span{color:#d7c7cf;font-size:10px;line-height:1.7}
+.sq-portrait-featured{gap:10px!important}
+.sq-portrait-featured>svg{width:clamp(125px,17vw,190px)!important;height:auto!important;color:#e2b77d;filter:drop-shadow(0 0 26px rgba(214,173,114,.17))}
+.sq-portrait-featured>span{font:12px Georgia,serif!important;letter-spacing:.16em;color:#e7c89a!important}
+.sq-portrait-featured .sq-result-featured{background:rgba(35,24,39,.38)}
+@media(max-width:640px){
+  .sq-result-art{min-height:0;padding:22px 20px;gap:8px}
+  .sq-result-art>svg,.sq-portrait-featured>svg{width:112px!important}
+  .sq-result-featured{padding:10px 14px}
+  .sq-rec-fallback{gap:5px}
+  .sq-rec-fallback svg{width:36px;height:39px}
+  .sq-rec-fallback .sq-fallback-brand{font-size:8px}
+  .sq-rec-fallback small{font-size:8px}
+}

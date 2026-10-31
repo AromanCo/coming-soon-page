@@ -1,0 +1,52 @@
+{
+  "schemaVersion": 1,
+  "downloadDate": null,
+  "images": [],
+  "reviewedCandidates": [
+    {
+      "productId": 10157,
+      "brand": "Calvin Klein",
+      "fragrance": "CK2",
+      "concentration": "Eau de Toilette",
+      "edition": "Original 2016 unisex release; catalog row identifies CK2, year 2016, and unisex audience.",
+      "productEvidence": [
+        "https://moodiedavittreport.com/world-duty-free-debuts-gender-free-calvin-klein-ck2-scent/",
+        "https://basenotes.com/articles/calvin-klein-to-launch-new-unisex-fragrance-ck2-in-2016.3206/"
+      ],
+      "photoCandidate": "Calvin Klein campaign/product imagery exists in retailer and archived brand campaign contexts; no Pexels image verified as this exact bottle and no reusable asset license or permission documented.",
+      "rightsStatus": "blocked-no-reuse-permission"
+    },
+    {
+      "productId": 32026,
+      "brand": "Orientica",
+      "fragrance": "Sweet Amber",
+      "concentration": "Eau de Parfum, 30 ml",
+      "edition": "Standard Sweet Amber release; catalog row identifies the 2018 release.",
+      "productEvidence": [
+        "https://www.orientica.co.uk/en-us/products/sweet-amber-30ml-spray",
+        "https://orientica.com.bd/media/"
+      ],
+      "photoCandidate": "First-party/manufacturer product imagery is available on Orientica pages, but those pages do not grant a reuse license. No separate written permission documented. Pexels exact-product source not found.",
+      "rightsStatus": "blocked-no-reuse-permission"
+    },
+    {
+      "productId": 14185,
+      "brand": "Dior",
+      "fragrance": "Miss Dior",
+      "concentration": "Catalog does not specify; a secondary product reference describes the original 1947 item as Eau de Toilette.",
+      "edition": "Catalog year is 1947 and its notes align with the original Miss Dior profile. It is not the later pink-bow Miss Dior Parfum bottle.",
+      "productEvidence": [
+        "https://www.galeriedior.com/en/30-avenue-montaigne/parfums-christian-dior",
+        "https://www.atrume.com/product/%D8%B9%D8%B7%D8%B1-%D8%A7%D8%AF%DA%A9%D9%84%D9%86-%D8%AF%DB%8C%D9%88%D8%B1-%D9%85%DB%8C%D8%B3-%D8%AF%DB%8C%D9%88%D8%B1-%D8%A7%D8%AF%D9%88%D8%AA%D9%88%DB%8C%D9%84%D8%AA-%D8%A7%D9%88%D8%B1%D8%AC%DB%8C/"
+      ],
+      "rejectedPhoto": {
+        "originalUrl": "https://www.pexels.com/photo/elegant-perfume-bottle-with-floral-decoration-28720745/",
+        "photographer": "NUDE Nahum",
+        "license": "Pexels License; source page marks the photograph Free.",
+        "reason": "The pictured bottle is Miss Dior Parfum, while this catalog record is the 1947 original product profile. Reuse terms do not cure the product mismatch; the asset was removed and is not mapped."
+      },
+      "photoCandidate": "Dior’s official Galerie Dior page shows an original 1947 amphora bottle, but no reuse permission for that image is stated. Do not host without permission.",
+      "rightsStatus": "blocked-no-reuse-permission-and-edition-mismatch"
+    }
+  ]
+}

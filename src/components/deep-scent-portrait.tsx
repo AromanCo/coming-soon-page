@@ -9,7 +9,14 @@ export function DeepScentPortrait({result,portrait}:{result:ScentResult;portrait
  return <div className="sq-portrait">
   <section className="sq-portrait-hero">
    <div className="sq-portrait-heading"><p className="sq-kicker">AROMAN · THE COMPLETE PORTRAIT</p><span className="sq-portrait-overline">فصل دوم کامل شد · {digits(15)} انتخاب</span><h2>این، پرتره کامل<br/><em>رایحه توئه.</em></h2><p>{result.archetype.title} — {result.archetype.subtitle}</p><div className="sq-portrait-tags">{result.accords.map(x=><span key={x}>{x}</span>)}</div></div>
-   <div className="sq-portrait-emblem" aria-hidden="true"><AromanEmblem/><span>YOUR SCENT · YOUR STORY</span></div>
+   <aside className="sq-portrait-emblem sq-portrait-featured">
+    <AromanEmblem aria-hidden="true"/><span>YOUR SCENT · YOUR STORY</span>
+    <div className="sq-result-featured">
+     <p className="sq-product-feature-label">عطر پیشنهادی اول</p>
+     <strong>{result.recommendations[0].name}</strong><small>{result.recommendations[0].brand}</small>
+     <span>جزئیات هر سه پیشنهاد در ادامه</span>
+    </div>
+   </aside>
   </section>
   <section className="sq-portrait-story"><div><p className="sq-kicker">01 · FROM FIRST IMPRESSION</p><h3>سلیقه‌ات چه تغییری کرد؟</h3><p>{portrait.evolution}</p></div><div><strong>{digits(portrait.changingPicks)}</strong><span>پیشنهاد تازه در مقایسه با کشف سریع</span></div></section>
   <section className="sq-portrait-facets"><div className="sq-portrait-sectionhead"><p className="sq-kicker">02 · YOUR SCENT DNA</p><h3>شش رنگ برجسته از سلیقه تو</h3><p>این مقیاس، ویژگی‌های پاسخ‌های تو را نسبت به پررنگ‌ترین ویژگی در همین پاسخ‌ها نشان می‌دهد؛ اندازه‌گیری علمی یا امتیاز سازگاری با عطر نیست.</p></div><ul className="sq-portrait-bars">{portrait.top.map((facet,i)=>{const descriptionId=`scent-dna-facet-description-${i}`;return <li key={facet.name} className="sq-portrait-bar"><span className="sq-portrait-rank" aria-hidden="true">{digits(i+1).padStart(2,"۰")}</span><strong>{facet.name}</strong><div className="sq-portrait-meter" role="meter" aria-label={`${facet.name}؛ قدرت نسبی پاسخ‌ها`} aria-describedby={descriptionId} aria-valuemin={0} aria-valuemax={100} aria-valuenow={facet.strength}><i style={{width:facet.strength+"%"}}/></div><span id={descriptionId} className="visually-hidden">{relativeDescription(facet.name,facet.strength)}</span><span className="sq-portrait-value" aria-hidden="true">{digits(facet.strength)} از ۱۰۰</span></li>})}</ul></section>
