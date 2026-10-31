@@ -7,6 +7,7 @@ import Link from "next/link";
 import quiz from "@/lib/scent-quest/quiz-data.json";
 import { rankScentQuest, type ScentChoice, type ScentAnswers, type ScentPerfume, type ScentResult, type ScentStage } from "@/lib/scent-quest/scoring";
 import { SHARE_CARD_LAYOUT } from "@/lib/scent-quest/share-card-layout";
+import { scentQuestOptionImages } from "@/lib/scent-quest/option-images";
 
 function RecommendationCard({ perfume, index, result }: { perfume: ScentPerfume; index: number; result: ScentResult }) {
   return <article>
@@ -93,43 +94,6 @@ export function ScentQuestGame(){
   const ids=stage==="quick"?quick:deep;
   const q=quiz.questions.find(item=>item.id===ids[index]);
   const chosen=q?answers[q.id]:undefined;
-  const questionPhotos:Record<string,string[]> = {
-    Q09:["scent-citrus.jpg","path-selected.jpg","invitation-botanical.jpg","scent-woody.jpg"],
-    Q01:["scent-citrus.jpg","scent-floral.jpg","scent-woody.jpg","invitation-botanical.jpg"],
-    Q02:["scent-citrus.jpg","path-selected.jpg","path-discover.jpg","scent-woody.jpg"],
-    Q03:["scent-floral.jpg","path-selected.jpg","path-discover.jpg","scent-woody.jpg"],
-    Q04:["scent-woody.jpg","hero-atelier-composite.png","invitation-botanical.jpg","path-personal.jpg"],
-    Q05:["path-personal.jpg","scent-citrus.jpg","scent-floral.jpg","invitation-botanical.jpg"],
-    Q06:["scent-citrus.jpg","path-discover.jpg","scent-woody.jpg","invitation-botanical.jpg"],
-    Q07:["path-discover.jpg","scent-citrus.jpg","path-selected.jpg","path-personal.jpg"],
-    Q08:["scent-woody.jpg","scent-citrus.jpg","invitation-botanical.jpg","path-selected.jpg"],
-    Q10:["scent-floral.jpg","scent-woody.jpg","path-selected.jpg","hero-atelier-composite.png"],
-    Q11:["path-personal.jpg","scent-citrus.jpg","scent-floral.jpg","invitation-botanical.jpg"],
-    Q12:["scent-floral.jpg","scent-citrus.jpg","scent-woody.jpg","path-discover.jpg"],
-    Q13:["path-personal.jpg","path-selected.jpg","hero-atelier-composite.png","path-discover.jpg"],
-    Q14:["path-selected.jpg","path-personal.jpg","invitation-botanical.jpg","scent-citrus.jpg"],
-    Q15:["invitation-botanical.jpg","scent-floral.jpg","scent-woody.jpg","path-discover.jpg"],
-  };
-  function optionSymbol(label:string){
-    if(/مرکبات|ترنج|لیمو|پرتقال/.test(label))return "🍊";
-    if(/سیب|گلابی|میوه/.test(label))return "🍐";
-    if(/رز|گل|یاس|مریم|شکوفه/.test(label))return "🌸";
-    if(/سبز|گیاه|نعناع|بهار/.test(label))return "🌿";
-    if(/چوب|سدر|صندل|خاک|خس/.test(label))return "🪵";
-    if(/عود|چرم|دود|تنباکو/.test(label))return "◈";
-    if(/کهربا|وانیل|شیرین|خوراکی|تونکا/.test(label))return "🍯";
-    if(/فلفل|هل|ادویه|دارچین|زعفران|زنجبیل/.test(label))return "✺";
-    if(/تمیز|صابونی|پودری|مشک|لباس/.test(label))return "✧";
-    if(/دریا|باران|آب|خنک|تابستان/.test(label))return "≈";
-    if(/گرم|آتش|پاییز|زمستان/.test(label))return "☼";
-    if(/شب|مهمانی|قرار/.test(label))return "☾";
-    if(/روزمره|کار|جلسه/.test(label))return "✦";
-    if(/زنانه/.test(label))return "❀";
-    if(/مردانه/.test(label))return "◇";
-    if(/ساده|کم|خشک/.test(label))return "○";
-    if(/پیچیده|زیاد|عمیق/.test(label))return "❖";
-    return "✶";
-  }
   const microcopy=["اولین حست رو دنبال کن.","انتخابی که بهت نزدیک‌تره کدومه؟","هر جواب، یک لایه از قصه توئه.","خودت رو به این فضاها بسپار.","یک قدم به کشف رایحه نزدیک‌تر شدی.","چند انتخاب تا امضای تو مونده.","آخرین انتخاب این فصل!"];
 
   function start(){setMode("question");setStage("quick");setIndex(0);}
@@ -214,8 +178,8 @@ export function ScentQuestGame(){
       <div className="sq-options sq-visual">{q.options.map((o,i)=><button key={o.id}
         className={chosen===o.id?"sq-option active":"sq-option"} aria-pressed={chosen===o.id}
         type="button" onClick={()=>pick(o.id as ScentChoice)}>
-        <span aria-hidden="true" className="sq-photo" style={{backgroundImage:`linear-gradient(0deg,rgba(25,18,31,.8),rgba(25,18,31,.12)),url("/images/${questionPhotos[q.id]?.[i] || "scent-citrus.jpg"}")`}}/>
-        <span className="sq-option-motif" aria-hidden="true">{optionSymbol(o.label)}</span><span className="sq-option-label"><i>{new Intl.NumberFormat("fa-IR",{minimumIntegerDigits:2,useGrouping:false}).format(i+1)}</i>{o.label}<b>{chosen===o.id?"✓":"○"}</b></span>
+        <span aria-hidden="true" className="sq-photo" style={{backgroundImage:`url("/images/scent-quest/${scentQuestOptionImages[q.id][o.id]}")`}}/>
+        <span className="sq-option-label"><i>{new Intl.NumberFormat("fa-IR",{minimumIntegerDigits:2,useGrouping:false}).format(i+1)}</i>{o.label}<b>{chosen===o.id?"✓":"○"}</b></span>
       </button>)}</div>
       <div className="sq-navigation"><button onClick={previous} type="button">→ بازگشت</button>
         <span className="sq-auto-hint" aria-live="polite">{transitioning?"داریم می‌ریم سؤال بعدی…":"با انتخاب هر گزینه، خودکار ادامه می‌دی."}</span></div>
