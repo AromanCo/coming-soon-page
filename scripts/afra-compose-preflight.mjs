@@ -6,7 +6,7 @@ import path from "node:path";
 import process from "node:process";
 
 const APPROVED_POSTGRES_IMAGE = "postgres:16-alpine";
-const COMPOSE_FILES = [
+const COMPOSE_FILE_NAMES = [
   "compose.yaml",
   "compose.ecr.yaml",
   "compose.nginx.yaml",
@@ -19,29 +19,47 @@ function fail(message) {
 }
 
 function projectDirectory() {
-  let directory = process.cwd();
+  let directory;
   let envFile;
+  const composeFiles = [];
   const args = process.argv.slice(2);
   while (args.length) {
     const flag = args.shift();
     const value = args.shift();
-    if (!value || (flag !== "--project-dir" && flag !== "--env-file")) {
-      fail("usage: scripts/afra-compose-preflight.mjs [--project-dir DIR] [--env-file FILE]");
+    if (!value || !["--project-dir", "--env-file", "--compose-file"].includes(flag)) {
+      fail("usage: scripts/afra-compose-preflight.mjs --project-dir DIR --compose-file FILE (repeat four times, in Afra order) [--env-file FILE]");
     }
-    if (flag === "--project-dir") directory = path.resolve(value);
-    else envFile = value;
+    if (flag === "--project-dir") {
+      if (directory) fail("--project-dir may be specified only once");
+      directory = path.resolve(value);
+    }
+    else if (flag === "--env-file") {
+      if (envFile) fail("--env-file may be specified only once");
+      envFile = value;
+    } else composeFiles.push(path.resolve(value));
   }
-  return { directory, envFile };
+  if (!directory) fail("--project-dir is required so relative Compose paths resolve against the Afra checkout");
+  if (composeFiles.length !== COMPOSE_FILE_NAMES.length) {
+    fail(`exactly four --compose-file arguments are required, in this order: ${COMPOSE_FILE_NAMES.join(", ")}`);
+  }
+  for (const [index, file] of composeFiles.entries()) {
+    if (path.basename(file) !== COMPOSE_FILE_NAMES[index]) {
+      fail(`Compose file ${index + 1} must be ${COMPOSE_FILE_NAMES[index]}; received ${file}`);
+    }
+  }
+  return { directory, envFile, composeFiles };
 }
 
-const { directory, envFile } = projectDirectory();
+const { directory, envFile, composeFiles } = projectDirectory();
 if (!existsSync(directory) || !statSync(directory).isDirectory()) {
   fail(`project directory does not exist: ${directory}`);
 }
+if (path.dirname(composeFiles[0]) !== directory) {
+  fail(`project directory must be the directory containing the first Compose file: ${path.dirname(composeFiles[0])}`);
+}
 
-for (const file of COMPOSE_FILES) {
-  const fullPath = path.join(directory, file);
-  if (!existsSync(fullPath) || !statSync(fullPath).isFile()) {
+for (const file of composeFiles) {
+  if (!existsSync(file) || !statSync(file).isFile()) {
     fail(`required Afra Compose file is missing: ${file}`);
   }
 }
@@ -52,7 +70,7 @@ if (envFile) {
   if (!existsSync(fullEnvFile) || !statSync(fullEnvFile).isFile()) fail(`environment file is missing: ${fullEnvFile}`);
   composeArgs.push("--env-file", fullEnvFile);
 }
-for (const file of COMPOSE_FILES) composeArgs.push("-f", file);
+for (const file of composeFiles) composeArgs.push("-f", file);
 composeArgs.push("config", "--format", "json");
 
 const rendered = spawnSync("docker", composeArgs, {

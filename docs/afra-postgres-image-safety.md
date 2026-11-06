@@ -46,35 +46,46 @@ version as part of this safety correction.
 
 ## Operator procedure
 
-From the Afra checkout, render and validate the same Compose inputs and
-environment file that the deployment will use:
+The files live in separate directories on Afra. From the checkout, pass each
+absolute path explicitly in the required order and keep the Compose project
+directory set to the checkout root:
 
 ~~~sh
-node scripts/afra-compose-preflight.mjs --env-file /path/to/the/production.env
+cd /root/dev/aroman/coming-soon-page
+node scripts/afra-compose-preflight.mjs \
+  --project-dir /root/dev/aroman/coming-soon-page \
+  --compose-file /root/dev/aroman/coming-soon-page/compose.yaml \
+  --compose-file /root/.config/aroman-inplace/compose.ecr.yaml \
+  --compose-file /root/.config/aroman-inplace/compose.nginx.yaml \
+  --compose-file /root/.config/server-maintenance/aroman-db-compat.override.yaml
 ~~~
 
-Omit `--env-file` only when the deployment uses Compose's default `.env` in
-that checkout. The preflight calls only `docker compose config --format json`;
-it does not run migrations, pull images, or modify containers. It fails closed
-if a file is missing, Compose cannot render the merge, either service is absent,
-an image differs from the approved `postgres:16-alpine` reference, or either
-pull policy is not `never`. Passing this check does not establish the local
-image's contents or the running database version.
+The `--compose-file` arguments must be supplied exactly once each and in this
+order. The script checks the requested paths exist, renders the configuration
+with the checkout as `--project-directory`, and validates the merged services.
+If deployment uses an explicit `--env-file`, pass that same path to the
+preflight with `--env-file` as well. The preflight calls only
+`docker compose config --format json`; it does not run migrations, pull images,
+or modify containers. It fails closed if a file is missing, Compose cannot
+render the merge, either service is absent, an image differs from the approved
+`postgres:16-alpine` reference, or either pull policy is not `never`. Passing
+this check does not establish the local image's contents or the running
+database version.
 
 After a successful preflight and normal deployment approval, use the same
 ordered file list, environment file and project directory for the deployment
 command, with pulls disabled:
 
 ~~~sh
-docker compose --env-file /path/to/the/production.env \
-  -f compose.yaml \
-  -f compose.ecr.yaml \
-  -f compose.nginx.yaml \
-  -f aroman-db-compat.override.yaml \
+docker compose --project-directory /root/dev/aroman/coming-soon-page \
+  -f /root/dev/aroman/coming-soon-page/compose.yaml \
+  -f /root/.config/aroman-inplace/compose.ecr.yaml \
+  -f /root/.config/aroman-inplace/compose.nginx.yaml \
+  -f /root/.config/server-maintenance/aroman-db-compat.override.yaml \
   up -d --pull never
 ~~~
 
-Use the exact environment file passed to preflight. Do not remove either the
-per-service `pull_policy: never` requirement or `--pull never` from the
-deployment invocation. This document and preflight are safety checks; they do
-not authorize or perform a deployment.
+If deployment uses an explicit `--env-file`, add the same option and path to
+both commands. Do not remove either the per-service `pull_policy: never`
+requirement or `--pull never` from the deployment invocation. This document
+and preflight are safety checks; they do not authorize or perform a deployment.
