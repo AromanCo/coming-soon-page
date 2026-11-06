@@ -54,6 +54,8 @@ none is silently introduced here.
 
 - `compose.prod.yaml`: production-only network and service topology.
 - `compose.prod.local.yaml`: loopback HTTP override for local simulation.
+- `docs/afra-postgres-image-safety.md`: Afra's four-file Compose order and
+  fail-closed PostgreSQL image preflight.
 - `deploy/caddy/Caddyfile`: HTTPS proxy and canonical IP policy.
 - `.env.production.example`: non-secret settings template.
 - `deploy/secrets/README.md`: secret file contract.
