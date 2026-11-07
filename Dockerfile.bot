@@ -1,0 +1,18 @@
+# syntax=docker/dockerfile:1
+# Standalone, production-mode Node worker. No Next.js build or web server.
+FROM node:24.21.0-alpine AS dependencies
+WORKDIR /app
+COPY package.json package-lock.json ./
+RUN npm ci --omit=dev --ignore-scripts --no-audit --no-fund
+
+FROM node:24.21.0-alpine AS runner
+WORKDIR /app
+ENV NODE_ENV=production
+COPY --from=dependencies --chown=node:node /app/node_modules ./node_modules
+COPY --chown=node:node src/bots ./src/bots
+COPY --chown=node:node src/lib/scent-quest ./src/lib/scent-quest
+COPY --chown=node:node public/data/scent-quest-perfumes.json ./public/data/scent-quest-perfumes.json
+COPY --chown=node:node scripts/run-scent-companion.mjs ./scripts/run-scent-companion.mjs
+USER node
+STOPSIGNAL SIGTERM
+CMD ["node", "scripts/run-scent-companion.mjs", "telegram"]
