@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
 import {URL} from "node:url";
 import {newSession,transitionSession} from "../src/bots/engine.mjs";
-import {processUpdate,processPolledUpdate,parseUpdate} from "../src/bots/runtime.mjs";
+import {processUpdate,processPolledUpdate,parseUpdate,orderUpdates} from "../src/bots/runtime.mjs";
 import {BotApi} from "../src/bots/bot-api.mjs";
 const quiz=JSON.parse(readFileSync(new URL("../src/lib/scent-quest/quiz-data.json",import.meta.url),"utf8"));
 const catalog=JSON.parse(readFileSync(new URL("../public/data/scent-quest-perfumes.json",import.meta.url),"utf8"));
@@ -52,6 +52,11 @@ test("group chat ignored and callback normalized",()=>{
  assert.equal(parseUpdate({message:{chat:{id:1,type:"group"},text:"/start"}}),null);
  assert.equal(parseUpdate({callback_query:{id:"x",data:"n:quick",message:{chat:{id:1,type:"group"},message_id:3}}}),null);
  assert.equal(parseUpdate({callback_query:{id:"x",data:"n:quick",message:{chat:{id:1,type:"private"},message_id:3}}}).action,"n:quick");
+});
+test("out-of-order provider updates are processed in increasing update ID order",()=>{
+ const updates=[{update_id:30},{update_id:28},{update_id:29},{update_id:29}];
+ assert.deepEqual(orderUpdates(updates).map(update=>update.update_id),[28,29,29,30]);
+ assert.deepEqual(updates.map(update=>update.update_id),[30,28,29,29]);
 });
 test("stateful runtime persists private chat and handles callbacks",async()=>{
  let state=null;const sent=[];
@@ -117,4 +122,9 @@ test("provider API failures omit credentials, chat IDs, and message content",asy
    return true;
   });
  }
+});
+test("queue saturation logging is aggregate-only and contains no user values",()=>{
+ const runner=readFileSync(new URL("../scripts/run-scent-companion.mjs",import.meta.url),"utf8");
+ assert.match(runner,/console\.error\("A bot response was omitted because the bounded delivery queue is full\."\)/);
+ assert.doesNotMatch(runner,/console\.(?:log|error|warn)\([^\n]*\$\{(?:update|chat|result|token|view)/i);
 });

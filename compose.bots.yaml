@@ -23,24 +23,76 @@ x-scent-bot-base: &scent-bot-base
 
 x-scent-bot-env: &scent-bot-env
   NODE_ENV: production
-  DATABASE_URL: ${DATABASE_URL:?Set DATABASE_URL in your existing .env}
+  PGHOST: db
+  PGPORT: "5432"
+  PGDATABASE: ${POSTGRES_DB:-aroman}
   DATABASE_SSL: "false"
   BOT_PUBLIC_SITE_URL: ${BOT_PUBLIC_SITE_URL:-https://aroman.ir}
   BOT_MEDIA_BASE_URL: ${BOT_MEDIA_BASE_URL:-}
 
 services:
+  bot-db-roles:
+    image: postgres:16.15-alpine@sha256:cbf42f0edc946c0bc1b8eeed62403734e1f25dc67a3491455d07a92fdb558b28
+    profiles: [bots, telegram, bale]
+    restart: "no"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    environment:
+      PGHOST: db
+      PGPORT: "5432"
+      PGDATABASE: ${POSTGRES_DB:-aroman}
+      PGUSER: ${POSTGRES_USER:-aroman}
+      PGPASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in your existing .env}
+    volumes:
+      - ./db/production:/opt/aroman/db-admin:ro
+    secrets:
+      - source: telegram_bot_database_password
+        target: db_telegram_bot_password
+      - source: bale_bot_database_password
+        target: db_bale_bot_password
+    entrypoint: ["/bin/sh", "-ec"]
+    command:
+      - |
+        psql --set ON_ERROR_STOP=1 --file /opt/aroman/db-admin/reconcile-bot-roles.sql
+        psql --set ON_ERROR_STOP=1 --set database_name="$${PGDATABASE}" --set bot_user=aroman_bot_telegram --file /opt/aroman/db-admin/grant-bot-privileges.sql
+        psql --set ON_ERROR_STOP=1 --set database_name="$${PGDATABASE}" --set bot_user=aroman_bot_bale --file /opt/aroman/db-admin/grant-bot-privileges.sql
+    networks: [backend]
+
   telegram-bot:
     <<: *scent-bot-base
     profiles: [bots, telegram]
     command: ["node", "scripts/run-scent-companion.mjs", "telegram"]
+    depends_on:
+      bot-db-roles:
+        condition: service_completed_successfully
     environment:
       <<: *scent-bot-env
-      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
+      PGUSER: aroman_bot_telegram
+      TELEGRAM_BOT_TOKEN_FILE: /run/secrets/telegram_bot_token
+      TELEGRAM_BOT_DATABASE_PASSWORD_FILE: /run/secrets/telegram_bot_database_password
+    secrets: [telegram_bot_token, telegram_bot_database_password]
 
   bale-bot:
     <<: *scent-bot-base
     profiles: [bots, bale]
     command: ["node", "scripts/run-scent-companion.mjs", "bale"]
+    depends_on:
+      bot-db-roles:
+        condition: service_completed_successfully
     environment:
       <<: *scent-bot-env
-      BALE_BOT_TOKEN: ${BALE_BOT_TOKEN:-}
+      PGUSER: aroman_bot_bale
+      BALE_BOT_TOKEN_FILE: /run/secrets/bale_bot_token
+      BALE_BOT_DATABASE_PASSWORD_FILE: /run/secrets/bale_bot_database_password
+    secrets: [bale_bot_token, bale_bot_database_password]
+
+secrets:
+  telegram_bot_token:
+    file: ${BOT_SECRETS_DIR:-./secrets/bots}/telegram_bot_token
+  bale_bot_token:
+    file: ${BOT_SECRETS_DIR:-./secrets/bots}/bale_bot_token
+  telegram_bot_database_password:
+    file: ${BOT_SECRETS_DIR:-./secrets/bots}/db_telegram_bot_password
+  bale_bot_database_password:
+    file: ${BOT_SECRETS_DIR:-./secrets/bots}/db_bale_bot_password

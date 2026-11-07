@@ -24,7 +24,11 @@ export function transitionSession(previous,action,deps){
  const s={phase:previous?.phase||"welcome",position:previous?.position||0,answers:{...(previous?.answers||{})}};
  const response=(changed=true)=>({session:s,changed,view:renderSession(s,deps)});
  if(action==="/forget"||action==="n:forget")return {erase:true,session:newSession(),changed:true,view:{text:"پیشرفتت حذف شد. با /start دوباره شروع کن.",rows:[]}};
- if(action==="/help"||action==="/privacy")return {session:s,changed:false,view:{text:action==="/help"?"دستورات: /start /reset /result /privacy /forget":"شناسه چت و پاسخ‌های بازی تا ۳۰ روز نگهداری می‌شود. شماره موبایل لازم نیست. برای حذف از /forget استفاده کن.",rows:[[btn("↩ برگشت","n:resume")]]}};
+ if(action==="/help")return {session:s,changed:false,view:{text:"دستورات: /start /reset /result /privacy /forget",rows:[[btn("↩ برگشت","n:resume")]]}};
+ if(action==="/privacy"){
+  const privacyUrl=new URL("/privacy",(deps.siteUrl||"https://aroman.ir").replace(/\/$/,"")).toString();
+  return {session:s,changed:false,view:{text:"حریم خصوصی ربات آرومان\n\nبرای ادامه بازی، شناسه چت و پاسخ‌های انتخابی‌ات در پایگاه داده آرومان ذخیره می‌شود؛ شماره موبایل نمی‌خواهیم. نشست پس از ۳۰ روز از آخرین به‌روزرسانی منقضی می‌شود. پیام‌های در صف، که ممکن است پیشنهادهای مبتنی بر پاسخ‌ها را داشته باشند، حداکثر ۳۰ روز نگهداری می‌شوند و پس از حداکثر ۱۰ تلاش تحویل حذف خواهند شد؛ ارسال پاسخ تضمین‌شده نیست و گاهی ممکن است تکرار شود.\n\nتلگرام یا بله، بسته به رباتی که استفاده می‌کنی، شناسه و پیام‌ها را طبق سیاست خودش پردازش می‌کند. با /forget نشست و پاسخ‌های قبلیِ صف‌شده پاک می‌شوند، اما پیام تأیید ممکن است ارسال نشود و پیامِ در حال ارسال را نمی‌توانیم پس بگیریم. این دستور نسخه‌های احتمالی پشتیبان یا داده‌های نگهداری‌شده نزد ارائه‌دهنده را پاک نمی‌کند.",rows:[[link("سیاست کامل حریم خصوصی",privacyUrl)],[btn("↩ برگشت","n:resume")]]}};
+ }
  if(action==="n:reset"||action==="/reset"){const next=newSession();return {session:next,changed:true,view:renderSession(next,deps)};}
  if(["/start","/result","n:resume"].includes(action))return response(false);
  if(action==="n:quick"&&s.phase==="welcome"){s.phase="quick";return response();}

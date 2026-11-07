@@ -1,0 +1,94 @@
+# Review-only production bot overlay. It is opt-in and does not alter the
+# standard web, waitlist, database, or migration service configuration.
+x-scent-bot: &scent-bot
+  image: aroman-scent-companion:${SCENT_BOT_IMAGE_TAG:?Set an approved bot image tag}
+  build:
+    context: .
+    dockerfile: Dockerfile.bot
+  restart: unless-stopped
+  init: true
+  stop_grace_period: 45s
+  read_only: true
+  tmpfs:
+    - /tmp:size=16m,mode=1777
+  security_opt: [no-new-privileges:true]
+  cap_drop: [ALL]
+  networks: [database]
+  environment: &scent-bot-env
+    NODE_ENV: production
+    PGHOST: db
+    PGPORT: "5432"
+    PGDATABASE: ${POSTGRES_DB:-aroman}
+    DATABASE_SSL: "false"
+    BOT_PUBLIC_SITE_URL: ${BOT_PUBLIC_SITE_URL:-https://aroman.ir}
+    BOT_MEDIA_BASE_URL: ${BOT_MEDIA_BASE_URL:-}
+
+services:
+  bot-db-roles:
+    image: postgres:16.15-alpine@sha256:cbf42f0edc946c0bc1b8eeed62403734e1f25dc67a3491455d07a92fdb558b28
+    profiles: [telegram, bale, bots]
+    restart: "no"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    environment:
+      PGHOST: db
+      PGPORT: "5432"
+      PGDATABASE: ${POSTGRES_DB:-aroman}
+      PGUSER: ${POSTGRES_ADMIN_USER:-aroman_admin}
+      PGPASSWORD_FILE: /run/secrets/db_admin_password
+    secrets:
+      - db_admin_password
+      - db_telegram_bot_password
+      - db_bale_bot_password
+    volumes:
+      - ./db/production/grant-bot-privileges.sql:/opt/aroman/grant-bot-privileges.sql:ro
+      - ./db/production/reconcile-bot-roles.sql:/opt/aroman/reconcile-bot-roles.sql:ro
+    entrypoint: ["/bin/sh", "-ec"]
+    command:
+      - |
+        export PGPASSWORD="$$(cat "$${PGPASSWORD_FILE}")"
+        psql --set ON_ERROR_STOP=1 --set database_name="$${PGDATABASE}" --file /opt/aroman/reconcile-bot-roles.sql
+        psql --set ON_ERROR_STOP=1 --set database_name="$${PGDATABASE}" --set bot_user=aroman_bot_telegram --file /opt/aroman/grant-bot-privileges.sql
+        psql --set ON_ERROR_STOP=1 --set database_name="$${PGDATABASE}" --set bot_user=aroman_bot_bale --file /opt/aroman/grant-bot-privileges.sql
+    networks: [database]
+
+  telegram-bot:
+    <<: *scent-bot
+    profiles: [telegram, bots]
+    command: ["node", "scripts/run-scent-companion.mjs", "telegram"]
+    depends_on:
+      bot-db-roles:
+        condition: service_completed_successfully
+    environment:
+      <<: *scent-bot-env
+      PGUSER: aroman_bot_telegram
+      TELEGRAM_BOT_TOKEN_FILE: /run/secrets/telegram_bot_token
+      TELEGRAM_BOT_DATABASE_PASSWORD_FILE: /run/secrets/db_telegram_bot_password
+    secrets: [telegram_bot_token, db_telegram_bot_password]
+
+  bale-bot:
+    <<: *scent-bot
+    profiles: [bale, bots]
+    command: ["node", "scripts/run-scent-companion.mjs", "bale"]
+    depends_on:
+      bot-db-roles:
+        condition: service_completed_successfully
+    environment:
+      <<: *scent-bot-env
+      PGUSER: aroman_bot_bale
+      BALE_BOT_TOKEN_FILE: /run/secrets/bale_bot_token
+      BALE_BOT_DATABASE_PASSWORD_FILE: /run/secrets/db_bale_bot_password
+    secrets: [bale_bot_token, db_bale_bot_password]
+
+secrets:
+  db_admin_password:
+    file: ${AROMAN_SECRETS_DIR:-./secrets/production}/db_admin_password
+  db_telegram_bot_password:
+    file: ${AROMAN_SECRETS_DIR:-./secrets/production}/db_telegram_bot_password
+  db_bale_bot_password:
+    file: ${AROMAN_SECRETS_DIR:-./secrets/production}/db_bale_bot_password
+  telegram_bot_token:
+    file: ${AROMAN_SECRETS_DIR:-./secrets/production}/telegram_bot_token
+  bale_bot_token:
+    file: ${AROMAN_SECRETS_DIR:-./secrets/production}/bale_bot_token
