@@ -19,6 +19,10 @@ node -e 'if (Number(process.versions.node.split(".")[0]) < 24) process.exit(1)' 
   echo "Node.js 24 or newer is required" >&2
   exit 1
 }
+[[ -d "$repo_dir/node_modules/pg" ]] || {
+  echo "Run npm ci before this database integration harness" >&2
+  exit 1
+}
 
 port=$(python3 - <<'PY'
 import socket
