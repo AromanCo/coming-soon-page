@@ -103,7 +103,10 @@ BEGIN
   IF EXISTS (
     SELECT 1 FROM pg_database
     WHERE datname = current_database()
-      AND datdba IN ('aroman_bot_telegram'::regrole, 'aroman_bot_bale'::regrole, 'aroman_bot'::regrole)
+      AND datdba IN (
+        SELECT oid FROM pg_roles
+        WHERE rolname IN ('aroman_bot_telegram', 'aroman_bot_bale', 'aroman_bot')
+      )
   ) THEN
     RAISE EXCEPTION 'A provider bot role must not own the database';
   END IF;

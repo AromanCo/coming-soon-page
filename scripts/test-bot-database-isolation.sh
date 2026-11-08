@@ -76,9 +76,41 @@ docker exec "$container_name" sh -ec 'umask 077; mkdir -p /run/secrets'
 printf '%s\n' "$telegram_password" | docker exec -i "$container_name" sh -ec 'umask 077; cat > /run/secrets/db_telegram_bot_password'
 printf '%s\n' "$bale_password" | docker exec -i "$container_name" sh -ec 'umask 077; cat > /run/secrets/db_bale_bot_password'
 
+echo "=== EXERCISE RECONCILIATION WITHOUT THE OPTIONAL LEGACY ROLE ==="
+docker exec -i "$container_name" psql -X -U postgres -d bot_test \
+  --set ON_ERROR_STOP=1 --file - < "$repo_dir/db/production/reconcile-bot-roles.sql"
+
+legacy_role_count=$(docker exec "$container_name" psql -X -U postgres -d bot_test -Atc \
+  "SELECT count(*) FROM pg_roles WHERE rolname='aroman_bot'")
+[[ "$legacy_role_count" == "0" ]] || {
+  echo "Role reconciliation must not create the optional legacy bot role" >&2
+  exit 1
+}
+provider_login_state=$(docker exec "$container_name" psql -X -U postgres -d bot_test -Atc "
+  SELECT string_agg(CASE WHEN rolcanlogin THEN 't' ELSE 'f' END, '|' ORDER BY rolname)
+  FROM pg_roles WHERE rolname IN ('aroman_bot_bale','aroman_bot_telegram')
+")
+[[ "$provider_login_state" == "f|f" ]] || {
+  echo "Provider logins must remain disabled until their grants are applied" >&2
+  exit 1
+}
+
 echo "=== EXERCISE LEGACY ROLE AND MEMBERSHIP RECONCILIATION ==="
 docker exec "$container_name" psql -X -U postgres -d bot_test -v ON_ERROR_STOP=1 \
   -c "CREATE ROLE aroman_bot LOGIN PASSWORD 'synthetic_legacy_pw_16_14'; GRANT aroman_bot_telegram TO aroman_bot; GRANT aroman_bot TO aroman_bot_bale"
+
+legacy_membership_count=$(docker exec "$container_name" psql -X -U postgres -d bot_test -Atc "
+  SELECT count(*)
+  FROM pg_auth_members m
+  JOIN pg_roles granted ON granted.oid=m.roleid
+  JOIN pg_roles member ON member.oid=m.member
+  WHERE granted.rolname IN ('aroman_bot_telegram','aroman_bot_bale','aroman_bot')
+     OR member.rolname IN ('aroman_bot_telegram','aroman_bot_bale','aroman_bot')
+")
+[[ "$legacy_membership_count" == "2" ]] || {
+  echo "Legacy reconciliation scenario must begin with both synthetic memberships" >&2
+  exit 1
+}
 
 docker exec -i "$container_name" psql -X -U postgres -d bot_test \
   --set ON_ERROR_STOP=1 --file - < "$repo_dir/db/production/reconcile-bot-roles.sql"
