@@ -23,8 +23,18 @@ Apply migrations `003_create_scent_bot_sessions.sql`,
 `008_isolate_bot_provider_rows.sql` to the
 bot test database. The normal migration service applies them from `db/migrations`.
 
-Use a disposable loopback PostgreSQL database named `bot_test` for database
-integration tests. The RLS isolation test requires `BOT_TEST_DATABASE_URL` to
+For the complete PostgreSQL provider-isolation check, run:
+
+    bash scripts/test-bot-database-isolation.sh
+
+The script starts a temporary PostgreSQL 16.15 container bound only to
+`127.0.0.1`, uses synthetic credentials, exercises role reconciliation and
+grant fail-closed behavior, runs the RLS/least-privilege/reliability suites,
+and removes the container on exit. It does not use the website database or
+production secrets. Docker, Python 3, Node 24+, and `npm ci` are required.
+
+For individual database tests, use a disposable loopback PostgreSQL database
+named `bot_test`. The RLS isolation test requires `BOT_TEST_DATABASE_URL` to
 authenticate as a disposable PostgreSQL superuser. If the variable is absent,
 the test skips; if it is explicitly set to a non-PostgreSQL, non-loopback, or
 non-`bot_test` target, the test fails before connecting. It also verifies the
