@@ -177,10 +177,17 @@ and waitlist services retain their existing database configuration.
 stack. It runs Bale only. The one-shot `bot-db-roles` service has its own
 `provision-bot-roles` profile and is not a dependency of the Bale worker; an
 ordinary worker start cannot silently reconcile database roles. Role
-provisioning remains a separately authorized operator action. The service
-grants each provider login `CONNECT`, schema `USAGE`, DML only on bot session,
-offset, outbox and metrics tables, and `USAGE` on the shared outbox sequence.
-It grants no schema `CREATE`, waitlist access, or broad default privileges.
+provisioning remains a separately authorized operator action. Reconciliation
+first commits a lockdown phase: it removes memberships, disables provider and
+legacy logins, and terminates their existing database sessions. It re-enables the
+provider logins only in a second transaction after ownership checks pass. If a
+provider or legacy role owns any database object, reconciliation aborts and the
+provider logins remain disabled until ownership is corrected and reconciliation
+is rerun. Run this operation in a maintenance window; supervised workers can
+reconnect after successful provisioning. The service grants each provider login
+`CONNECT`, schema `USAGE`, DML only on bot session, offset, outbox and metrics
+tables, and `USAGE` on the shared outbox sequence. It grants no schema
+`CREATE`, waitlist access, or broad default privileges.
 
 For the existing Afra Compose stack, append `compose.afra.bale.yaml` after
 Afra's host-managed files. It adds an internal `afra-bot-database` network to
@@ -202,14 +209,18 @@ credentials, URL and `PGHOST`/`PGUSER`/`PGDATABASE` methods, or a value with its
 Migration 008 enables RLS on sessions, poll offsets, outbox and delivery metrics.
 Policies bind `platform` to PostgreSQL `session_user` (`aroman_bot_telegram` or
 `aroman_bot_bale`), so query parameters and writable custom settings cannot select
-the other provider. Unknown roles fail closed. Role reconciliation is transactional,
-removes role memberships, disables the old shared `aroman_bot` login, and refuses
-to proceed if either provider role owns any database object. The grant script refuses
-to grant runtime access unless all four tables retain the expected `session_user`
-policies; it first revokes existing database, schema, table, sequence and routine
-privileges, then grants only the required bot-table operations and outbox-sequence
-usage. Workers have no table ownership, schema creation, `BYPASSRLS`, waitlist
-access, or direct routine execution privileges.
+the other provider. Unknown roles fail closed. Role reconciliation commits a lockdown phase
+that removes provider/legacy memberships, disables provider and old shared
+`aroman_bot` logins, and terminates their existing sessions. A second transaction
+re-enables provider logins only after confirming that neither provider nor legacy
+role owns any database object. If ownership validation fails, provider logins stay
+disabled until the ownership issue is corrected and reconciliation is rerun. The
+grant script refuses runtime access unless both provider roles are non-elevated,
+membership-free and non-owners and all four tables retain the expected
+`session_user` policies; it first revokes existing database, schema, table,
+sequence and routine privileges, then grants only the required bot-table
+operations and outbox-sequence usage. Workers have no table ownership, schema
+creation, `BYPASSRLS`, waitlist access, or direct routine execution privileges.
 
 The migration role owns these tables and RLS is not forced so the trusted
 migration owner can perform schema maintenance. PostgreSQL superusers and
