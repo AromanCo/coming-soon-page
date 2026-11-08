@@ -1,4 +1,5 @@
--- Run once per provider role after migrations 003, 004, 006, 007 and 008.
+-- Run as a trusted database administrator after role reconciliation and
+-- migrations 003, 004, 006, 007 and 008.
 -- Inputs: psql variables database_name and bot_user.
 BEGIN;
 
