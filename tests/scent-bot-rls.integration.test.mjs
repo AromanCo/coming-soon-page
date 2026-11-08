@@ -7,11 +7,17 @@ import { test } from "node:test";
 import { PostgresSessionStore } from "../src/bots/store.mjs";
 
 const adminUrl = process.env.BOT_TEST_DATABASE_URL;
-let safe = false;
+const hasAdminUrl = adminUrl !== undefined;
+let parsedAdminUrl = null;
 try {
-  const url = new URL(adminUrl);
-  safe = ["127.0.0.1", "localhost", "::1"].includes(url.hostname) && url.pathname === "/bot_test";
-} catch { /* Missing or invalid configuration keeps this isolated test skipped. */ }
+  const candidate = new URL(adminUrl);
+  if (["postgres:", "postgresql:"].includes(candidate.protocol) &&
+      ["127.0.0.1", "localhost", "::1"].includes(candidate.hostname) &&
+      candidate.username && candidate.password && candidate.pathname === "/bot_test") {
+    parsedAdminUrl = candidate;
+  }
+} catch { /* An explicitly configured invalid URL must fail before connecting. */ }
+const safe = Boolean(parsedAdminUrl);
 
 const syntheticLogins = {
   telegram: { role: "aroman_bot_telegram", password: "synthetic_telegram_pw_16_14" },
@@ -21,16 +27,18 @@ const syntheticLogins = {
   unknown: { role: "aroman_bot_unknown_test", password: "synthetic_unknown_pw_16_14" },
 };
 
-test("Scent Companion provider row isolation with independent PostgreSQL logins", { skip: safe ? false : "requires BOT_TEST_DATABASE_URL on loopback database /bot_test" }, async () => {
+test("Scent Companion provider row isolation with independent PostgreSQL logins", { skip: hasAdminUrl ? false : "requires BOT_TEST_DATABASE_URL on loopback database /bot_test" }, async () => {
+  assert.ok(safe, "Refusing to run: BOT_TEST_DATABASE_URL must use PostgreSQL, loopback, a password, and the /bot_test database");
   const admin = new pg.Pool({ connectionString: adminUrl, max: 2 });
   const pools = {};
   let migrationPool;
   const stamp = Date.now();
   const chats = { telegram: `synthetic-rls-tg-${stamp}`, bale: `synthetic-rls-bale-${stamp}` };
   try {
-    assert.equal((await admin.query("SELECT current_database() AS db")).rows[0].db, "bot_test");
-    const adminRole = (await admin.query("SELECT rolsuper FROM pg_roles WHERE rolname=current_user")).rows[0];
-    assert.equal(adminRole.rolsuper, true, "isolated fixture requires a disposable database administrator");
+    const adminIdentity = (await admin.query("SELECT current_database() AS db, session_user AS role, r.rolsuper FROM pg_roles r WHERE r.rolname=session_user")).rows[0];
+    assert.equal(adminIdentity.db, "bot_test");
+    assert.equal(adminIdentity.role, decodeURIComponent(parsedAdminUrl.username));
+    assert.equal(adminIdentity.rolsuper, true, "isolated fixture requires a disposable database administrator");
 
     for (const migration of [
       "001_create_waitlist.sql",
