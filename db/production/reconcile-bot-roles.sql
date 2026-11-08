@@ -37,12 +37,14 @@ BEGIN
 END
 $;
 
+COMMIT;
+
+-- NOLOGIN is committed before terminating existing sessions, preventing them
+-- from reconnecting between the lockdown and session termination.
 SELECT pg_terminate_backend(activity.pid)
 FROM pg_stat_activity AS activity
 WHERE activity.usename IN ('aroman_bot_telegram', 'aroman_bot_bale', 'aroman_bot')
   AND activity.pid <> pg_backend_pid();
-
-COMMIT;
 
 -- Only re-enable the provider logins in this second transaction after the
 -- ownership checks pass. A refusal leaves the first-phase NOLOGIN state intact.
