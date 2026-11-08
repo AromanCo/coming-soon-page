@@ -16,13 +16,17 @@ BEGIN
     RAISE EXCEPTION 'Provider bot roles must be LOGIN, NOINHERIT, and have no elevated role attributes';
   END IF;
 
+  IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'aroman_bot' AND rolcanlogin) THEN
+    RAISE EXCEPTION 'The former shared aroman_bot login must remain disabled';
+  END IF;
+
   IF EXISTS (
     SELECT 1
     FROM pg_auth_members AS memberships
     JOIN pg_roles AS granted ON granted.oid = memberships.roleid
     JOIN pg_roles AS member ON member.oid = memberships.member
-    WHERE granted.rolname IN ('aroman_bot_telegram', 'aroman_bot_bale')
-       OR member.rolname IN ('aroman_bot_telegram', 'aroman_bot_bale')
+    WHERE granted.rolname IN ('aroman_bot_telegram', 'aroman_bot_bale', 'aroman_bot')
+       OR member.rolname IN ('aroman_bot_telegram', 'aroman_bot_bale', 'aroman_bot')
   ) THEN
     RAISE EXCEPTION 'Provider bot roles must have no role memberships';
   END IF;
@@ -32,7 +36,7 @@ BEGIN
     FROM pg_shdepend AS dependencies
     WHERE dependencies.refclassid = 'pg_authid'::regclass
       AND dependencies.refobjid IN (
-        SELECT oid FROM pg_roles WHERE rolname IN ('aroman_bot_telegram', 'aroman_bot_bale')
+        SELECT oid FROM pg_roles WHERE rolname IN ('aroman_bot_telegram', 'aroman_bot_bale', 'aroman_bot')
       )
       AND dependencies.deptype = 'o'
   ) THEN
