@@ -1,7 +1,8 @@
 import assert from "node:assert/strict";
+import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { test } from "node:test";
-import { URL } from "node:url";
+import { fileURLToPath, URL } from "node:url";
 
 const localCompose = readFileSync(new URL("../compose.bots.yaml", import.meta.url), "utf8");
 const productionCompose = readFileSync(new URL("../compose.prod.bots.yaml", import.meta.url), "utf8");
@@ -9,6 +10,8 @@ const swedenCompose = readFileSync(new URL("../compose.sweden.telegram.yaml", im
 const afraCompose = readFileSync(new URL("../compose.afra.bale.yaml", import.meta.url), "utf8");
 const roleSql = readFileSync(new URL("../db/production/reconcile-bot-roles.sql", import.meta.url), "utf8");
 const grantSql = readFileSync(new URL("../db/production/grant-bot-privileges.sql", import.meta.url), "utf8");
+const databaseIsolationScriptUrl = new URL("../scripts/test-bot-database-isolation.sh", import.meta.url);
+const databaseIsolationScript = readFileSync(databaseIsolationScriptUrl, "utf8");
 
 test("opt-in bot overlays mount only the provider secrets at the paths workers and role SQL expect", () => {
   assert.match(localCompose, /source: telegram_bot_database_password\s+target: db_telegram_bot_password/);
@@ -59,4 +62,15 @@ test("Sweden and Afra topology overlays isolate providers and database ingress",
   assert.match(afraCompose, /bale-bot:[\s\S]*?networks:\s+- afra-bot-database\s+- bot-egress/);
   assert.doesNotMatch(afraCompose, /telegram-bot:|ports:|bot-db-roles:|migrate:/);
   assert.match(afraCompose, /restart: unless-stopped/);
+});
+
+test("disposable PostgreSQL bot isolation harness is syntax-valid and loopback-only", () => {
+  execFileSync("bash", ["-n", fileURLToPath(databaseIsolationScriptUrl)]);
+  assert.match(databaseIsolationScript, /postgres:16\\.15-alpine@sha256:/);
+  assert.match(databaseIsolationScript, /127\\.0\\.0\\.1:\\$\\{port\\}:5432/);
+  assert.match(databaseIsolationScript, /synthetic_ci_(admin|telegram|bale)_pw/);
+  assert.match(databaseIsolationScript, /synthetic_bot_owned_probe/);
+  assert.match(databaseIsolationScript, /DISABLE ROW LEVEL SECURITY/);
+  assert.match(databaseIsolationScript, /tests\\/scent-bot-postgres\\.integration\\.test\\.mjs/);
+  assert.match(databaseIsolationScript, /docker rm -f/);
 });
