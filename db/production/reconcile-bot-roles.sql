@@ -1,6 +1,8 @@
 \set telegram_bot_password `tr -d '\n' < /run/secrets/db_telegram_bot_password`
 \set bale_bot_password `tr -d '\n' < /run/secrets/db_bale_bot_password`
 
+BEGIN;
+
 SELECT format(
   'CREATE ROLE aroman_bot_telegram LOGIN PASSWORD %L NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS NOINHERIT CONNECTION LIMIT 6',
   :'telegram_bot_password'
@@ -49,6 +51,29 @@ BEGIN
 END
 $$;
 
+-- RLS is ineffective if a provider login owns any database object: owners bypass
+-- row policies. Refuse reconciliation rather than silently transferring ownership.
+DO $$
+DECLARE
+  owned_object TEXT;
+  owner_role TEXT;
+BEGIN
+  SELECT roles.rolname, pg_describe_object(dependencies.classid, dependencies.objid, dependencies.objsubid)
+    INTO owner_role, owned_object
+  FROM pg_shdepend AS dependencies
+  JOIN pg_roles AS roles ON roles.oid = dependencies.refobjid
+  WHERE dependencies.refclassid = 'pg_authid'::regclass
+    AND dependencies.deptype = 'o'
+    AND roles.rolname IN ('aroman_bot_telegram', 'aroman_bot_bale')
+  ORDER BY roles.rolname
+  LIMIT 1;
+
+  IF owned_object IS NOT NULL THEN
+    RAISE EXCEPTION 'Provider role % owns database object %; transfer ownership to a trusted migration/admin role before provisioning', owner_role, owned_object;
+  END IF;
+END
+$$;
+
 -- Retire the former shared login if present. RLS also denies it provider rows.
 DO $$
 BEGIN
@@ -57,3 +82,5 @@ BEGIN
   END IF;
 END
 $$;
+
+COMMIT;
