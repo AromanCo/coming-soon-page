@@ -58,8 +58,8 @@ BEGIN
 END
 $$;
 
--- Only re-enable the provider logins in this second transaction after the
--- ownership checks pass. A refusal leaves the first-phase NOLOGIN state intact.
+-- Keep provider logins disabled here. Each provider grant transaction enables
+-- its own login only after all least-privilege grants have committed.
 BEGIN;
 
 SELECT format(
