@@ -101,6 +101,14 @@ membership_count=$(docker exec "$container_name" psql -X -U postgres -d bot_test
   echo "Provider role memberships were not fully removed" >&2
   exit 1
 }
+provider_login_state=$(docker exec "$container_name" psql -X -U postgres -d bot_test -Atc "
+  SELECT string_agg(CASE WHEN rolcanlogin THEN 't' ELSE 'f' END, '|' ORDER BY rolname)
+  FROM pg_roles WHERE rolname IN ('aroman_bot_bale','aroman_bot_telegram')
+")
+[[ "$provider_login_state" == "f|f" ]] || {
+  echo "Provider logins must remain disabled until their grants are applied" >&2
+  exit 1
+}
 
 echo "=== VERIFY ROLE RECONCILIATION REFUSES OBJECT OWNERSHIP ==="
 docker exec "$container_name" psql -X -U postgres -d bot_test -v ON_ERROR_STOP=1 \
@@ -126,9 +134,8 @@ provider_login_state=$(docker exec "$container_name" psql -X -U postgres -d bot_
   SELECT string_agg(CASE WHEN rolcanlogin THEN 't' ELSE 'f' END, '|' ORDER BY rolname)
   FROM pg_roles WHERE rolname IN ('aroman_bot_bale','aroman_bot_telegram')
 ")
-[[ "$provider_login_state" == "t|t" ]] || {
-  echo "Provider logins were not re-enabled after ownership was corrected" >&2
-  exit 1
+[[ "$provider_login_state" == "f|f" ]] || {
+  echo "Provider logins must remain disabled after ownership is corrected until grants commit" >&2
 }
 
 echo "=== APPLY WEBSITE RUNTIME FUNCTION GRANTS ==="
@@ -153,7 +160,25 @@ for bot_user in aroman_bot_telegram aroman_bot_bale; do
   docker exec -i "$container_name" psql -X -U postgres -d bot_test \
     --set ON_ERROR_STOP=1 --set database_name=bot_test --set "bot_user=$bot_user" --file - \
     < "$repo_dir/db/production/grant-bot-privileges.sql"
+  if [[ "$bot_user" == "aroman_bot_telegram" ]]; then
+    provider_login_state=$(docker exec "$container_name" psql -X -U postgres -d bot_test -Atc "
+      SELECT string_agg(CASE WHEN rolcanlogin THEN 't' ELSE 'f' END, '|' ORDER BY rolname)
+      FROM pg_roles WHERE rolname IN ('aroman_bot_bale','aroman_bot_telegram')
+    ")
+    [[ "$provider_login_state" == "f|t" ]] || {
+      echo "Telegram login should enable only after Telegram grants commit" >&2
+      exit 1
+    }
+  fi
 done
+provider_login_state=$(docker exec "$container_name" psql -X -U postgres -d bot_test -Atc "
+  SELECT string_agg(CASE WHEN rolcanlogin THEN 't' ELSE 'f' END, '|' ORDER BY rolname)
+  FROM pg_roles WHERE rolname IN ('aroman_bot_bale','aroman_bot_telegram')
+")
+[[ "$provider_login_state" == "t|t" ]] || {
+  echo "Both provider logins must be enabled after both grant transactions commit" >&2
+  exit 1
+}
 
 echo "=== VERIFY TELEGRAM DATABASE PRIVILEGES ==="
 (
