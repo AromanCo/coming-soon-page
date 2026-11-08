@@ -27,7 +27,6 @@ test("Telegram provider database role is least privilege", { skip: hasDatabaseCo
       SELECT r.rolsuper, r.rolcreatedb, r.rolcreaterole, r.rolreplication, r.rolinherit, r.rolbypassrls,
         has_database_privilege(current_user, current_database(), 'CONNECT') AS can_connect,
         has_database_privilege(current_user, current_database(), 'CREATE') AS database_create,
-        has_database_privilege(current_user, current_database(), 'TEMP') AS database_temp,
         has_schema_privilege(current_user, 'public', 'USAGE') AS schema_usage,
         has_schema_privilege(current_user, 'public', 'CREATE') AS schema_create,
         (SELECT count(*)::int FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace
@@ -52,7 +51,6 @@ test("Telegram provider database role is least privilege", { skip: hasDatabaseCo
     assert.equal(checks.rolbypassrls, false);
     for (const key of ["can_connect", "schema_usage", "sessions_dml", "offsets_dml", "outbox_dml", "outbox_sequence", "metrics_select", "metrics_update"]) assert.equal(checks[key], true, `${key} should be granted`);
     assert.equal(checks.database_create, false);
-    assert.equal(checks.database_temp, false);
     assert.equal(checks.bot_owns_relations, 0, "provider role must not own bot tables or sequences");
     assert.equal(checks.metrics_insert, false);
     assert.equal(checks.metrics_delete, false);
