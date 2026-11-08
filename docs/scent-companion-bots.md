@@ -23,17 +23,29 @@ Apply migrations `003_create_scent_bot_sessions.sql`,
 `008_isolate_bot_provider_rows.sql` to the
 bot test database. The normal migration service applies them from `db/migrations`.
 
-To run the PostgreSQL reliability suite, use a disposable loopback PostgreSQL
-database named `bot_test` and set `BOT_TEST_DATABASE_URL`. The test refuses a
-different host or database name. It must never point at production.
+Use a disposable loopback PostgreSQL database named `bot_test` for database
+integration tests. The RLS isolation test requires `BOT_TEST_DATABASE_URL` to
+authenticate as a disposable PostgreSQL superuser. If the variable is absent,
+the test skips; if it is explicitly set to a non-PostgreSQL, non-loopback, or
+non-`bot_test` target, the test fails before connecting. It also verifies the
+actual database and authenticated session role before changing the fixture.
 
     BOT_TEST_DATABASE_URL='postgres://test_admin:test_password@127.0.0.1:5432/bot_test' \
     node --no-warnings --test tests/scent-bot-rls.integration.test.mjs
 
-The isolation test creates synthetic login roles and checks them through independent
-connections. The reliability integration additionally needs
-`BOT_TEST_TELEGRAM_DATABASE_URL` and `BOT_TEST_BALE_DATABASE_URL`, using the two
-synthetic provider logins. Never point these variables at an application database.
+The reliability integration additionally requires
+`BOT_TEST_TELEGRAM_DATABASE_URL` and `BOT_TEST_BALE_DATABASE_URL`. All three
+URLs must target the same loopback hostname, port, and `bot_test` database.
+The provider URLs must authenticate specifically as `aroman_bot_telegram` and
+`aroman_bot_bale`; the test checks the actual `session_user` identities before
+applying migrations, reading queues, or delivering synthetic responses. If any
+of the three variables is set but the configuration is incomplete or points
+elsewhere, the test fails before opening a database connection.
+
+The least-privilege check in `tests/scent-bot-db-privileges.test.mjs` uses
+`BOT_TEST_TELEGRAM_DATABASE_URL` alone and enforces the same loopback,
+database-name, and exact-login checks. Never point any of these variables at
+production or another application database.
 
 Use synthetic credentials for this isolated test database. Adapter tests use
 mocked fetch responses and do not contact Telegram or Bale.
@@ -180,9 +192,14 @@ credentials, URL and `PGHOST`/`PGUSER`/`PGDATABASE` methods, or a value with its
 Migration 008 enables RLS on sessions, poll offsets, outbox and delivery metrics.
 Policies bind `platform` to PostgreSQL `session_user` (`aroman_bot_telegram` or
 `aroman_bot_bale`), so query parameters and writable custom settings cannot select
-the other provider. Unknown roles fail closed. Workers have no role memberships,
-table ownership, `BYPASSRLS`, or waitlist access. Reconciliation disables the old
-shared `aroman_bot` login.
+the other provider. Unknown roles fail closed. Role reconciliation is transactional,
+removes role memberships, disables the old shared `aroman_bot` login, and refuses
+to proceed if either provider role owns any database object. The grant script refuses
+to grant runtime access unless all four tables retain the expected `session_user`
+policies; it first revokes existing database, schema, table, sequence and routine
+privileges, then grants only the required bot-table operations and outbox-sequence
+usage. Workers have no table ownership, schema creation, `BYPASSRLS`, waitlist
+access, or direct routine execution privileges.
 
 The migration role owns these tables and RLS is not forced so the trusted
 migration owner can perform schema maintenance. PostgreSQL superusers and
