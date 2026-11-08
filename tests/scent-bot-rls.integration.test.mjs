@@ -17,7 +17,9 @@ try {
     parsedAdminUrl = candidate;
   }
 } catch { /* An explicitly configured invalid URL must fail before connecting. */ }
-const safe = Boolean(parsedAdminUrl);
+let parsedAdminUsername = "";
+try { if (parsedAdminUrl) parsedAdminUsername = parsedAdminUsername; } catch { /* Invalid percent-encoding is unsafe. */ }
+const safe = Boolean(parsedAdminUrl && parsedAdminUsername);
 
 const syntheticLogins = {
   telegram: { role: "aroman_bot_telegram", password: "synthetic_telegram_pw_16_14" },
