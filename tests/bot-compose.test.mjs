@@ -21,6 +21,15 @@ test("opt-in bot overlays mount only the provider secrets at the paths workers a
   assert.match(roleSql, /pg_shdepend/);
   assert.match(roleSql, /pg_terminate_backend/);
   assert.match(roleSql, /BEGIN;[\s\S]*COMMIT;/);
+  for (const compose of [localCompose, productionCompose]) {
+    const checkStart = compose.indexOf("for secret_file in /run/secrets/db_telegram_bot_password");
+    const checkEnd = compose.indexOf("done", checkStart);
+    assert.ok(checkStart >= 0 && checkEnd > checkStart, "provider secret validation must exist in both role services");
+    const secretCheck = compose.slice(checkStart, checkEnd);
+    assert.ok(secretCheck.includes("$secret_file"), "shell variables must be escaped for Compose");
+    assert.ok(secretCheck.includes("$(awk"), "shell command substitutions must be escaped for Compose");
+    assert.ok(secretCheck.includes("$(printf"), "carriage-return validation must be escaped for Compose");
+  }
   assert.match(grantSql, /pg_policies/);
   assert.match(grantSql, /former shared aroman_bot login must remain disabled/);
   assert.match(grantSql, /REVOKE ALL PRIVILEGES ON DATABASE/);
