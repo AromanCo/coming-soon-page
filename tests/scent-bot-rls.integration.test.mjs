@@ -18,7 +18,7 @@ try {
   }
 } catch { /* An explicitly configured invalid URL must fail before connecting. */ }
 let parsedAdminUsername = "";
-try { if (parsedAdminUrl) parsedAdminUsername = parsedAdminUsername; } catch { /* Invalid percent-encoding is unsafe. */ }
+try { if (parsedAdminUrl) parsedAdminUsername = decodeURIComponent(parsedAdminUrl.username); } catch { /* Invalid percent-encoding is unsafe. */ }
 const safe = Boolean(parsedAdminUrl && parsedAdminUsername);
 
 const syntheticLogins = {
