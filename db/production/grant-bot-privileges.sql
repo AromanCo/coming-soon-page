@@ -88,6 +88,8 @@ SELECT format('REVOKE ALL PRIVILEGES ON DATABASE %I FROM %I', :'database_name', 
 SELECT format('GRANT CONNECT ON DATABASE %I TO %I', :'database_name', :'bot_user')
 \gexec
 
+REVOKE CREATE ON SCHEMA public FROM PUBLIC;
+
 SELECT format('REVOKE ALL PRIVILEGES ON SCHEMA public FROM %I', :'bot_user')
 \gexec
 SELECT format('GRANT USAGE ON SCHEMA public TO %I', :'bot_user')
