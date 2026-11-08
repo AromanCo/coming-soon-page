@@ -183,8 +183,11 @@ legacy logins, and terminates their existing database sessions. It re-enables th
 provider logins only in a second transaction after ownership checks pass. If a
 provider or legacy role owns any database object, reconciliation aborts and the
 provider logins remain disabled until ownership is corrected and reconciliation
-is rerun. Run this operation in a maintenance window; supervised workers can
-reconnect after successful provisioning. The service grants each provider login
+is rerun. Run this operation as a database superuser in a maintenance
+window; it deliberately disconnects active bot sessions. Supervised workers can
+reconnect after successful provisioning. Both Compose role services reject
+missing, empty, multi-line, or carriage-return-containing provider password files
+before invoking reconciliation. The service grants each provider login
 `CONNECT`, schema `USAGE`, DML only on bot session, offset, outbox and metrics
 tables, and `USAGE` on the shared outbox sequence. It grants no schema
 `CREATE`, waitlist access, or broad default privileges.
