@@ -179,15 +179,17 @@ stack. It runs Bale only. The one-shot `bot-db-roles` service has its own
 ordinary worker start cannot silently reconcile database roles. Role
 provisioning remains a separately authorized operator action. Reconciliation
 first commits a lockdown phase: it removes memberships, disables provider and
-legacy logins, and terminates their existing database sessions. It re-enables the
-provider logins only in a second transaction after ownership checks pass. If a
-provider or legacy role owns any database object, reconciliation aborts and the
-provider logins remain disabled until ownership is corrected and reconciliation
-is rerun. Run this operation as a database superuser in a maintenance
-window; it deliberately disconnects active bot sessions. Supervised workers can
-reconnect after successful provisioning. Both Compose role services reject
-missing, empty, multi-line, or carriage-return-containing provider password files
-before invoking reconciliation. The service grants each provider login
+legacy logins, and terminates their existing database sessions. It leaves both
+provider logins disabled after ownership validation. Each per-provider grant
+transaction applies that login's least-privilege privileges and enables the login
+atomically at commit; a failed grant leaves that provider disabled. If a provider
+or legacy role owns any database object, reconciliation aborts and both provider
+logins remain disabled until ownership is corrected and reconciliation is rerun.
+Run this operation as a database superuser in a maintenance window; it deliberately
+disconnects active bot sessions. Supervised workers can reconnect after successful
+provisioning. Both Compose role services reject missing, empty, multi-line, or
+carriage-return-containing provider password files before invoking reconciliation.
+The service grants each provider login
 `CONNECT`, schema `USAGE`, DML only on bot session, offset, outbox and metrics
 tables, and `USAGE` on the shared outbox sequence. It grants no schema
 `CREATE`, waitlist access, or broad default privileges.
@@ -214,11 +216,12 @@ Policies bind `platform` to PostgreSQL `session_user` (`aroman_bot_telegram` or
 `aroman_bot_bale`), so query parameters and writable custom settings cannot select
 the other provider. Unknown roles fail closed. Role reconciliation commits a lockdown phase
 that removes provider/legacy memberships, disables provider and old shared
-`aroman_bot` logins, and terminates their existing sessions. A second transaction
-re-enables provider logins only after confirming that neither provider nor legacy
+`aroman_bot` logins, and terminates their existing sessions. A second transaction reconciles
+both provider roles as `NOLOGIN` after confirming that neither provider nor legacy
 role owns any database object. If ownership validation fails, provider logins stay
-disabled until the ownership issue is corrected and reconciliation is rerun. The
-grant script refuses runtime access unless both provider roles are non-elevated,
+disabled until the ownership issue is corrected and reconciliation is rerun. Each
+provider grant transaction enables only its own login after its privileges are
+applied successfully. The grant script refuses runtime access unless both provider roles are non-elevated,
 membership-free and non-owners and all four tables retain the expected
 `session_user` policies; it first revokes existing database, schema, table,
 sequence and routine privileges, then grants only the required bot-table
