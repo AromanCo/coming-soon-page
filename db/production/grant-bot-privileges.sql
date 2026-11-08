@@ -8,6 +8,37 @@ DO $$
 DECLARE
   expected_table TEXT;
 BEGIN
+  IF EXISTS (
+    SELECT 1 FROM pg_roles
+    WHERE rolname IN ('aroman_bot_telegram', 'aroman_bot_bale')
+      AND (NOT rolcanlogin OR rolsuper OR rolcreatedb OR rolcreaterole OR rolreplication OR rolbypassrls OR rolinherit)
+  ) THEN
+    RAISE EXCEPTION 'Provider bot roles must be LOGIN, NOINHERIT, and have no elevated role attributes';
+  END IF;
+
+  IF EXISTS (
+    SELECT 1
+    FROM pg_auth_members AS memberships
+    JOIN pg_roles AS granted ON granted.oid = memberships.roleid
+    JOIN pg_roles AS member ON member.oid = memberships.member
+    WHERE granted.rolname IN ('aroman_bot_telegram', 'aroman_bot_bale')
+       OR member.rolname IN ('aroman_bot_telegram', 'aroman_bot_bale')
+  ) THEN
+    RAISE EXCEPTION 'Provider bot roles must have no role memberships';
+  END IF;
+
+  IF EXISTS (
+    SELECT 1
+    FROM pg_shdepend AS dependencies
+    WHERE dependencies.refclassid = 'pg_authid'::regclass
+      AND dependencies.refobjid IN (
+        SELECT oid FROM pg_roles WHERE rolname IN ('aroman_bot_telegram', 'aroman_bot_bale')
+      )
+      AND dependencies.deptype = 'o'
+  ) THEN
+    RAISE EXCEPTION 'Provider bot roles must not own database objects';
+  END IF;
+
   FOREACH expected_table IN ARRAY ARRAY[
     'scent_bot_sessions',
     'scent_bot_poll_offsets',
@@ -81,6 +112,9 @@ BEGIN
   END IF;
 END
 $;
+
+REVOKE ALL PRIVILEGES ON TABLE scent_bot_sessions, scent_bot_poll_offsets, scent_bot_outbox, scent_bot_delivery_metrics FROM PUBLIC;
+REVOKE ALL PRIVILEGES ON SEQUENCE scent_bot_outbox_id_seq FROM PUBLIC;
 
 SELECT format('GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE scent_bot_sessions, scent_bot_poll_offsets, scent_bot_outbox TO %I', :'bot_user')
 \gexec
