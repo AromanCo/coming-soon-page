@@ -26,9 +26,9 @@ test("opt-in bot overlays mount only the provider secrets at the paths workers a
     const checkEnd = compose.indexOf("done", checkStart);
     assert.ok(checkStart >= 0 && checkEnd > checkStart, "provider secret validation must exist in both role services");
     const secretCheck = compose.slice(checkStart, checkEnd);
-    assert.ok(secretCheck.includes("$secret_file"), "shell variables must be escaped for Compose");
-    assert.ok(secretCheck.includes("$(awk"), "shell command substitutions must be escaped for Compose");
-    assert.ok(secretCheck.includes("$(printf"), "carriage-return validation must be escaped for Compose");
+    assert.ok(secretCheck.includes("$" + "$" + "secret_file"), "shell variables must be escaped for Compose");
+    assert.ok(secretCheck.includes("$" + "$" + "(awk"), "shell command substitutions must be escaped for Compose");
+    assert.ok(secretCheck.includes("$" + "$" + "(printf"), "carriage-return validation must be escaped for Compose");
   }
   assert.match(grantSql, /pg_policies/);
   assert.match(grantSql, /former shared aroman_bot login must remain disabled/);
