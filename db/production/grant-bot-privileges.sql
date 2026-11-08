@@ -12,9 +12,9 @@ BEGIN
   IF EXISTS (
     SELECT 1 FROM pg_roles
     WHERE rolname IN ('aroman_bot_telegram', 'aroman_bot_bale')
-      AND (NOT rolcanlogin OR rolsuper OR rolcreatedb OR rolcreaterole OR rolreplication OR rolbypassrls OR rolinherit)
+      AND (rolsuper OR rolcreatedb OR rolcreaterole OR rolreplication OR rolbypassrls OR rolinherit)
   ) THEN
-    RAISE EXCEPTION 'Provider bot roles must be LOGIN, NOINHERIT, and have no elevated role attributes';
+    RAISE EXCEPTION 'Provider bot roles must be NOINHERIT and have no elevated role attributes';
   END IF;
 
   IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'aroman_bot' AND rolcanlogin) THEN
@@ -88,6 +88,12 @@ SELECT CASE
 END
 \gexec
 
+SELECT format(
+  'DO $$ BEGIN IF COALESCE((SELECT rolcanlogin FROM pg_roles WHERE rolname=%L), TRUE) THEN RAISE EXCEPTION ''Provider role must remain NOLOGIN until its grants are complete''; END IF; END $$',
+  :'bot_user'
+)
+\gexec
+
 SELECT format('REVOKE ALL PRIVILEGES ON DATABASE %I FROM %I', :'database_name', :'bot_user')
 \gexec
 SELECT format('GRANT CONNECT ON DATABASE %I TO %I', :'database_name', :'bot_user')
@@ -128,6 +134,10 @@ SELECT format('GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE scent_bot_sessions,
 SELECT format('GRANT SELECT, UPDATE ON TABLE scent_bot_delivery_metrics TO %I', :'bot_user')
 \gexec
 SELECT format('GRANT USAGE ON SEQUENCE scent_bot_outbox_id_seq TO %I', :'bot_user')
+\gexec
+
+-- Enabling this one provider login is atomic with its completed grants.
+SELECT format('ALTER ROLE %I LOGIN', :'bot_user')
 \gexec
 
 COMMIT;
