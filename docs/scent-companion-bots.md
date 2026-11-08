@@ -151,15 +151,24 @@ is selected. Store Telegram and Bale tokens and database passwords in separate
 files under `BOT_SECRETS_DIR`; each service mounts only its own files. The website
 and waitlist services retain their existing database configuration.
 
-The review-only `compose.prod.bots.yaml` uses fixed logins
-`aroman_bot_telegram` and `aroman_bot_bale`, with separate
-`db_telegram_bot_password` and `db_bale_bot_password` secrets. Its opt-in
-`bot-db-roles` service waits for the existing migration service, then reconciles
-the two provider roles and grants each login `CONNECT`, schema `USAGE`, DML only
-on bot session, offset, outbox and metrics tables, and `USAGE` on the shared
-outbox sequence. It grants no schema `CREATE`, waitlist access, or broad default
-privileges. The service is not part of the normal production Compose file set
-and has not been run against production.
+`compose.prod.bots.yaml` is for the repository's standard production Compose
+stack. It runs Bale only. The one-shot `bot-db-roles` service has its own
+`provision-bot-roles` profile and is not a dependency of the Bale worker; an
+ordinary worker start cannot silently reconcile database roles. Role
+provisioning remains a separately authorized operator action. The service
+grants each provider login `CONNECT`, schema `USAGE`, DML only on bot session,
+offset, outbox and metrics tables, and `USAGE` on the shared outbox sequence.
+It grants no schema `CREATE`, waitlist access, or broad default privileges.
+
+For the existing Afra Compose stack, append `compose.afra.bale.yaml` after
+Afra's host-managed files. It adds an internal `afra-bot-database` network to
+the existing `db` and Bale containers, while Bale also joins `bot-egress`.
+PostgreSQL is not attached to `bot-egress` and no database port is published.
+Docker bridge networks do not enforce destination-level egress restrictions;
+Afra's host firewall must permit only the required HTTPS destinations. This
+Afra overlay contains no Telegram, migration, web, database, or role
+provisioning worker service. Provision provider roles through a separately
+approved administrative operation before enabling Bale.
 
 Bot tokens and provider database passwords accept file-based configuration.
 Direct local compatibility still accepts token environment variables,
@@ -186,10 +195,9 @@ worker can deliberately take the other provider's known lock key and cause denia
 of service, but cannot read its rows. The production overlay remains review-only
 and profile gated; it is not deployed.
 
-For a separately authorized production review, combine this overlay only with
-the approved production Compose file set. Do not combine it with the local
-`compose.yaml` or run its role-provisioning service against production without
-separate authorization.
+Do not combine `compose.prod.bots.yaml` with the local Compose stack. Do not
+run its role-provisioning service against production without separate
+authorization.
 
 No ports are published by the workers. They contact the messaging APIs with outbound HTTPS.
 Their processes run as the non-root Node user on a read-only filesystem.

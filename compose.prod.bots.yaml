@@ -13,7 +13,7 @@ x-scent-bot: &scent-bot
     - /tmp:size=16m,mode=1777
   security_opt: [no-new-privileges:true]
   cap_drop: [ALL]
-  networks: [database]
+  networks: [database, bot-egress]
   environment: &scent-bot-env
     NODE_ENV: production
     PGHOST: db
@@ -26,7 +26,9 @@ x-scent-bot: &scent-bot
 services:
   bot-db-roles:
     image: postgres:16.15-alpine@sha256:cbf42f0edc946c0bc1b8eeed62403734e1f25dc67a3491455d07a92fdb558b28
-    profiles: [telegram, bale, bots]
+    # Deliberately separate from worker profiles. Run this one-shot service
+    # only as an explicit database-role provisioning operation.
+    profiles: [provision-bot-roles]
     restart: "no"
     depends_on:
       migrate:
@@ -53,27 +55,10 @@ services:
         psql --set ON_ERROR_STOP=1 --set database_name="$${PGDATABASE}" --set bot_user=aroman_bot_bale --file /opt/aroman/grant-bot-privileges.sql
     networks: [database]
 
-  telegram-bot:
-    <<: *scent-bot
-    profiles: [telegram, bots]
-    command: ["node", "scripts/run-scent-companion.mjs", "telegram"]
-    depends_on:
-      bot-db-roles:
-        condition: service_completed_successfully
-    environment:
-      <<: *scent-bot-env
-      PGUSER: aroman_bot_telegram
-      TELEGRAM_BOT_TOKEN_FILE: /run/secrets/telegram_bot_token
-      TELEGRAM_BOT_DATABASE_PASSWORD_FILE: /run/secrets/db_telegram_bot_password
-    secrets: [telegram_bot_token, db_telegram_bot_password]
-
   bale-bot:
     <<: *scent-bot
-    profiles: [bale, bots]
+    profiles: [bale]
     command: ["node", "scripts/run-scent-companion.mjs", "bale"]
-    depends_on:
-      bot-db-roles:
-        condition: service_completed_successfully
     environment:
       <<: *scent-bot-env
       PGUSER: aroman_bot_bale
@@ -88,7 +73,12 @@ secrets:
     file: ${AROMAN_SECRETS_DIR:-./secrets/production}/db_telegram_bot_password
   db_bale_bot_password:
     file: ${AROMAN_SECRETS_DIR:-./secrets/production}/db_bale_bot_password
-  telegram_bot_token:
-    file: ${AROMAN_SECRETS_DIR:-./secrets/production}/telegram_bot_token
   bale_bot_token:
     file: ${AROMAN_SECRETS_DIR:-./secrets/production}/bale_bot_token
+
+networks:
+  # Keep PostgreSQL reachable only through its existing internal network.
+  # Docker does not enforce destination-level egress policy; apply that in
+  # the Afra host firewall before enabling the worker.
+  bot-egress:
+    driver: bridge

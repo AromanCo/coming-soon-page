@@ -18,7 +18,7 @@ const catalog=JSON.parse(readFileSync(new URL("../public/data/scent-quest-perfum
 const siteUrl=(process.env.BOT_PUBLIC_SITE_URL||"https://aroman.ir").replace(/\/$/,"");
 const mediaOrigin=(process.env.BOT_MEDIA_BASE_URL||"").replace(/\/$/,"");
 if(new URL(siteUrl).protocol!=="https:"||(mediaOrigin&&new URL(mediaOrigin).protocol!=="https:"))throw Error("Site and media URL must use HTTPS");
-const pool=new pg.Pool({...((typeof botConfig.database==="string")?{connectionString:botConfig.database}:botConfig.database),ssl:process.env.DATABASE_SSL==="true"?{rejectUnauthorized:process.env.DATABASE_SSL_REJECT_UNAUTHORIZED!=="false"}:false,max:3,keepAlive:true,keepAliveInitialDelayMillis:10000});
+const pool=new pg.Pool({...((typeof botConfig.database==="string")?{connectionString:botConfig.database}:botConfig.database),ssl:process.env.DATABASE_SSL==="true"?{rejectUnauthorized:true}:false,max:3,keepAlive:true,keepAliveInitialDelayMillis:10000});
 const store=new PostgresSessionStore(pool);
 const api=new BotApi({platform,token:botConfig.token});
 const deps={quiz,catalog,siteUrl};
