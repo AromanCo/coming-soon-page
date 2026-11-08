@@ -23,17 +23,39 @@ Apply migrations `003_create_scent_bot_sessions.sql`,
 `008_isolate_bot_provider_rows.sql` to the
 bot test database. The normal migration service applies them from `db/migrations`.
 
-To run the PostgreSQL reliability suite, use a disposable loopback PostgreSQL
-database named `bot_test` and set `BOT_TEST_DATABASE_URL`. The test refuses a
-different host or database name. It must never point at production.
+For the complete PostgreSQL provider-isolation check, run:
+
+    bash scripts/test-bot-database-isolation.sh
+
+The script starts a temporary PostgreSQL 16.15 container bound only to
+`127.0.0.1`, uses synthetic credentials, exercises role reconciliation and
+grant fail-closed behavior, runs the RLS/least-privilege/reliability suites,
+and removes the container on exit. It does not use the website database or
+production secrets. Docker, Python 3, Node 24+, and `npm ci` are required.
+
+For individual database tests, use a disposable loopback PostgreSQL database
+named `bot_test`. The RLS isolation test requires `BOT_TEST_DATABASE_URL` to
+authenticate as a disposable PostgreSQL superuser. If the variable is absent,
+the test skips; if it is explicitly set to a non-PostgreSQL, non-loopback, or
+non-`bot_test` target, the test fails before connecting. It also verifies the
+actual database and authenticated session role before changing the fixture.
 
     BOT_TEST_DATABASE_URL='postgres://test_admin:test_password@127.0.0.1:5432/bot_test' \
     node --no-warnings --test tests/scent-bot-rls.integration.test.mjs
 
-The isolation test creates synthetic login roles and checks them through independent
-connections. The reliability integration additionally needs
-`BOT_TEST_TELEGRAM_DATABASE_URL` and `BOT_TEST_BALE_DATABASE_URL`, using the two
-synthetic provider logins. Never point these variables at an application database.
+The reliability integration additionally requires
+`BOT_TEST_TELEGRAM_DATABASE_URL` and `BOT_TEST_BALE_DATABASE_URL`. All three
+URLs must target the same loopback hostname, port, and `bot_test` database.
+The provider URLs must authenticate specifically as `aroman_bot_telegram` and
+`aroman_bot_bale`; the test checks the actual `session_user` identities before
+applying migrations, reading queues, or delivering synthetic responses. If any
+of the three variables is set but the configuration is incomplete or points
+elsewhere, the test fails before opening a database connection.
+
+The least-privilege check in `tests/scent-bot-db-privileges.test.mjs` uses
+`BOT_TEST_TELEGRAM_DATABASE_URL` alone and enforces the same loopback,
+database-name, and exact-login checks. Never point any of these variables at
+production or another application database.
 
 Use synthetic credentials for this isolated test database. Adapter tests use
 mocked fetch responses and do not contact Telegram or Bale.
@@ -155,10 +177,22 @@ and waitlist services retain their existing database configuration.
 stack. It runs Bale only. The one-shot `bot-db-roles` service has its own
 `provision-bot-roles` profile and is not a dependency of the Bale worker; an
 ordinary worker start cannot silently reconcile database roles. Role
-provisioning remains a separately authorized operator action. The service
-grants each provider login `CONNECT`, schema `USAGE`, DML only on bot session,
-offset, outbox and metrics tables, and `USAGE` on the shared outbox sequence.
-It grants no schema `CREATE`, waitlist access, or broad default privileges.
+provisioning remains a separately authorized operator action. Reconciliation
+first commits a lockdown phase: it removes memberships, disables provider and
+legacy logins, and terminates their existing database sessions. It leaves both
+provider logins disabled after ownership validation. Each per-provider grant
+transaction applies that login's least-privilege privileges and enables the login
+atomically at commit; a failed grant leaves that provider disabled. If a provider
+or legacy role owns any database object, reconciliation aborts and both provider
+logins remain disabled until ownership is corrected and reconciliation is rerun.
+Run this operation as a database superuser in a maintenance window; it deliberately
+disconnects active bot sessions. Supervised workers can reconnect after successful
+provisioning. Both Compose role services reject missing, empty, multi-line, or
+carriage-return-containing provider password files before invoking reconciliation.
+The service grants each provider login
+`CONNECT`, schema `USAGE`, DML only on bot session, offset, outbox and metrics
+tables, and `USAGE` on the shared outbox sequence. It grants no schema
+`CREATE`, waitlist access, or broad default privileges.
 
 For the existing Afra Compose stack, append `compose.afra.bale.yaml` after
 Afra's host-managed files. It adds an internal `afra-bot-database` network to
@@ -180,9 +214,19 @@ credentials, URL and `PGHOST`/`PGUSER`/`PGDATABASE` methods, or a value with its
 Migration 008 enables RLS on sessions, poll offsets, outbox and delivery metrics.
 Policies bind `platform` to PostgreSQL `session_user` (`aroman_bot_telegram` or
 `aroman_bot_bale`), so query parameters and writable custom settings cannot select
-the other provider. Unknown roles fail closed. Workers have no role memberships,
-table ownership, `BYPASSRLS`, or waitlist access. Reconciliation disables the old
-shared `aroman_bot` login.
+the other provider. Unknown roles fail closed. Role reconciliation commits a lockdown phase
+that removes provider/legacy memberships, disables provider and old shared
+`aroman_bot` logins, and terminates their existing sessions. A second transaction reconciles
+both provider roles as `NOLOGIN` after confirming that neither provider nor legacy
+role owns any database object. If ownership validation fails, provider logins stay
+disabled until the ownership issue is corrected and reconciliation is rerun. Each
+provider grant transaction enables only its own login after its privileges are
+applied successfully. The grant script refuses runtime access unless both provider roles are non-elevated,
+membership-free and non-owners and all four tables retain the expected
+`session_user` policies; it first revokes existing database, schema, table,
+sequence and routine privileges, then grants only the required bot-table
+operations and outbox-sequence usage. Workers have no table ownership, schema
+creation, `BYPASSRLS`, waitlist access, or direct routine execution privileges.
 
 The migration role owns these tables and RLS is not forced so the trusted
 migration owner can perform schema maintenance. PostgreSQL superusers and
