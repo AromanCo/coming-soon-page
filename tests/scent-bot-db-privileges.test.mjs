@@ -11,9 +11,11 @@ try {
   const candidate = new URL(connectionString);
   if (["postgres:", "postgresql:"].includes(candidate.protocol) && candidate.hostname && candidate.username && candidate.password && candidate.pathname === "/bot_test") parsedUrl = candidate;
 } catch { /* An explicitly configured invalid URL must fail, not silently skip. */ }
+let parsedUsername = "";
+try { if (parsedUrl) parsedUsername = decodeURIComponent(parsedUrl.username); } catch { /* Invalid percent-encoding is unsafe. */ }
 const safe = Boolean(parsedUrl &&
   ["127.0.0.1", "localhost", "::1"].includes(parsedUrl.hostname) &&
-  decodeURIComponent(parsedUrl.username) === "aroman_bot_telegram");
+  parsedUsername === "aroman_bot_telegram");
 
 test("Telegram provider database role is least privilege", { skip: hasDatabaseConfiguration ? false : "requires BOT_TEST_TELEGRAM_DATABASE_URL pointing to loopback database /bot_test" }, async () => {
   assert.ok(safe, "Refusing to run: BOT_TEST_TELEGRAM_DATABASE_URL must use the loopback /bot_test database and aroman_bot_telegram login");
