@@ -39,7 +39,10 @@ test("opt-in bot overlays mount only the provider secrets at the paths workers a
   assert.match(grantSql, /ALL ROUTINES IN SCHEMA public/);
   assert.match(grantSql, /pg_auth_members/);
   assert.match(grantSql, /pg_shdepend/);
-  assert.match(grantSql, /Provider bot roles must be LOGIN/);
+  assert.match(grantSql, /Provider bot roles must be NOINHERIT/);
+  assert.match(grantSql, /Provider role must remain NOLOGIN until its grants are complete/);
+  assert.match(grantSql, /ALTER ROLE %I LOGIN/);
+  assert.match(roleSql, /CREATE ROLE aroman_bot_telegram NOLOGIN/);
   assert.match(grantSql, /FROM PUBLIC;/);
   assert.match(localCompose, /profiles: \[bots, telegram\]/);
   assert.match(localCompose, /profiles: \[bots, bale\]/);
