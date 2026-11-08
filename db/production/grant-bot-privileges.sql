@@ -69,6 +69,19 @@ SELECT format('REVOKE ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public FROM %I',
 SELECT format('REVOKE ALL PRIVILEGES ON ALL ROUTINES IN SCHEMA public FROM %I', :'bot_user')
 \gexec
 
+-- The website's least-privilege entry points are SECURITY DEFINER. Remove
+-- PUBLIC execution even on local stacks that do not run the website grant script.
+DO $
+BEGIN
+  IF to_regprocedure('public.aroman_register_rate_limit(text)') IS NOT NULL THEN
+    EXECUTE 'REVOKE EXECUTE ON FUNCTION public.aroman_register_rate_limit(TEXT) FROM PUBLIC';
+  END IF;
+  IF to_regprocedure('public.aroman_create_waitlist_subscription(text,text,text)') IS NOT NULL THEN
+    EXECUTE 'REVOKE EXECUTE ON FUNCTION public.aroman_create_waitlist_subscription(TEXT, TEXT, TEXT) FROM PUBLIC';
+  END IF;
+END
+$;
+
 SELECT format('GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE scent_bot_sessions, scent_bot_poll_offsets, scent_bot_outbox TO %I', :'bot_user')
 \gexec
 SELECT format('GRANT SELECT, UPDATE ON TABLE scent_bot_delivery_metrics TO %I', :'bot_user')
