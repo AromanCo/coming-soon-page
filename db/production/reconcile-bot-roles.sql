@@ -46,7 +46,7 @@ FROM pg_stat_activity AS activity
 WHERE activity.usename IN ('aroman_bot_telegram', 'aroman_bot_bale', 'aroman_bot')
   AND activity.pid <> pg_backend_pid();
 
-DO $
+DO $$
 BEGIN
   IF EXISTS (
     SELECT 1 FROM pg_stat_activity
@@ -56,7 +56,7 @@ BEGIN
     RAISE EXCEPTION 'Provider or legacy bot sessions remain after login lockdown';
   END IF;
 END
-$;
+$$;
 
 -- Only re-enable the provider logins in this second transaction after the
 -- ownership checks pass. A refusal leaves the first-phase NOLOGIN state intact.
