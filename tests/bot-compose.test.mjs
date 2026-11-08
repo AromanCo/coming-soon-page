@@ -66,11 +66,11 @@ test("Sweden and Afra topology overlays isolate providers and database ingress",
 
 test("disposable PostgreSQL bot isolation harness is syntax-valid and loopback-only", () => {
   execFileSync("bash", ["-n", fileURLToPath(databaseIsolationScriptUrl)]);
-  assert.match(databaseIsolationScript, /postgres:16\\.15-alpine@sha256:/);
-  assert.match(databaseIsolationScript, /127\\.0\\.0\\.1:\\$\\{port\\}:5432/);
-  assert.match(databaseIsolationScript, /synthetic_ci_(admin|telegram|bale)_pw/);
-  assert.match(databaseIsolationScript, /synthetic_bot_owned_probe/);
-  assert.match(databaseIsolationScript, /DISABLE ROW LEVEL SECURITY/);
-  assert.match(databaseIsolationScript, /tests\\/scent-bot-postgres\\.integration\\.test\\.mjs/);
-  assert.match(databaseIsolationScript, /docker rm -f/);
+  assert.ok(databaseIsolationScript.includes("postgres:16.15-alpine@sha256:"));
+  assert.ok(databaseIsolationScript.includes('--publish "127.0.0.1:${port}:5432"'));
+  assert.ok(databaseIsolationScript.includes("synthetic_ci_admin_pw_16_14"));
+  assert.ok(databaseIsolationScript.includes("synthetic_bot_owned_probe"));
+  assert.ok(databaseIsolationScript.includes("DISABLE ROW LEVEL SECURITY"));
+  assert.ok(databaseIsolationScript.includes("tests/scent-bot-postgres.integration.test.mjs"));
+  assert.ok(databaseIsolationScript.includes("docker rm -f"));
 });
