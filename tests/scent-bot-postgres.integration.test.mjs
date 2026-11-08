@@ -16,10 +16,34 @@ const engineConfig={quiz,catalog,siteUrl:"https://aroman.ir"};
 const connectionString=process.env.BOT_TEST_DATABASE_URL;
 const telegramConnectionString=process.env.BOT_TEST_TELEGRAM_DATABASE_URL;
 const baleConnectionString=process.env.BOT_TEST_BALE_DATABASE_URL;
-const parsedUrl=connectionString?new URL(connectionString):null;
-const safeDatabase=parsedUrl&&telegramConnectionString&&baleConnectionString&&["127.0.0.1","localhost","::1"].includes(parsedUrl.hostname)&&parsedUrl.pathname==="/bot_test";
+const databaseVariableNames=["BOT_TEST_DATABASE_URL","BOT_TEST_TELEGRAM_DATABASE_URL","BOT_TEST_BALE_DATABASE_URL"];
+const hasDatabaseConfiguration=databaseVariableNames.some(name=>process.env[name]!==undefined);
+const loopbackHosts=new Set(["127.0.0.1","localhost","::1"]);
 
-test("Scent Companion PostgreSQL reliability integration",{skip:safeDatabase?false:"requires BOT_TEST_DATABASE_URL plus Telegram and Bale login URLs for loopback database /bot_test"},async t=>{
+function parseDatabaseUrl(value){
+ try{
+  const url=new URL(value);
+  if(!["postgres:","postgresql:"].includes(url.protocol)||!url.hostname||!url.username||!url.password||url.pathname!=="/bot_test")return null;
+  return url;
+ }catch{return null;}
+}
+function decodedUsername(url){
+ try{return decodeURIComponent(url.username);}catch{return "";}
+}
+const parsedUrl=parseDatabaseUrl(connectionString);
+const parsedTelegramUrl=parseDatabaseUrl(telegramConnectionString);
+const parsedBaleUrl=parseDatabaseUrl(baleConnectionString);
+const sameDatabaseTarget=url=>Boolean(parsedUrl&&url&&
+ url.hostname===parsedUrl.hostname&&
+ (url.port||"5432")===(parsedUrl.port||"5432")&&
+ url.pathname===parsedUrl.pathname);
+const safeDatabase=Boolean(parsedUrl&&loopbackHosts.has(parsedUrl.hostname)&&
+ !["aroman_bot_telegram","aroman_bot_bale"].includes(decodedUsername(parsedUrl))&&
+ parsedTelegramUrl&&decodedUsername(parsedTelegramUrl)==="aroman_bot_telegram"&&sameDatabaseTarget(parsedTelegramUrl)&&
+ parsedBaleUrl&&decodedUsername(parsedBaleUrl)==="aroman_bot_bale"&&sameDatabaseTarget(parsedBaleUrl));
+
+test("Scent Companion PostgreSQL reliability integration",{skip:hasDatabaseConfiguration?false:"requires BOT_TEST_DATABASE_URL plus Telegram and Bale login URLs for loopback database /bot_test"},async t=>{
+ assert.ok(safeDatabase,"Refusing to run: admin, Telegram and Bale URLs must target the same loopback /bot_test database, with the exact provider login roles");
  const pool=new pg.Pool({connectionString,max:4});
  const workerPool=new pg.Pool({connectionString:telegramConnectionString,max:4});
  const balePool=new pg.Pool({connectionString:baleConnectionString,max:2});
@@ -30,7 +54,14 @@ test("Scent Companion PostgreSQL reliability integration",{skip:safeDatabase?fal
  const updateId=Date.now();
  let releaseProcessingLock;
  try{
-  assert.equal((await pool.query("SELECT current_database() AS name")).rows[0].name,"bot_test");
+  const adminIdentity=(await pool.query("SELECT current_database() AS name, session_user AS role, r.rolsuper FROM pg_roles r WHERE r.rolname=session_user")).rows[0];
+  assert.equal(adminIdentity.name,"bot_test");
+  assert.equal(adminIdentity.role,decodedUsername(parsedUrl));
+  assert.equal(adminIdentity.rolsuper,true,"the isolated test database URL must authenticate as a disposable superuser");
+  const telegramIdentity=(await workerPool.query("SELECT current_database() AS name, session_user AS role")).rows[0];
+  const baleIdentity=(await balePool.query("SELECT current_database() AS name, session_user AS role")).rows[0];
+  assert.deepEqual(telegramIdentity,{name:"bot_test",role:"aroman_bot_telegram"});
+  assert.deepEqual(baleIdentity,{name:"bot_test",role:"aroman_bot_bale"});
   for(const migration of ["003_create_scent_bot_sessions.sql","004_add_scent_bot_outbox.sql","006_bound_bot_delivery_retries.sql","007_bounded_bot_control_queue_metrics.sql","008_isolate_bot_provider_rows.sql"]){
    await pool.query(await readFile(`db/migrations/${migration}`,"utf8"));
   }
