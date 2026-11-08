@@ -8,12 +8,19 @@ const productionCompose = readFileSync(new URL("../compose.prod.bots.yaml", impo
 const swedenCompose = readFileSync(new URL("../compose.sweden.telegram.yaml", import.meta.url), "utf8");
 const afraCompose = readFileSync(new URL("../compose.afra.bale.yaml", import.meta.url), "utf8");
 const roleSql = readFileSync(new URL("../db/production/reconcile-bot-roles.sql", import.meta.url), "utf8");
+const grantSql = readFileSync(new URL("../db/production/grant-bot-privileges.sql", import.meta.url), "utf8");
 
 test("opt-in bot overlays mount only the provider secrets at the paths workers and role SQL expect", () => {
   assert.match(localCompose, /source: telegram_bot_database_password\s+target: db_telegram_bot_password/);
   assert.match(localCompose, /source: bale_bot_database_password\s+target: db_bale_bot_password/);
   assert.match(roleSql, /\/run\/secrets\/db_telegram_bot_password/);
   assert.match(roleSql, /\/run\/secrets\/db_bale_bot_password/);
+  assert.match(roleSql, /pg_shdepend/);
+  assert.match(roleSql, /BEGIN;[\\s\\S]*COMMIT;/);
+  assert.match(grantSql, /pg_policies/);
+  assert.match(grantSql, /REVOKE ALL PRIVILEGES ON DATABASE/);
+  assert.match(grantSql, /REVOKE ALL PRIVILEGES ON SCHEMA public/);
+  assert.match(grantSql, /ALL ROUTINES IN SCHEMA public/);
   assert.match(localCompose, /profiles: \[bots, telegram\]/);
   assert.match(localCompose, /profiles: \[bots, bale\]/);
   assert.match(productionCompose, /profiles: \[provision-bot-roles\]/);
