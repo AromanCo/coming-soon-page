@@ -16,7 +16,7 @@ test("opt-in bot overlays mount only the provider secrets at the paths workers a
   assert.match(roleSql, /\/run\/secrets\/db_telegram_bot_password/);
   assert.match(roleSql, /\/run\/secrets\/db_bale_bot_password/);
   assert.match(roleSql, /pg_shdepend/);
-  assert.match(roleSql, /BEGIN;[\\s\\S]*COMMIT;/);
+  assert.match(roleSql, /BEGIN;[\s\S]*COMMIT;/);
   assert.match(grantSql, /pg_policies/);
   assert.match(grantSql, /REVOKE ALL PRIVILEGES ON DATABASE/);
   assert.match(grantSql, /REVOKE ALL PRIVILEGES ON SCHEMA public/);
