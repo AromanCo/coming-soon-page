@@ -102,7 +102,7 @@ SELECT format('REVOKE ALL PRIVILEGES ON ALL ROUTINES IN SCHEMA public FROM %I', 
 
 -- The website's least-privilege entry points are SECURITY DEFINER. Remove
 -- PUBLIC execution even on local stacks that do not run the website grant script.
-DO $
+DO $$
 BEGIN
   IF to_regprocedure('public.aroman_register_rate_limit(text)') IS NOT NULL THEN
     EXECUTE 'REVOKE EXECUTE ON FUNCTION public.aroman_register_rate_limit(TEXT) FROM PUBLIC';
@@ -111,7 +111,7 @@ BEGIN
     EXECUTE 'REVOKE EXECUTE ON FUNCTION public.aroman_create_waitlist_subscription(TEXT, TEXT, TEXT) FROM PUBLIC';
   END IF;
 END
-$;
+$$;
 
 REVOKE ALL PRIVILEGES ON TABLE scent_bot_sessions, scent_bot_poll_offsets, scent_bot_outbox, scent_bot_delivery_metrics FROM PUBLIC;
 REVOKE ALL PRIVILEGES ON SEQUENCE scent_bot_outbox_id_seq FROM PUBLIC;
