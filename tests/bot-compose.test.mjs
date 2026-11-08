@@ -20,6 +20,8 @@ test("opt-in bot overlays mount only the provider secrets at the paths workers a
   assert.match(grantSql, /pg_policies/);
   assert.match(grantSql, /REVOKE ALL PRIVILEGES ON DATABASE/);
   assert.match(grantSql, /REVOKE ALL PRIVILEGES ON SCHEMA public/);
+  assert.match(grantSql, /REVOKE CREATE ON SCHEMA public FROM PUBLIC/);
+  assert.match(grantSql, /REVOKE EXECUTE ON FUNCTION public.aroman_create_waitlist_subscription/);
   assert.match(grantSql, /ALL ROUTINES IN SCHEMA public/);
   assert.match(grantSql, /pg_auth_members/);
   assert.match(grantSql, /pg_shdepend/);
