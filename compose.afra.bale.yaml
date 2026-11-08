@@ -1,0 +1,57 @@
+# Afra production worker overlay for the existing compose.yaml stack.
+# Append after Afra's host-managed Compose files; do not replace them.
+services:
+  db:
+    networks:
+      - afra-bot-database
+
+  bale-bot:
+    image: aroman-scent-companion:${SCENT_BOT_IMAGE_TAG:?Set an approved bot image tag}
+    build:
+      context: .
+      dockerfile: Dockerfile.bot
+    command: ["node", "scripts/run-scent-companion.mjs", "bale"]
+    profiles: [bale]
+    restart: unless-stopped
+    init: true
+    stop_grace_period: 45s
+    read_only: true
+    tmpfs:
+      - /tmp:size=16m,mode=1777
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    networks:
+      - afra-bot-database
+      - bot-egress
+    environment:
+      NODE_ENV: production
+      PGHOST: db
+      PGPORT: "5432"
+      PGDATABASE: ${POSTGRES_DB:?Set POSTGRES_DB}
+      PGUSER: aroman_bot_bale
+      BALE_BOT_TOKEN_FILE: /run/secrets/bale_bot_token
+      BALE_BOT_DATABASE_PASSWORD_FILE: /run/secrets/db_bale_bot_password
+      DATABASE_SSL: ${DATABASE_SSL:-false}
+      BOT_PUBLIC_SITE_URL: ${BOT_PUBLIC_SITE_URL:-https://aroman.ir}
+      BOT_MEDIA_BASE_URL: ${BOT_MEDIA_BASE_URL:-}
+    secrets:
+      - bale_bot_token
+      - db_bale_bot_password
+
+secrets:
+  bale_bot_token:
+    file: ${AROMAN_SECRETS_DIR:-./secrets/production}/bale_bot_token
+  db_bale_bot_password:
+    file: ${AROMAN_SECRETS_DIR:-./secrets/production}/db_bale_bot_password
+
+networks:
+  # PostgreSQL joins this additional internal network. It is not attached to
+  # bot-egress and has no published host port.
+  afra-bot-database:
+    driver: bridge
+    internal: true
+  # Destination restrictions require an Afra host firewall policy.
+  bot-egress:
+    driver: bridge

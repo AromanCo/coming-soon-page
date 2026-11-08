@@ -1,0 +1,47 @@
+# Sweden worker-only deployment. The operator supplies a private Afra
+# PostgreSQL endpoint reachable through the host's approved private route.
+services:
+  telegram-bot:
+    image: aroman-scent-companion:${SCENT_BOT_IMAGE_TAG:?Set an approved bot image tag}
+    build:
+      context: .
+      dockerfile: Dockerfile.bot
+    command: ["node", "scripts/run-scent-companion.mjs", "telegram"]
+    restart: unless-stopped
+    init: true
+    stop_grace_period: 45s
+    read_only: true
+    tmpfs:
+      - /tmp:size=16m,mode=1777
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    networks:
+      - default
+    environment:
+      NODE_ENV: production
+      PGHOST: ${AFRA_PRIVATE_DB_HOST:?Set AFRA_PRIVATE_DB_HOST to the private Afra endpoint}
+      PGPORT: ${AFRA_PRIVATE_DB_PORT:?Set AFRA_PRIVATE_DB_PORT}
+      PGDATABASE: ${POSTGRES_DB:?Set POSTGRES_DB}
+      PGUSER: aroman_bot_telegram
+      TELEGRAM_BOT_TOKEN_FILE: /run/secrets/telegram_bot_token
+      TELEGRAM_BOT_DATABASE_PASSWORD_FILE: /run/secrets/db_telegram_bot_password
+      DATABASE_SSL: ${DATABASE_SSL:-true}
+      BOT_PUBLIC_SITE_URL: ${BOT_PUBLIC_SITE_URL:-https://aroman.ir}
+      BOT_MEDIA_BASE_URL: ${BOT_MEDIA_BASE_URL:-}
+    secrets:
+      - telegram_bot_token
+      - db_telegram_bot_password
+
+secrets:
+  telegram_bot_token:
+    file: ${AROMAN_SECRETS_DIR:-./secrets/production}/telegram_bot_token
+  db_telegram_bot_password:
+    file: ${AROMAN_SECRETS_DIR:-./secrets/production}/db_telegram_bot_password
+
+networks:
+  # This bridge provides outbound access. The host must route the private Afra
+  # destination and enforce egress policy; the tunnel itself is host managed.
+  default:
+    driver: bridge
