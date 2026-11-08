@@ -6,7 +6,7 @@
 -- commits before ownership validation so a later refusal leaves bots offline.
 BEGIN;
 
-DO $
+DO $$
 DECLARE
   edge RECORD;
 BEGIN
@@ -21,9 +21,9 @@ BEGIN
     EXECUTE format('REVOKE %I FROM %I', edge.granted_role, edge.member_role);
   END LOOP;
 END
-$;
+$$;
 
-DO $
+DO $$
 BEGIN
   IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'aroman_bot_telegram') THEN
     ALTER ROLE aroman_bot_telegram NOLOGIN;
@@ -35,7 +35,7 @@ BEGIN
     ALTER ROLE aroman_bot NOLOGIN;
   END IF;
 END
-$;
+$$;
 
 COMMIT;
 
