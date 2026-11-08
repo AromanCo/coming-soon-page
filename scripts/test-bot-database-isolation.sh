@@ -110,10 +110,26 @@ if docker exec -i "$container_name" psql -X -U postgres -d bot_test \
   echo "Role reconciliation unexpectedly accepted a provider-owned database object" >&2
   exit 1
 fi
+provider_login_state=$(docker exec "$container_name" psql -X -U postgres -d bot_test -Atc "
+  SELECT string_agg(CASE WHEN rolcanlogin THEN 't' ELSE 'f' END, '|' ORDER BY rolname)
+  FROM pg_roles WHERE rolname IN ('aroman_bot_bale','aroman_bot_telegram')
+")
+[[ "$provider_login_state" == "f|f" ]] || {
+  echo "Unsafe provider logins were not left disabled after ownership refusal" >&2
+  exit 1
+}
 docker exec "$container_name" psql -X -U postgres -d bot_test -v ON_ERROR_STOP=1 \
   -c "ALTER TABLE public.synthetic_bot_owned_probe OWNER TO aroman_migrate_test; DROP TABLE public.synthetic_bot_owned_probe"
 docker exec -i "$container_name" psql -X -U postgres -d bot_test \
   --set ON_ERROR_STOP=1 --file - < "$repo_dir/db/production/reconcile-bot-roles.sql"
+provider_login_state=$(docker exec "$container_name" psql -X -U postgres -d bot_test -Atc "
+  SELECT string_agg(CASE WHEN rolcanlogin THEN 't' ELSE 'f' END, '|' ORDER BY rolname)
+  FROM pg_roles WHERE rolname IN ('aroman_bot_bale','aroman_bot_telegram')
+")
+[[ "$provider_login_state" == "t|t" ]] || {
+  echo "Provider logins were not re-enabled after ownership was corrected" >&2
+  exit 1
+}
 
 echo "=== APPLY WEBSITE RUNTIME FUNCTION GRANTS ==="
 docker exec -i "$container_name" psql -X -U postgres -d bot_test \
