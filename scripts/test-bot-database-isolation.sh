@@ -94,8 +94,8 @@ membership_count=$(docker exec "$container_name" psql -X -U postgres -d bot_test
   FROM pg_auth_members m
   JOIN pg_roles granted ON granted.oid=m.roleid
   JOIN pg_roles member ON member.oid=m.member
-  WHERE granted.rolname IN ('aroman_bot_telegram','aroman_bot_bale')
-     OR member.rolname IN ('aroman_bot_telegram','aroman_bot_bale')
+  WHERE granted.rolname IN ('aroman_bot_telegram','aroman_bot_bale','aroman_bot')
+     OR member.rolname IN ('aroman_bot_telegram','aroman_bot_bale','aroman_bot')
 ")
 [[ "$membership_count" == "0" ]] || {
   echo "Provider role memberships were not fully removed" >&2
