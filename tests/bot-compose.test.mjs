@@ -84,6 +84,9 @@ test("disposable PostgreSQL bot isolation harness is syntax-valid and loopback-o
   assert.ok(databaseIsolationScript.includes('--publish "127.0.0.1:${port}:5432"'));
   assert.ok(databaseIsolationScript.includes("synthetic_ci_admin_pw_16_14"));
   assert.ok(databaseIsolationScript.includes("synthetic_bot_owned_probe"));
+  assert.ok(databaseIsolationScript.includes('== "f|f"'));
+  assert.ok(databaseIsolationScript.includes('== "f|t"'));
+  assert.ok(databaseIsolationScript.includes('== "t|t"'));
   assert.ok(databaseIsolationScript.includes("DISABLE ROW LEVEL SECURITY"));
   assert.ok(databaseIsolationScript.includes("tests/scent-bot-postgres.integration.test.mjs"));
   assert.ok(databaseIsolationScript.includes("docker rm -f"));
