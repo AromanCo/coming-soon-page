@@ -50,7 +50,7 @@ services:
     command:
       - |
         for secret_file in /run/secrets/db_telegram_bot_password /run/secrets/db_bale_bot_password; do
-          if [ ! -s "$secret_file" ] || [ "$(awk 'END { print NR }' "$secret_file")" -ne 1 ] || grep -q "$(printf '\\r')" "$secret_file"; then
+          if [ ! -s "$secret_file" ] || [ "$(awk 'END { print NR }' "$secret_file")" -ne 1 ] || grep -q "$(printf '\r')" "$secret_file"; then
             echo "Provider database password must be a non-empty single-line secret: $secret_file" >&2
             exit 1
           fi
