@@ -1,5 +1,7 @@
 # Sweden worker-only deployment. The operator supplies a private Afra
 # PostgreSQL endpoint reachable through the host's approved private route.
+# For the temporary Afra setup, PostgreSQL traffic uses the encrypted SSH
+# reverse tunnel because PostgreSQL SSL is disabled there.
 services:
   telegram-bot:
     image: aroman-scent-companion:${SCENT_BOT_IMAGE_TAG:?Set an approved bot image tag}
@@ -18,7 +20,7 @@ services:
     cap_drop:
       - ALL
     networks:
-      - default
+      - aroman-telegram
     environment:
       NODE_ENV: production
       PGHOST: ${AFRA_PRIVATE_DB_HOST:?Set AFRA_PRIVATE_DB_HOST to the private Afra endpoint}
@@ -27,7 +29,7 @@ services:
       PGUSER: aroman_bot_telegram
       TELEGRAM_BOT_TOKEN_FILE: /run/secrets/telegram_bot_token
       TELEGRAM_BOT_DATABASE_PASSWORD_FILE: /run/secrets/db_telegram_bot_password
-      DATABASE_SSL: ${DATABASE_SSL:-true}
+      DATABASE_SSL: "false"
       BOT_PUBLIC_SITE_URL: ${BOT_PUBLIC_SITE_URL:-https://aroman.ir}
       BOT_MEDIA_BASE_URL: ${BOT_MEDIA_BASE_URL:-}
     secrets:
@@ -41,7 +43,7 @@ secrets:
     file: ${AROMAN_SECRETS_DIR:-./secrets/production}/db_telegram_bot_password
 
 networks:
-  # This bridge provides outbound access. The host must route the private Afra
-  # destination and enforce egress policy; the tunnel itself is host managed.
-  default:
-    driver: bridge
+  # This pre-existing network reaches the host-managed SSH tunnel endpoint.
+  aroman-telegram:
+    name: aroman-telegram
+    external: true
