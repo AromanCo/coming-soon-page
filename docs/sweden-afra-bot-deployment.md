@@ -21,11 +21,13 @@ migrations.
   PostgreSQL SSL is disabled; database traffic must use the encrypted SSH
   reverse tunnel.
 - `compose.afra.bale.yaml` is appended after Afra's existing host-managed
-  Compose files. It adds an internal network to the existing `db` service and
-  Bale worker, and a separate bridge egress network to Bale. The existing
-  database remains off the egress network and has no published port. The
-  worker uses `aroman_bot_bale` and only Bale secret files. It defines no
-  Telegram worker and cannot start Telegram polling.
+  four-file Compose configuration. Bale joins the already-existing `backend`
+  network for PostgreSQL access and a separate `bot-egress` bridge for provider
+  API access. The overlay does not change the `db`, `web`, or `migrate` service
+  definitions, so attaching Bale does not require a database restart. The DB
+  remains off `bot-egress` and has no published port. Bale uses
+  `aroman_bot_bale` and only Bale secret files. It defines no Telegram worker
+  and cannot start Telegram polling.
 - `compose.prod.bots.yaml` is for the repository's standard production stack,
   not a replacement for Afra's host-managed Compose files.
 
@@ -34,6 +36,15 @@ values and an operator-owned environment file. Do not put real secrets in
 shell history or commit environment files. Compose secret file paths must be
 readable by the Docker daemon; protect each provider token and database
 password with restrictive host permissions and keep them in separate files.
+
+The Afra Bale overlay deliberately shares the existing backend network with
+the website and PostgreSQL for this temporary deployment. This lets the worker
+reach the current database without changing or recreating the database
+container, but it also means Docker networking does not isolate Bale from
+other backend services. Provider-specific database roles, least-privilege
+grants and `session_user` RLS remain mandatory. The separate `bot-egress`
+network is not an outbound allowlist; verify Afra host firewall rules for
+provider API destinations before starting Bale.
 
 ## Private Sweden to Afra database path
 
@@ -124,24 +135,87 @@ lock; the database retains its committed offsets and pending deliveries.
 1. Preserve Afra's existing Compose file order, image overrides, database
    compatibility override and project name. Append only
    `compose.afra.bale.yaml` for this worker configuration.
-2. Verify the merged configuration preserves existing web/database settings,
-   joins `db` and Bale to the internal bot database network, and attaches only
-   Bale to the egress network. Confirm the host firewall applies the required
-   outbound destination policy.
+2. Verify the merged configuration leaves `db`, `web` and `migrate` identical
+   to the existing four-file configuration, joins Bale to `backend` and
+   `bot-egress`, and leaves `db` off `bot-egress`. Confirm the host firewall
+   applies the required outbound destination policy.
 3. Through the existing authorized change and backup process, verify database
    version/image, current migrations, provider roles and grants. Provision
    roles only as a separately approved step. No routine Bale restart should
    run role reconciliation.
 4. Check for an existing Bale worker and webhook conflict. Render configuration
-   with synthetic values, then start only the Bale profile. Verify lock
-   acquisition and worker startup using sanitized logs; verify the website
-   independently.
+   with synthetic values. Under an approved deployment change, append the Bale
+   overlay after Afra's four existing files and start only the explicitly
+   selected worker, without starting its dependencies:
+
+   ```sh
+   docker compose --project-directory "$AFRA_CHECKOUT" \
+     -f "$AFRA_CHECKOUT/compose.yaml" \
+     -f "$AFRA_ECR_COMPOSE" \
+     -f "$AFRA_NGINX_COMPOSE" \
+     -f "$AFRA_DB_COMPAT_OVERRIDE" \
+     -f "$AFRA_CHECKOUT/compose.afra.bale.yaml" \
+     --profile bale up -d --no-deps --no-build --pull never bale-bot
+   ```
+
+   Use an already-present approved worker image. Do not run `up` for the whole
+   project or for `db`, `web` or `migrate`. Verify Bale lock acquisition and
+   worker startup using sanitized logs; verify the website independently.
 
 Rollback: stop Bale, restore the previous Bale image and Compose configuration,
 and leave the existing website, database volume and host-managed overrides in
 place. Do not run `down -v`, remove database volumes, or reverse migrations as
 part of worker rollback. Use only the separately approved database recovery
 procedure if database recovery is needed.
+
+## Existing-volume role SQL delivery proposal
+
+The role SQL scripts expect their password files at `/run/secrets/*`. They can
+receive those files through a short-lived PostgreSQL client container instead
+of adding mounts or files to the running database container. This is a proposal
+for a separately authorized role change; it has not been run against Afra.
+First stage the expected files in a protected host directory and verify that
+the local `postgres:16-alpine` client image is already present. Then invoke a
+disposable client with read-only bind mounts for secrets and SQL, sharing only
+the current DB container's network namespace:
+
+```sh
+docker run --rm --pull=never --user 0:0 \
+  --network aroman-coming-soon_backend \
+  --mount type=bind,source=/etc/aroman/secrets,target=/run/secrets,readonly \
+  --mount type=bind,source="$RELEASE_CHECKOUT/db/production",target=/sql,readonly \
+  postgres:16-alpine sh -ec '
+    export PGHOST=db PGPORT=5432 PGDATABASE=aroman
+    export PGPASSWORD="$(tr -d "\n" </run/secrets/db_admin_password)"
+    psql -X -w -v ON_ERROR_STOP=1 \
+      -v database_name=aroman -v admin_user=aroman \
+      -v migration_user=aroman_migrate -v app_user=aroman_app \
+      -U aroman --file /sql/create-roles.sql
+  '
+```
+
+The script's own `\set` commands read the migration/app passwords from the
+same read-only `/run/secrets` mount. Run `grant-runtime-privileges.sql` in a
+separate disposable client using `db_migration_password` for its connection
+and `-U aroman_migrate`; this ensures the `SECURITY DEFINER` functions are
+owned by the restricted migration role. For bot setup, use a separate client
+with the admin password to run `reconcile-bot-roles.sql`, then
+`grant-bot-privileges.sql` once per provider. Do not put password contents in
+arguments or logs. `--rm` removes each client; the command does not mount the
+database volume or modify the running DB container. The admin secret must
+preserve the current `aroman` password until the website cutover succeeds.
+
+For the website cutover, Afra's existing base `compose.yaml` passes
+`DATABASE_URL` from the project environment file. Set that value to the
+`aroman_app` connection string and add
+`DATABASE_USE_LEAST_PRIVILEGE_FUNCTIONS: "true"` under `web.environment` in an
+already-included Afra override. Render the unchanged four-file order plus the
+override with `docker compose config --quiet`; do not print resolved
+configuration. Treat the environment file as a credential store: the November 9 Afra check confirmed mode `0600` for both the original
+project `.env` and `/etc/aroman/production.env`. Reverify permissions
+and the effective override before the production cutover.
+Applying changed web environment requires an explicitly selected web update;
+do not include database dependencies in that update.
 
 ## Operator decisions still required
 

@@ -72,8 +72,8 @@ test("Sweden and Afra topology overlays isolate providers and database ingress",
   assert.match(afraCompose, /PGUSER: aroman_bot_bale/);
   assert.match(afraCompose, /BALE_BOT_TOKEN_FILE:/);
   assert.match(afraCompose, /BALE_BOT_DATABASE_PASSWORD_FILE:/);
-  assert.match(afraCompose, /afra-bot-database:\s+driver: bridge\s+internal: true/);
-  assert.match(afraCompose, /bale-bot:[\s\S]*?networks:\s+- afra-bot-database\s+- bot-egress/);
+  assert.match(afraCompose, /bale-bot:[\s\S]*?networks:\s+- backend\s+- bot-egress/);
+  assert.doesNotMatch(afraCompose, /afra-bot-database|^\s{2}db:/m);
   assert.doesNotMatch(afraCompose, /telegram-bot:|ports:|bot-db-roles:|migrate:/);
   assert.match(afraCompose, /restart: unless-stopped/);
 });
