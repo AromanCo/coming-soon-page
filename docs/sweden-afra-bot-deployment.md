@@ -13,10 +13,13 @@ migrations.
   `SCENT_BOT_IMAGE_TAG`, and `AROMAN_SECRETS_DIR` through an operator-owned
   environment file. Compose has no default database host or port. The worker
   uses `aroman_bot_telegram` and mounts only the Telegram token and Telegram
-  database password files. It has no published ports, runs read-only as the
-  unprivileged image user, drops capabilities, and restarts under
-  `unless-stopped` supervision. Its bridge network provides outbound routing;
-  it does not create or configure a tunnel.
+  database password files. It joins the pre-existing external Docker network
+  `aroman-telegram`; Compose does not create that network or configure a
+  tunnel. It has no published ports, runs read-only as the unprivileged image
+  user, drops capabilities, and restarts under `unless-stopped` supervision.
+  For the temporary Afra setup, `DATABASE_SSL` is explicitly false because
+  PostgreSQL SSL is disabled; database traffic must use the encrypted SSH
+  reverse tunnel.
 - `compose.afra.bale.yaml` is appended after Afra's existing host-managed
   Compose files. It adds an internal network to the existing `db` service and
   Bale worker, and a separate bridge egress network to Bale. The existing
@@ -34,11 +37,12 @@ password with restrictive host permissions and keep them in separate files.
 
 ## Private Sweden to Afra database path
 
-The operator must select and operate the private network or tunnel. Choose a
-stable private Afra database address and port and provide those values through
-Sweden's configuration; this repository assumes no IP, DNS name, tunnel
-product, or public endpoint. Docker internal networks only connect containers
-attached to that Docker network. They do not connect Sweden to Afra.
+The operator must operate the host-managed SSH reverse tunnel and route. Choose
+a stable private Afra database address and port and provide those values
+through Sweden's configuration. The existing `aroman-telegram` external Docker
+network must already connect the worker to the host-side tunnel endpoint;
+Compose only attaches the worker to it. The Docker network does not create the
+tunnel or connect Sweden to Afra by itself.
 
 The private path must meet all of these controls before the Telegram worker is
 started:
@@ -59,13 +63,13 @@ started:
 4. Use a distinct database password for each provider. Keep row-level
    `session_user` policies and grants in place; do not give either worker the
    admin or migration role.
-5. Prefer PostgreSQL TLS with a certificate valid for the configured database
-   hostname and a chain trusted by the worker's Node.js trust store. When
-   `DATABASE_SSL=true`, the worker verifies the certificate and rejects
-   invalid identities. Never set a bypass of certificate verification. If
-   Afra uses a private CA that is not in Node.js's trust store, add and review
-   an explicit CA-file configuration before enabling TLS. The private tunnel
-   should still be authenticated and encrypted if database TLS is not enabled.
+5. For the current temporary Afra deployment, PostgreSQL SSL is disabled and
+   the Sweden overlay sets `DATABASE_SSL=false`. Use only the authenticated,
+   encrypted SSH reverse tunnel for database traffic; do not route this
+   connection directly over a public interface. If PostgreSQL TLS is enabled
+   in a later deployment, change the overlay only after validating the
+   certificate hostname and trust chain. When `DATABASE_SSL=true`, the worker
+   verifies the certificate and rejects invalid identities.
 
 If the private route or database fails, the worker retries polling/database
 errors with bounded backoff. Loss of its pinned advisory-lock session causes

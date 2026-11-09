@@ -34,10 +34,26 @@ test("Sweden Compose renders as one Telegram worker and no database, website or 
   const worker = rendered.services["telegram-bot"];
   assert.equal(worker.environment.PGHOST, "afra-private.example.invalid");
   assert.equal(worker.environment.PGPORT, "55432");
+  assert.equal(worker.environment.PGDATABASE, "aroman_test");
   assert.equal(worker.environment.PGUSER, "aroman_bot_telegram");
+  assert.equal(worker.environment.DATABASE_SSL, "false");
+  assert.deepEqual(Object.keys(worker.networks), ["aroman-telegram"]);
+  assert.equal(rendered.networks["aroman-telegram"].name, "aroman-telegram");
+  assert.equal(rendered.networks["aroman-telegram"].external, true);
+  assert.equal(rendered.networks.default, undefined);
   assert.equal(worker.ports, undefined);
+  assert.deepEqual(worker.command, ["node", "scripts/run-scent-companion.mjs", "telegram"]);
+  assert.equal(worker.restart, "unless-stopped");
+  assert.equal(worker.stop_grace_period, "45s");
+  assert.equal(worker.init, true);
   assert.equal(worker.read_only, true);
+  assert.deepEqual(worker.security_opt, ["no-new-privileges:true"]);
+  assert.deepEqual(worker.cap_drop, ["ALL"]);
+  assert.equal(worker.environment.TELEGRAM_BOT_TOKEN_FILE, "/run/secrets/telegram_bot_token");
+  assert.equal(worker.environment.TELEGRAM_BOT_DATABASE_PASSWORD_FILE, "/run/secrets/db_telegram_bot_password");
   assert.deepEqual(worker.secrets.map(secret => secret.source).sort(), ["db_telegram_bot_password", "telegram_bot_token"]);
+  assert.equal(rendered.secrets.telegram_bot_token.file, "/tmp/aroman-synthetic-secrets/telegram_bot_token");
+  assert.equal(rendered.secrets.db_telegram_bot_password.file, "/tmp/aroman-synthetic-secrets/db_telegram_bot_password");
 });
 
 test("Afra Bale overlay retains base web/database settings and isolates the database from egress", () => {
