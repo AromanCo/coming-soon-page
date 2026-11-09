@@ -1,10 +1,6 @@
 # Afra production worker overlay for the existing compose.yaml stack.
 # Append after Afra's host-managed Compose files; do not replace them.
 services:
-  db:
-    networks:
-      - afra-bot-database
-
   bale-bot:
     image: aroman-scent-companion:${SCENT_BOT_IMAGE_TAG:?Set an approved bot image tag}
     build:
@@ -23,7 +19,7 @@ services:
     cap_drop:
       - ALL
     networks:
-      - afra-bot-database
+      - backend
       - bot-egress
     environment:
       NODE_ENV: production
@@ -47,11 +43,7 @@ secrets:
     file: ${AROMAN_SECRETS_DIR:-./secrets/production}/db_bale_bot_password
 
 networks:
-  # PostgreSQL joins this additional internal network. It is not attached to
-  # bot-egress and has no published host port.
-  afra-bot-database:
-    driver: bridge
-    internal: true
-  # Destination restrictions require an Afra host firewall policy.
+  # The existing backend network is shared with the website and PostgreSQL.
+  # Destination restrictions still require an Afra host firewall policy.
   bot-egress:
     driver: bridge

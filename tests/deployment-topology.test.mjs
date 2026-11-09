@@ -4,11 +4,19 @@ import process from "node:process";
 import { test } from "node:test";
 
 const composeEnv = {
-  ...process.env,
+  PATH: process.env.PATH ?? "/usr/bin:/bin",
+  HOME: process.env.HOME ?? "/tmp",
+  DOCKER_HOST: "unix:///var/run/docker.sock",
+  COMPOSE_PROJECT_NAME: "aroman-compose-test",
+  POSTGRES_USER: "synthetic-db-admin",
   POSTGRES_PASSWORD: "synthetic-db-password",
   POSTGRES_DB: "aroman_test",
   DATABASE_URL: "postgres://synthetic:synthetic@db:5432/aroman_test",
+  DATABASE_SSL: "false",
   WAITLIST_HASH_SECRET: "synthetic-waitlist-secret",
+  POSTGRES_ADMIN_USER: "synthetic-db-admin",
+  POSTGRES_MIGRATION_USER: "synthetic-db-migrate",
+  POSTGRES_APP_USER: "synthetic-db-app",
   SCENT_BOT_IMAGE_TAG: "test",
   AROMAN_SECRETS_DIR: "/tmp/aroman-synthetic-secrets",
   AFRA_PRIVATE_DB_HOST: "afra-private.example.invalid",
@@ -56,24 +64,45 @@ test("Sweden Compose renders as one Telegram worker and no database, website or 
   assert.equal(rendered.secrets.db_telegram_bot_password.file, "/tmp/aroman-synthetic-secrets/db_telegram_bot_password");
 });
 
-test("Afra Bale overlay retains base web/database settings and isolates the database from egress", () => {
+test("Afra Bale overlay preserves web/database/migration and uses the existing backend network", () => {
   const base = config(["compose.yaml"]);
   const merged = config(["compose.yaml", "compose.afra.bale.yaml"], "bale");
   assert.deepEqual(merged.services.web, base.services.web);
-  for (const [key, value] of Object.entries(base.services.db)) {
-    if (key !== "networks") assert.deepEqual(merged.services.db[key], value);
-  }
-  assert.deepEqual(Object.keys(config(["compose.yaml", "compose.afra.bale.yaml"]).services).sort(),
-    Object.keys(base.services).sort());
+  assert.deepEqual(merged.services.db, base.services.db);
+  assert.deepEqual(merged.services.migrate, base.services.migrate);
+  const defaults = config(["compose.yaml", "compose.afra.bale.yaml"]);
+  assert.deepEqual(Object.keys(defaults.services).sort(), Object.keys(base.services).sort());
+  assert.equal(defaults.services["bale-bot"], undefined);
+  assert.equal(defaults.services["telegram-bot"], undefined);
   assert.ok(merged.services["bale-bot"]);
   assert.equal(merged.services["telegram-bot"], undefined);
   assert.equal(merged.services.db.ports, undefined);
-  assert.equal(merged.services["bale-bot"].ports, undefined);
-  assert.deepEqual(Object.keys(merged.services.db.networks).sort(), ["afra-bot-database", "backend"]);
-  assert.deepEqual(Object.keys(merged.services["bale-bot"].networks).sort(), ["afra-bot-database", "bot-egress"]);
-  assert.equal(merged.networks["afra-bot-database"].internal, true);
-  assert.equal(merged.services["bale-bot"].environment.PGUSER, "aroman_bot_bale");
-  assert.deepEqual(merged.services["bale-bot"].secrets.map(secret => secret.source).sort(), ["bale_bot_token", "db_bale_bot_password"]);
+  const worker = merged.services["bale-bot"];
+  assert.equal(worker.ports, undefined);
+  assert.deepEqual(Object.keys(merged.services.db.networks), Object.keys(base.services.db.networks));
+  assert.deepEqual(Object.keys(worker.networks).sort(), ["backend", "bot-egress"]);
+  assert.ok(Object.hasOwn(worker.networks, "backend"));
+  assert.ok(Object.hasOwn(worker.networks, "bot-egress"));
+  assert.equal(merged.services.db.networks["bot-egress"], undefined);
+  assert.equal(merged.networks["afra-bot-database"], undefined);
+  assert.deepEqual(merged.networks.backend, base.networks.backend);
+  assert.equal(worker.environment.PGHOST, "db");
+  assert.equal(worker.environment.PGPORT, "5432");
+  assert.equal(worker.environment.PGDATABASE, "aroman_test");
+  assert.equal(worker.environment.PGUSER, "aroman_bot_bale");
+  assert.equal(worker.environment.BALE_BOT_TOKEN_FILE, "/run/secrets/bale_bot_token");
+  assert.equal(worker.environment.BALE_BOT_DATABASE_PASSWORD_FILE, "/run/secrets/db_bale_bot_password");
+  assert.equal(worker.read_only, true);
+  assert.deepEqual(worker.security_opt, ["no-new-privileges:true"]);
+  assert.deepEqual(worker.cap_drop, ["ALL"]);
+  assert.equal(worker.restart, "unless-stopped");
+  assert.equal(worker.stop_grace_period, "45s");
+  assert.equal(worker.init, true);
+  assert.deepEqual(worker.command, ["node", "scripts/run-scent-companion.mjs", "bale"]);
+  assert.equal(worker.depends_on, undefined);
+  assert.deepEqual(worker.secrets.map(secret => secret.source).sort(), ["bale_bot_token", "db_bale_bot_password"]);
+  assert.equal(merged.secrets.bale_bot_token.file, "/tmp/aroman-synthetic-secrets/bale_bot_token");
+  assert.equal(merged.secrets.db_bale_bot_password.file, "/tmp/aroman-synthetic-secrets/db_bale_bot_password");
   assert.ok(!Object.keys(merged.services).some(name => /backup/i.test(name)));
 });
 
