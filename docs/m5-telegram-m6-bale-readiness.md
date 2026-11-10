@@ -6,6 +6,8 @@ is operator-provided status. No VPS, worker container, network, secret or
 database was inspected for this local task. M6 Bale remains a plan; this
 document does not authorize production changes.
 
+> **Historical record:** This document captures the M5/M6 planning and code review before production deployment. The operator subsequently verified that both Telegram (Sweden) and Bale (Afra) were live and operational on 2026-11-10. M7 verification and outstanding risks are recorded in [the operational handoff](m7-two-vps-operational-handoff-20261110.md). Preserve the earlier statements as timestamped review evidence, not as current status.
+
 ## M5 source and image provenance
 
 The reviewed source revision is
