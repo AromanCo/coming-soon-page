@@ -6,6 +6,10 @@ PostgreSQL stack and may run the Bale worker. Both provider workers must use
 the same Afra database; Sweden must not run PostgreSQL, the website, Bale or
 migrations.
 
+For the operator-reported M5 live acceptance, image provenance, rollback and
+the read-only M6 Afra preflight, see [M5 Telegram handoff and M6 Bale
+readiness](m5-telegram-m6-bale-readiness.md).
+
 ## Compose files
 
 - `compose.sweden.telegram.yaml` contains one Telegram worker. Supply

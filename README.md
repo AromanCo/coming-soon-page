@@ -4,7 +4,7 @@ A mobile-first Persian landing page for AROMAN, built with Next.js, React, Tailw
 
 ## Deployment architecture and launch roadmap
 
-> **Status snapshot — 2026-11-09:** The existing website and PostgreSQL are running on Afra. Telegram and Bale workers are implemented and locally tested but **not deployed**. PRs [#26](https://github.com/AromanCo/coming-soon-page/pull/26) and [#27](https://github.com/AromanCo/coming-soon-page/pull/27) are merged. **Production database changes and bot activation remain NO-GO** until the gates below pass. This roadmap describes the *target*, not a claim that every component is live.
+> **Status snapshot — 2026-11-10:** Per the M5 handoff, Telegram is running on Sweden and live `/start`, Scent Quest and `/forget` acceptance passed. This repository-only task did not inspect either VPS or verify the live image digest. Bale is not deployed. PRs [#26](https://github.com/AromanCo/coming-soon-page/pull/26) and [#27](https://github.com/AromanCo/coming-soon-page/pull/27) are merged. M6 remains **NO-GO** until its read-only Afra preflight and approval gates pass.
 
 ### Final architecture (two existing VPS servers)
 
@@ -37,10 +37,10 @@ flowchart TB
 | --- | --- | --- |
 | Coming Soon / Scent Quest / Waitlist website | Running on Afra; final QA outstanding | Verify public flows, privacy/content, and production configuration |
 | PostgreSQL / existing Waitlist schema | PostgreSQL 16.14 running; migrations 001–002 present | Preserve data and validate existing backup/restore |
-| Bot schema (003–008, including retention audit 005) | Passed isolated PostgreSQL 16.14 rehearsal; **not applied on Afra** | Apply under explicit database-change approval; verify schema and RLS |
-| Restricted runtime and provider database roles | Passed isolated rehearsal; **not provisioned on Afra** | Provision securely and prove grants, RLS, and website compatibility |
-| Sweden tunnel / Docker network | Previously tested; network and route established | Recheck service persistence, authenticated route, egress rules and access during deployment |
-| Telegram worker | Source, tests and Compose ready; **not running** | Approved image, secrets, provider login and end-to-end testing |
+| Bot schema (003–008, including retention audit 005) | Passed isolated PostgreSQL 16.14 rehearsal; production state was not inspected for this handoff | Verify the four bot tables and provider RLS read-only before M6 |
+| Restricted runtime and provider database roles | Passed isolated rehearsal; production role state was not inspected for this handoff | Verify `aroman_bot_bale` grants, attributes, memberships and login state before M6 |
+| Sweden tunnel / Docker network | M5 Telegram acceptance reported; network ownership and boot persistence were not inspected for this handoff | Verify the external network, authenticated route, egress rules and restart persistence |
+| Telegram worker | M5 accepted on Sweden per handoff: live `/start`, Scent Quest and `/forget` passed | Record live image ID/digest and recheck service, tunnel and network persistence read-only |
 | Bale worker | Network correction merged in PR #27; **not running** | Approved image, secrets, provider login and end-to-end testing |
 | Release security/operations | CI and local tests pass; runtime readiness not complete | Assess dependency alerts, backup/recovery, monitoring, rollback and final acceptance |
 
@@ -86,12 +86,13 @@ flowchart TB
 - [ ] Verify each provider can access only its own rows in sessions, poll offsets, outbox and delivery metrics; deny cross-provider writes and Waitlist reads.
 - **Gate:** Both provider identities and RLS pass before either bot starts.
 
-**M5 — Sweden Telegram activation: REQUIRES SEPARATE DEPLOYMENT APPROVAL**
+**M5 — Sweden Telegram activation: ACCEPTED PER HANDOFF**
 
 - [ ] Prepare/verify the approved immutable bot image and isolated Telegram-only Secret files; verify the existing tunnel and network from the actual worker path.
 - [ ] Render `compose.sweden.telegram.yaml`; confirm there is **only** `telegram-bot`, no published ports, and no competing Telegram polling worker or webhook.
-- [ ] Start **only** Telegram with an approved worker-only command; verify advisory lock, polling, Scent Companion conversation, state persistence, `/forget` and reconnect behavior without logging personal data.
-- **Gate:** Telegram is operational on Sweden against the shared Afra database.
+- [x] M5 handoff reports live `/start`, Scent Quest and `/forget` acceptance on Sweden.
+- [ ] Record the running image ID/digest and labels, and recheck the tunnel/network boot persistence read-only; no VPS was inspected in this repository task.
+- **Gate:** M5 acceptance is recorded; any image replacement remains a separate approved deployment.
 
 **M6 — Afra Bale activation: REQUIRES SEPARATE DEPLOYMENT APPROVAL**
 
@@ -115,7 +116,7 @@ flowchart TB
 
 **Never on Afra without an explicit, reviewed change:** `docker compose up` for the full project, an unscoped `migrate` service, `compose.prod.yaml` replacing host overrides, PostgreSQL image pulls/upgrades, `down -v`, database volume deletion, unreviewed role reconciliation, or app/bot restarts.
 
-For detailed runbooks and security controls see [Afra PostgreSQL image safety](docs/afra-postgres-image-safety.md), [Sweden/Afra bot deployment](docs/sweden-afra-bot-deployment.md), [Scent Companion bots](docs/scent-companion-bots.md), and [production deployment](docs/production-deployment.md). The local-development commands below are **not** the deployment procedure for Afra's existing four-file production stack.
+For detailed runbooks and security controls see [M5 Telegram handoff and M6 Bale readiness](docs/m5-telegram-m6-bale-readiness.md), [Afra PostgreSQL image safety](docs/afra-postgres-image-safety.md), [Sweden/Afra bot deployment](docs/sweden-afra-bot-deployment.md), [Scent Companion bots](docs/scent-companion-bots.md), and [production deployment](docs/production-deployment.md). The local-development commands below are **not** the deployment procedure for Afra's existing four-file production stack.
 
 ---
 
