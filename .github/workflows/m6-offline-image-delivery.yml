@@ -29,16 +29,23 @@ jobs:
     env:
       APPROVED_SOURCE_SHA: 3b7438c7f68adbbe93f9e04a98a49b814d8d9bfe
       IMAGE_REF: aroman-scent-companion:3b7438c7f68adbbe93f9e04a98a49b814d8d9bfe-m6slim
-      ARCHIVE_NAME: aroman-scent-companion-3b7438c7f68adbbe93f9e04a98a49b814d8d9bfe-m6slim.tar.gz
+      ENCRYPTED_ARCHIVE_NAME: aroman-scent-companion-3b7438c7f68adbbe93f9e04a98a49b814d8d9bfe-m6slim.tar.gz.age
+      CIPHERTEXT_CHECKSUM_NAME: aroman-scent-companion-3b7438c7f68adbbe93f9e04a98a49b814d8d9bfe-m6slim.tar.gz.age.sha256
       PROVENANCE_NAME: aroman-scent-companion-3b7438c7f68adbbe93f9e04a98a49b814d8d9bfe-m6slim.provenance.txt
-      ARTIFACT_NAME: aroman-scent-companion-3b7438c7f68adbbe93f9e04a98a49b814d8d9bfe-m6slim
+      ARTIFACT_NAME: aroman-scent-companion-3b7438c7f68adbbe93f9e04a98a49b814d8d9bfe-m6slim-age
     steps:
-      - name: Require private repository for image artifact
+      - name: Require configured age recipient
+        shell: bash
         env:
-          REPOSITORY_PRIVATE: ${{ github.event.repository.private }}
+          AGE_RECIPIENT: ${{ vars.M6_AGE_RECIPIENT }}
         run: |
-          if [[ "$REPOSITORY_PRIVATE" != "true" ]]; then
-            echo "Refusing to upload a worker image artifact from a public repository." >&2
+          set -euo pipefail
+          if [[ -z "${AGE_RECIPIENT:-}" ]]; then
+            echo "Required Actions variable M6_AGE_RECIPIENT is missing." >&2
+            exit 1
+          fi
+          if [[ ! "$AGE_RECIPIENT" =~ ^age1[023456789acdefghjklmnpqrstuvwxyz]+$ ]]; then
+            echo "M6_AGE_RECIPIENT must be an age bech32 recipient." >&2
             exit 1
           fi
 
@@ -53,6 +60,31 @@ jobs:
         run: |
           actual_revision="$(git rev-parse HEAD)"
           test "$actual_revision" = "$APPROVED_SOURCE_SHA"
+
+      - name: Install pinned age and verify recipient
+        shell: bash
+        env:
+          AGE_RECIPIENT: ${{ vars.M6_AGE_RECIPIENT }}
+        run: |
+          set -euo pipefail
+          age_archive="$RUNNER_TEMP/age-v1.3.2-linux-amd64.tar.gz"
+          curl --fail --location --silent --show-error \
+            "https://github.com/FiloSottile/age/releases/download/v1.3.2/age-v1.3.2-linux-amd64.tar.gz" \
+            --output "$age_archive"
+          printf '%s  %s\n' \
+            'cbe24006683f8eb669266162894b9a522a1af52f2665fbc63a4bb032ed26ac10' \
+            "$age_archive" | sha256sum --check
+          tar -xzf "$age_archive" -C "$RUNNER_TEMP"
+          age_bin="$RUNNER_TEMP/age/age"
+          age_inspect_bin="$RUNNER_TEMP/age/age-inspect"
+          "$age_bin" --version | grep -Fx 'v1.3.2'
+          echo "$RUNNER_TEMP/age" >> "$GITHUB_PATH"
+
+          probe_ciphertext="$RUNNER_TEMP/m6-age-recipient-probe.age"
+          printf '%s' 'Aroman M6 recipient validation probe' \
+            | "$age_bin" --encrypt --recipient "$AGE_RECIPIENT" > "$probe_ciphertext"
+          test -s "$probe_ciphertext"
+          "$age_inspect_bin" "$probe_ciphertext" > /dev/null
 
       - name: Build pinned amd64 image
         run: |
@@ -94,7 +126,9 @@ jobs:
               console.log("Offline worker imports passed as non-root with pg@8.23.1");
             '
 
-      - name: Export image, checksum and provenance
+      - name: Encrypt image archive, checksum ciphertext and write provenance
+        env:
+          AGE_RECIPIENT: ${{ vars.M6_AGE_RECIPIENT }}
         run: |
           set -euo pipefail
           image_id="$(docker image inspect "$IMAGE_REF" --format '{{.Id}}')"
@@ -103,10 +137,14 @@ jobs:
           configured_user="$(docker image inspect "$IMAGE_REF" --format '{{.Config.User}}')"
           revision="$(docker image inspect "$IMAGE_REF" --format '{{index .Config.Labels "org.opencontainers.image.revision"}}')"
 
-          docker save "$IMAGE_REF" | gzip -n -9 > "$ARCHIVE_NAME"
-          sha256sum "$ARCHIVE_NAME" > "$ARCHIVE_NAME.sha256"
-          sha256sum --check "$ARCHIVE_NAME.sha256"
-          archive_sha256="$(sha256sum "$ARCHIVE_NAME" | cut -d ' ' -f1)"
+          docker save "$IMAGE_REF" \
+            | gzip -n -9 \
+            | age --encrypt --recipient "$AGE_RECIPIENT" > "$ENCRYPTED_ARCHIVE_NAME"
+          test -s "$ENCRYPTED_ARCHIVE_NAME"
+          age-inspect "$ENCRYPTED_ARCHIVE_NAME" > /dev/null
+          sha256sum "$ENCRYPTED_ARCHIVE_NAME" > "$CIPHERTEXT_CHECKSUM_NAME"
+          sha256sum --check "$CIPHERTEXT_CHECKSUM_NAME"
+          ciphertext_sha256="$(sha256sum "$ENCRYPTED_ARCHIVE_NAME" | cut -d ' ' -f1)"
 
           cat > "$PROVENANCE_NAME" <<EOF
           image_ref=$IMAGE_REF
@@ -114,7 +152,9 @@ jobs:
           image_size_bytes=$image_size
           platform=$image_platform
           source_revision=$revision
-          archive_sha256=$archive_sha256
+          ciphertext_sha256=$ciphertext_sha256
+          encryption=age-recipient-v1
+          age_version=v1.3.2
           configured_user=$configured_user
           node_version=24.21.0
           pg_version=8.23.1
@@ -122,13 +162,13 @@ jobs:
           offline_runtime_imports=passed
           EOF
 
-      - name: Upload short-retention private artifact
+      - name: Upload encrypted short-retention artifact
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
           name: ${{ env.ARTIFACT_NAME }}
           path: |
-            ${{ env.ARCHIVE_NAME }}
-            ${{ env.ARCHIVE_NAME }}.sha256
+            ${{ env.ENCRYPTED_ARCHIVE_NAME }}
+            ${{ env.CIPHERTEXT_CHECKSUM_NAME }}
             ${{ env.PROVENANCE_NAME }}
           retention-days: 7
           if-no-files-found: error

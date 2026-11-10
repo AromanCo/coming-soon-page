@@ -60,7 +60,6 @@ publishing the approved artifact; a local image ID is not a registry digest.
 
 ## Offline image delivery workflow
 
-When the repository-private gate passes,
 `.github/workflows/m6-offline-image-delivery.yml` builds the approved
 `3b7438c7f68adbbe93f9e04a98a49b814d8d9bfe` source on GitHub-hosted
 `ubuntu-24.04`. Its trigger is a `push` to
@@ -68,31 +67,110 @@ When the repository-private gate passes,
 worker manifest/lockfile, or runtime inputs change. It checks out the approved
 source SHA explicitly even though the workflow itself is on a newer review
 branch commit. It does not publish to a container registry and has no
-production credentials. It uploads a compressed Docker archive, SHA-256 sidecar
-and provenance text as the seven-day artifact
-`aroman-scent-companion-3b7438c7f68adbbe93f9e04a98a49b814d8d9bfe-m6slim`.
-GitHub currently reports this repository as **public**. The workflow therefore
-stops at its first step and does not build or upload until the repository is
-private. This guard is necessary because workflow artifacts are downloadable
-by repository readers; in a public repository that includes anyone. No
-visibility setting was changed. A private repository or a separately approved
-restricted artifact destination is required to receive the image safely.
+production credentials. It keeps the pinned Node base digest and committed
+worker lockfile, verifies the image revision, non-root user, Node and `pg`
+versions, and offline imports. Before building, it requires the public
+`M6_AGE_RECIPIENT` Actions variable and tests that age can encrypt to it. It
+streams `docker save` through gzip and age; the plaintext archive is never
+written to disk or uploaded. It uploads only the age ciphertext, its SHA-256
+sidecar and non-sensitive provenance as the seven-day artifact
+`aroman-scent-companion-3b7438c7f68adbbe93f9e04a98a49b814d8d9bfe-m6slim-age`.
+
+The repository is public, so anyone able to download its workflow artifacts can
+obtain the ciphertext. The private age identity is held only by the authorized
+operator and is never placed in GitHub Actions, repository files or logs. The
+workflow has `contents: read` permission and no registry publishing or
+production credentials. It fails before image build if the recipient variable
+is absent or malformed, and fails if age cannot encrypt or inspect the result.
+The public key can encrypt but cannot decrypt; age inspection checks the
+ciphertext envelope, while the operator's local decryption verifies that the
+matching private identity is available and the archive is intact. No repository
+visibility setting was changed.
+
+### Local age key and artifact handling
+
+Generate the keypair on the trusted operator workstation, not in GitHub Actions
+or the repository. Protect the private identity and keep it in an approved
+private backup location:
+
+```sh
+install -d -m 700 "$HOME/.config/aroman"
+(umask 077 && age-keygen -o "$HOME/.config/aroman/m6-image-identity.txt")
+chmod 600 "$HOME/.config/aroman/m6-image-identity.txt"
+age-keygen -y "$HOME/.config/aroman/m6-image-identity.txt" \
+  > "$HOME/.config/aroman/m6-image-recipient.txt"
+chmod 600 "$HOME/.config/aroman/m6-image-recipient.txt"
+```
+
+In the repository's GitHub Settings, add the single `age1...` line from
+`m6-image-recipient.txt` as the Actions **variable** `M6_AGE_RECIPIENT`
+(`Settings` → `Secrets and variables` → `Actions` → `Variables`). This is a
+public key, not a secret. Confirm it matches the locally held private identity
+without printing or uploading that identity:
+
+```sh
+age-keygen -y "$HOME/.config/aroman/m6-image-identity.txt" \
+  | diff - "$HOME/.config/aroman/m6-image-recipient.txt"
+```
+
+After an approved workflow run, download the named artifact to a private local
+working directory. The repository is public, so treat the artifact as
+publicly downloadable ciphertext:
+
+```sh
+umask 077
+WORK_DIR="$(mktemp -d)"
+chmod 700 "$WORK_DIR"
+gh run download "$RUN_ID" \
+  --repo AromanCo/coming-soon-page \
+  --name aroman-scent-companion-3b7438c7f68adbbe93f9e04a98a49b814d8d9bfe-m6slim-age \
+  --dir "$WORK_DIR"
+cd "$WORK_DIR"
+sha256sum --check \
+  aroman-scent-companion-3b7438c7f68adbbe93f9e04a98a49b814d8d9bfe-m6slim.tar.gz.age.sha256
+```
+
+Decrypt only on that trusted workstation. The resulting Docker archive is
+plaintext and must remain in restricted local storage:
+
+```sh
+IDENTITY="$HOME/.config/aroman/m6-image-identity.txt"
+CIPHERTEXT="$WORK_DIR/aroman-scent-companion-3b7438c7f68adbbe93f9e04a98a49b814d8d9bfe-m6slim.tar.gz.age"
+PLAINTEXT="${CIPHERTEXT%.age}"
+age --decrypt --identity "$IDENTITY" --output "$PLAINTEXT" "$CIPHERTEXT"
+gzip --test "$PLAINTEXT"
+(cd "$WORK_DIR" && sha256sum "$(basename "$PLAINTEXT")" \
+  > "$(basename "$PLAINTEXT").sha256")
+```
+
+For a separately authorized transfer, use the existing verified Afra SSH alias
+and host key with strict checking, and send only the plaintext archive and its
+locally generated checksum to an approved restricted staging directory. Never
+send the private identity. Verify the plaintext checksum on Afra before image
+loading:
+
+```sh
+scp -o StrictHostKeyChecking=yes \
+  "$PLAINTEXT" "$PLAINTEXT.sha256" \
+  "$AFRA_SSH_ALIAS:$AFRA_STAGING_DIR/"
+ssh -o StrictHostKeyChecking=yes "$AFRA_SSH_ALIAS" \
+  "cd '$AFRA_STAGING_DIR' && sha256sum --check '$(basename "$PLAINTEXT").sha256'"
+```
 
 The workflow deliberately does not declare `workflow_dispatch`: GitHub only
 accepts manual-dispatch events for workflow files present on the default
 branch ([workflow trigger rules](https://docs.github.com/en/actions/how-tos/write-workflows/choose-when-workflows-run/trigger-a-workflow)).
 A branch-filtered `push` lets this workflow run from the review branch without
-changing `main` first. Artifact readers must have repository read access
-([GitHub artifact access](https://docs.github.com/en/actions/how-tos/manage-workflow-runs/download-workflow-artifacts)).
+changing `main` first. `gh run download` retrieves the artifact from that
+workflow run ([GitHub artifact access](https://docs.github.com/en/actions/how-tos/manage-workflow-runs/download-workflow-artifacts)).
 
 ### Afra import and non-executing verification procedure
 
-After separate approval and transfer by the authorized operator, verify the
-archive on Afra without starting a container or changing Compose:
+After separate approval and the verified SSH transfer above, an authorized
+operator can load the archive on Afra without starting a container or changing
+Compose:
 
 ```sh
-sha256sum --check \
-  aroman-scent-companion-3b7438c7f68adbbe93f9e04a98a49b814d8d9bfe-m6slim.tar.gz.sha256
 docker load --input \
   aroman-scent-companion-3b7438c7f68adbbe93f9e04a98a49b814d8d9bfe-m6slim.tar.gz
 docker image inspect \
@@ -105,7 +183,9 @@ user `node`, and the exact approved revision. The GitHub workflow already
 checked Node, `pg`, and offline module imports in an isolated no-network test
 container. Do not run `docker run`, `docker create`, or Compose on Afra for this
 verification. `docker load` adds only an image to the local image store; it
-does not recreate the database/website or start Bale. Confirm the Afra
+does not recreate the database/website or start Bale. The ciphertext checksum
+protects the downloaded encrypted bytes; verify the locally generated
+plaintext checksum after SSH transfer. Confirm the Afra
 architecture before transfer; this artifact is built for `linux/amd64`.
 
 ## M5 operational record and rollback
