@@ -9,23 +9,37 @@ const ids=(quiz,phase)=>phase==="quick"?quiz.stage1_questions:quiz.stage2_questi
 const summary=r=>r.recommendations.map((p,i)=>numeral(i+1)+". "+p.name+" — "+p.brand).join("\n");
 export function renderSession(s,{quiz,catalog,siteUrl}){
  const base=(siteUrl||"https://aroman.ir").replace(/\/$/,"");
- if(s.phase==="welcome")return {text:"✦ هم‌رایحه آرومان\n\nهر رایحه یک قصه دارد؛ قصه تو چیست؟\n۷ سؤال کوتاه، نتیجه شخصی و در صورت تمایل ۸ سؤال عمیق‌تر.\nبدون شماره موبایل و ثبت‌نام.",rows:[[btn("✨ شروع کشف سریع","n:quick")],[link("آرومان",base)]],photo:"/images/hero-atelier-composite.png"};
+ if(s.phase==="welcome")return {
+  text:"✦ هم‌رایحه آرومان\n\nهر رایحه، روایتی از توست.\nبا چند انتخاب ساده، امضای عطری خودت را پیدا کن.\n\n◦ ۷ سؤال کوتاه برای شروع\n◦ ۸ سؤال اختیاری برای شناخت عمیق‌تر\n◦ بدون شماره موبایل و ثبت‌نام\n\nآماده‌ای رایحه‌ات را کشف کنی؟",
+  rows:[[btn("شروع کشف رایحه ✨","n:quick")],[link("درباره آرومان",base)]],
+  photo:"/images/hero-atelier-composite.png"
+ };
  if(["quick","deep"].includes(s.phase)){
   const list=ids(quiz,s.phase),id=list[s.position],q=question(quiz,id);
   if(!q)throw Error("Invalid question state");
-  return {text:(s.phase==="quick"?"فصل اول · کشف سریع":"فصل دوم · کشف عمیق")+"\nسؤال "+numeral(s.position+1)+" از "+numeral(list.length)+"\n\n"+q.text+"\n\nبا حس خودت انتخاب کن.",rows:[...q.options.map((o,i)=>[btn(numeral(i+1)+" · "+o.label,"a:"+id+":"+i)]),[btn("↩ بازگشت","n:back")]],photo:"/images/path-discover.jpg"};
+  const heading=s.phase==="quick"?"کشف سریع":"کشف عمیق";
+  const dots="●".repeat(s.position+1)+"○".repeat(list.length-s.position-1);
+  return {
+   text:heading+" · سؤال "+numeral(s.position+1)+" از "+numeral(list.length)+"\n"+dots+"\n\n"+q.text+"\n\nبا حس خودت انتخاب کن.",
+   rows:[...q.options.map((o,i)=>[btn(numeral(i+1)+" · "+o.label,"a:"+id+":"+i)]),[btn("↩ سؤال قبل","n:back")]]
+  };
  }
  const deep=s.phase==="deep_result",result=rankScentQuest(quiz,catalog,s.answers,deep?"deep":"quick");
- const head=(deep?"✧ پرتره عمیق رایحه تو\n۱۵ پاسخ":"✨ نتیجه اولیه رایحه تو\n۷ پاسخ")+"\n\n"+result.archetype.title+"\n"+result.archetype.subtitle+"\n\n"+result.accords.join(" · ");
- const extra=deep?"\n\nپیشنهادها پس از بررسی تمام ۱۵ پاسخ:\n"+summary(result):"\n\nسه عطر پیشنهادی:\n"+summary(result)+"\n\nاگر خواستی ۸ سؤال دیگر عمیق‌تر برو.";
- return {text:head+extra,rows:[...(deep?[]:[[btn("🔮 کشف عمیق","n:deep")]]),[btn("🎁 اشتراک نتیجه","n:share")],[link("عضویت اختیاری در لیست دعوت",base+"/#waitlist")],[btn("شروع دوباره","n:reset")]],photo:"/scent-quest/result/"+result.archetype.slug+"/opengraph-image"};
+ const head=deep?"✧ پرتره عمیق رایحه تو":"✨ نتیجه اولیه رایحه تو";
+ const scope=deep?"بر اساس ۱۵ انتخاب":"بر اساس ۷ انتخاب";
+ const extra=deep?"\n\nبا ۸ انتخاب تازه، تصویر کامل‌تری از سلیقه‌ات پیدا کردیم.":"\n\nاگر دوست داری، با ۸ سؤال دیگر عمیق‌تر می‌رویم.";
+ return {
+  text:head+"\n"+scope+"\n\n"+result.archetype.title+"\n"+result.archetype.subtitle+"\n\n🌿 حال‌وهوای رایحه\n"+result.accords.join(" · ")+"\n\n✦ سه عطر پیشنهادی\n"+summary(result)+extra,
+  rows:[...(deep?[]:[[btn("🔮 کشف عمیق‌تر","n:deep")]]),[btn("🎁 اشتراک نتیجه","n:share")],[link("درباره آرومان",base)],[btn("↻ شروع دوباره","n:reset")]],
+  photo:"/scent-quest/result/"+result.archetype.slug+"/opengraph-image"
+ };
 }
 export function transitionSession(previous,action,deps){
  const s={phase:previous?.phase||"welcome",position:previous?.position||0,answers:{...(previous?.answers||{})}};
  const response=(changed=true)=>({session:s,changed,view:renderSession(s,deps)});
- if(action==="/forget"||action==="n:forget")return {erase:true,session:newSession(),changed:true,view:{text:"پیشرفتت حذف شد. با /start دوباره شروع کن.",rows:[]}};
+ if(action==="/forget"||action==="n:forget")return {erase:true,session:newSession(),changed:true,view:{text:"پیشرفتت حذف شد. ✦\nبرای یک کشف تازه، دوباره شروع کن.",rows:[[btn("✨ شروع دوباره","n:quick")]]}};
  if(action==="/help")return {session:s,changed:false,view:{text:"دستورات: /start /reset /result /privacy /forget",rows:[[btn("↩ برگشت","n:resume")]]}};
- if(action==="/privacy"){
+ if(action==="/privacy"||action==="n:privacy"){
   const privacyUrl=new URL("/privacy",(deps.siteUrl||"https://aroman.ir").replace(/\/$/,"")).toString();
   return {session:s,changed:false,view:{text:"حریم خصوصی ربات آرومان\n\nبرای ادامه بازی، شناسه چت و پاسخ‌های انتخابی‌ات در پایگاه داده آرومان ذخیره می‌شود؛ شماره موبایل نمی‌خواهیم. نشست پس از ۳۰ روز از آخرین به‌روزرسانی منقضی می‌شود. پیام‌های در صف، که ممکن است پیشنهادهای مبتنی بر پاسخ‌ها را داشته باشند، حداکثر ۳۰ روز نگهداری می‌شوند و پس از حداکثر ۱۰ تلاش تحویل حذف خواهند شد؛ ارسال پاسخ تضمین‌شده نیست و گاهی ممکن است تکرار شود.\n\nتلگرام یا بله، بسته به رباتی که استفاده می‌کنی، شناسه و پیام‌ها را طبق سیاست خودش پردازش می‌کند. با /forget نشست و پاسخ‌های قبلیِ صف‌شده پاک می‌شوند، اما پیام تأیید ممکن است ارسال نشود و پیامِ در حال ارسال را نمی‌توانیم پس بگیریم. این دستور نسخه‌های احتمالی پشتیبان یا داده‌های نگهداری‌شده نزد ارائه‌دهنده را پاک نمی‌کند.",rows:[[link("سیاست کامل حریم خصوصی",privacyUrl)],[btn("↩ برگشت","n:resume")]]}};
  }

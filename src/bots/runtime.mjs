@@ -3,7 +3,7 @@ import {transitionSession} from "./engine.mjs";
 export function parseUpdate(update){
  const c=update?.callback_query;
  if(c){if(c.message?.chat?.type!=="private"||!c.message.chat.id||typeof c.data!=="string")return null;
- return {chatId:String(c.message.chat.id),action:c.data,callbackId:c.id,messageId:c.message.message_id};}
+ return {chatId:String(c.message.chat.id),action:c.data,callbackId:c.id,messageId:c.message.message_id,messageKind:Array.isArray(c.message.photo)&&c.message.photo.length?"photo":"text"};}
  const m=update?.message;
  if(!m?.chat?.id||m.chat.type!=="private")return null;
  const command=String(m.text??"").trim().split(/[\s@]/)[0];
@@ -18,6 +18,9 @@ async function makePlan({platform,update,store,engineConfig,mediaOrigin=""}){
  const event=parseUpdate(update);if(!event)return {ignored:true};
  const state=await store.get(platform,event.chatId);
  const outcome=transitionSession(state,event.action,engineConfig);
+ if(event.callbackId&&outcome.view&&outcome.changed&&!outcome.erase&&!outcome.stale&&Number.isSafeInteger(event.messageId)&&event.messageId>0){
+  outcome.view={...outcome.view,editTarget:{messageId:event.messageId,kind:event.messageKind}};
+ }
  return {ignored:Boolean(outcome.stale),stale:Boolean(outcome.stale),event,outcome,mediaOrigin};
 }
 
@@ -25,7 +28,7 @@ export async function finishUpdate(plan,api){
  if(!plan?.event)return;
  const {event,outcome}=plan;
  if(event.callbackId)try{await api.acknowledge(event.callbackId,outcome.stale?"این دکمه قدیمی شده 🌿":"");}catch{/* Callback acknowledgement is best effort. */}
- if(event.callbackId&&outcome.changed&&event.messageId)try{await api.clearButtons(event.chatId,event.messageId);}catch{/* Stale buttons are rejected against persisted state. */}
+ if(event.callbackId&&outcome.changed&&event.messageId&&!outcome.view?.editTarget)try{await api.clearButtons(event.chatId,event.messageId);}catch{/* Stale buttons are rejected against persisted state. */}
 }
 
 /** Test/helper path for non-polling callers. Production polling uses the durable outbox path. */
