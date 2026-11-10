@@ -1,12 +1,12 @@
 # Sweden and Afra bot topology
 
-This document describes configuration only. It does not authorize deployment.
+This document describes configuration only and does not authorize a deployment. Both workers are currently live according to the 2026-11-10 M7 operational handoff; the future-tense instructions below are preserved as setup guidance.
 Sweden runs the Telegram worker alone. Afra keeps the existing website and
 PostgreSQL stack and may run the Bale worker. Both provider workers must use
 the same Afra database; Sweden must not run PostgreSQL, the website, Bale or
 migrations.
 
-For the operator-reported M5 live acceptance, image provenance, rollback and
+For current operational status consult [the M7 handoff](m7-two-vps-operational-handoff-20261110.md). For the earlier operator-reported M5 live acceptance, image provenance, rollback and
 the read-only M6 Afra preflight, see [M5 Telegram handoff and M6 Bale
 readiness](m5-telegram-m6-bale-readiness.md).
 
