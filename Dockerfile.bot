@@ -1,16 +1,24 @@
-# syntax=docker/dockerfile:1
-# Standalone, production-mode Node worker. No Next.js build or web server.
-FROM node:24.21.0-alpine AS dependencies
+# Minimal Scent Companion worker runtime. The pinned multi-platform manifest
+# resolves to Node.js 24.21.0 on both build and runtime stages.
+FROM node:24.21.0-alpine3.23@sha256:9ec4a2e289874ed0d722e1772ec2de45d2801541db8612f3638b26f128c69ac2 AS dependencies
 WORKDIR /app
-COPY package.json package-lock.json ./
-RUN npm ci --omit=dev --ignore-scripts --no-audit --no-fund
+COPY deploy/bot-runtime/package.json deploy/bot-runtime/package-lock.json ./
+RUN test "$(node --version)" = "v24.21.0" \
+  && npm ci --omit=dev --ignore-scripts --no-audit --no-fund \
+  && node -e 'if (require("./node_modules/pg/package.json").version !== "8.23.1") process.exit(1)'
 
-FROM node:24.21.0-alpine AS runner
+FROM node:24.21.0-alpine3.23@sha256:9ec4a2e289874ed0d722e1772ec2de45d2801541db8612f3638b26f128c69ac2 AS runner
 WORKDIR /app
 ENV NODE_ENV=production
+ARG BOT_SOURCE_REVISION=unknown
+LABEL org.opencontainers.image.source="https://github.com/AromanCo/coming-soon-page" \
+  org.opencontainers.image.revision="$BOT_SOURCE_REVISION" \
+  org.opencontainers.image.base.name="node:24.21.0-alpine3.23" \
+  org.opencontainers.image.base.digest="sha256:9ec4a2e289874ed0d722e1772ec2de45d2801541db8612f3638b26f128c69ac2"
 COPY --from=dependencies --chown=node:node /app/node_modules ./node_modules
 COPY --chown=node:node src/bots ./src/bots
-COPY --chown=node:node src/lib/scent-quest ./src/lib/scent-quest
+COPY --chown=node:node src/lib/scent-quest/scoring.ts ./src/lib/scent-quest/scoring.ts
+COPY --chown=node:node src/lib/scent-quest/quiz-data.json ./src/lib/scent-quest/quiz-data.json
 COPY --chown=node:node public/data/scent-quest-perfumes.json ./public/data/scent-quest-perfumes.json
 COPY --chown=node:node scripts/run-scent-companion.mjs ./scripts/run-scent-companion.mjs
 USER node

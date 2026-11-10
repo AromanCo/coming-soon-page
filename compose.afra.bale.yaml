@@ -6,6 +6,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.bot
+      args:
+        BOT_SOURCE_REVISION: ${SCENT_BOT_SOURCE_REVISION:?Set SCENT_BOT_SOURCE_REVISION to the approved source commit}
     command: ["node", "scripts/run-scent-companion.mjs", "bale"]
     profiles: [bale]
     restart: unless-stopped

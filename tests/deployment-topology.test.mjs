@@ -18,6 +18,7 @@ const composeEnv = {
   POSTGRES_MIGRATION_USER: "synthetic-db-migrate",
   POSTGRES_APP_USER: "synthetic-db-app",
   SCENT_BOT_IMAGE_TAG: "test",
+  SCENT_BOT_SOURCE_REVISION: "6c99b9a446bf6654f8062234d045c0420607ef76",
   AROMAN_SECRETS_DIR: "/tmp/aroman-synthetic-secrets",
   AFRA_PRIVATE_DB_HOST: "afra-private.example.invalid",
   AFRA_PRIVATE_DB_PORT: "55432",
@@ -45,6 +46,7 @@ test("Sweden Compose renders as one Telegram worker and no database, website or 
   assert.equal(worker.environment.PGDATABASE, "aroman_test");
   assert.equal(worker.environment.PGUSER, "aroman_bot_telegram");
   assert.equal(worker.environment.DATABASE_SSL, "false");
+  assert.equal(worker.build.args.BOT_SOURCE_REVISION, composeEnv.SCENT_BOT_SOURCE_REVISION);
   assert.deepEqual(Object.keys(worker.networks), ["aroman-telegram"]);
   assert.equal(rendered.networks["aroman-telegram"].name, "aroman-telegram");
   assert.equal(rendered.networks["aroman-telegram"].external, true);
@@ -90,6 +92,7 @@ test("Afra Bale overlay preserves web/database/migration and uses the existing b
   assert.equal(worker.environment.PGPORT, "5432");
   assert.equal(worker.environment.PGDATABASE, "aroman_test");
   assert.equal(worker.environment.PGUSER, "aroman_bot_bale");
+  assert.equal(worker.build.args.BOT_SOURCE_REVISION, composeEnv.SCENT_BOT_SOURCE_REVISION);
   assert.equal(worker.environment.BALE_BOT_TOKEN_FILE, "/run/secrets/bale_bot_token");
   assert.equal(worker.environment.BALE_BOT_DATABASE_PASSWORD_FILE, "/run/secrets/db_bale_bot_password");
   assert.equal(worker.read_only, true);
