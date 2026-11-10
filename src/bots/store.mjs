@@ -224,7 +224,12 @@ export class PostgresSessionStore {
       if (!row) break;
       const item = { ...row, platform };
       try {
-        await api.sendMessage(item.chat_id, item.view, item.media_origin);
+        // The queued view includes its edit target, if any. This is invoked only
+        // after the inbound update's state/outbox transaction has committed.
+        if(typeof api.deliverView==="function")
+          await api.deliverView(item.chat_id, item.view, item.media_origin);
+        else
+          await api.sendMessage(item.chat_id, item.view, item.media_origin);
         const client = this.workerClients.get(platform);
         await client.query(
           'DELETE FROM scent_bot_outbox WHERE id = $1 AND delivery_lease_token = $2',
