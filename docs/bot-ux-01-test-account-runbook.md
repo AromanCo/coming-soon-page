@@ -4,7 +4,7 @@
 
 ## Source and approved design package
 
-- Source under review: PR #31, `feat/bot-inline-quiz-editorial-ux-20261110` (base PR #30 must be reconciled first).
+- Source under review: PR #31, `feat/bot-inline-quiz-editorial-ux-20261110`, based directly on merged `main` after PR #30 (`f386a490`).
 - Original minimal-modern kit: `aroman_bot_visuals_v2_minimal.zip` (provided as a separate conversation artifact, **not uploaded into GitHub**).
 - Expected kit content: `bot_avatar_640.png`, `welcome_1280x720.jpg`, `result_fallback_1200x675.jpg`, `decorative_icon_concepts.svg`, `preview_contact_sheet.jpg`, `manifest.json`, `README.md`, `proposed_profile_fa.md`, `provider_qa_checklist.md`.
 - Color direction: warm ivory `#F7F2EB`, soft stone `#E8DDD0`, charcoal `#30302E`, muted gold `#C9A46C`.
@@ -54,7 +54,7 @@ The harness validates API edit method compatibility; it does **not** prove the 7
 
 ## Merge/release guardrails
 
-- PR #30 (release-source reconciliation) is separate; merge it only after verifying CI and code review.
+- PR #30 (release-source reconciliation) was merged after green CI and documentation review; merging that PR did not deploy or restart workers.
 - PR #31 code can be reviewed and merged independently of **production deployment**, but do not claim real-provider acceptance until the test matrix is filled for both providers.
 - No live image rebuild, secret swapping, webhook change or worker restart without a new explicit production release plan.
 - Avatar/name updates are separate bot-profile actions through provider administration; no code PR changes them.
