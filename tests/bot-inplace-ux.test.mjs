@@ -21,7 +21,7 @@ test("callback answer queues a replacement of its source text message, not a new
   const api={acknowledge:async()=>{acked++;},clearButtons:async()=>{cleared++;}};
   const result=await processPolledUpdate({
     platform:"telegram",updateId:21,store,api,engineConfig:deps,
-    update:{callback_query:{id:"test",data:quiz.stage1_questions[0]===undefined?"":"a:"+quiz.stage1_questions[0]+":0",
+    update:{callback_query:{id:"test",data:"a:"+quiz.stage1_questions[0]+":0,
       message:{chat:{id:5,type:"private"},message_id:32,text:"Old question"}}}
   });
   assert.equal(result.duplicate,false);
@@ -35,6 +35,10 @@ test("callback answer queues a replacement of its source text message, not a new
 test("last quick answer replaces its question with the actual quick result",async()=>{
   const last=quiz.stage1_questions.at(-1);
   let state={phase:"quick",position:quiz.stage1_questions.length-1,answers:{}};
+  for(const id of quiz.stage1_questions.slice(0,-1)){
+    const q=quiz.questions.find(q=>q.id===id);
+    state.answers[id]=q.options[0].id;
+  }
   const queued=[];
   const store={applyUpdate:async(_platform,_id,fn)=>fn({
     get:async()=>state,
