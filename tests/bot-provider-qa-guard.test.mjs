@@ -2,7 +2,7 @@ import {test} from "node:test";
 import assert from "node:assert/strict";
 import {spawnSync} from "node:child_process";
 import process from "node:process";
-import {fileURLToPath} from "node:url";
+import {fileURLToPath,URL} from "node:url";
 
 const script=fileURLToPath(new URL("../scripts/qa-bot-provider-edit.mjs",import.meta.url));
 const qaEnv={
