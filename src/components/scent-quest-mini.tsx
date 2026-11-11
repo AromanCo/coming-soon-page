@@ -77,7 +77,7 @@ export function ScentQuestMini() {
   const [result, setResult] = useState<ScentResult | null>(null);
   const [quickResult, setQuickResult] = useState<ScentResult | null>(null);
   const [notice, setNotice] = useState("");
-  const [provider, setProvider] = useState<MiniPlatform>("browser");
+  const [bridgeConnected, setBridgeConnected] = useState(false);
   const bridge = useRef<NativeMiniBridge | null>(null);
   const actionLock = useRef(false);
 
@@ -112,7 +112,6 @@ export function ScentQuestMini() {
   // In-memory state only: no URL-history mutation (important for Bale Web Mini Apps).
   useEffect(() => {
     const selected = getMiniPlatform(window.location.search);
-    setProvider(selected);
     if (selected === "browser") return;
     const script = document.createElement("script");
     script.src = selected === "bale"
@@ -123,6 +122,7 @@ export function ScentQuestMini() {
       const api = selected === "bale" ? window.Bale?.WebApp : window.Telegram?.WebApp;
       if (!api) return;
       bridge.current = api;
+      setBridgeConnected(true);
       try {
         api.setHeaderColor?.("#F7F2EB");
         api.setBackgroundColor?.("#F7F2EB");
@@ -146,7 +146,7 @@ export function ScentQuestMini() {
       button.onClick?.(back);
     }
     return () => button.offClick?.(back);
-  }, [back, provider, screen]);
+  }, [back, bridgeConnected, screen]);
 
   useEffect(() => {
     actionLock.current = false;
