@@ -1,0 +1,168 @@
+name: UX-01 encrypted bot image delivery
+
+on:
+  push:
+    branches:
+      - "work/ux01-encrypted-image-delivery-20261111"
+    paths:
+      - ".github/workflows/ux01-encrypted-image-delivery.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ux01-offline-image-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build-and-package:
+    name: Build and verify offline worker image
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      APPROVED_SOURCE_SHA: a08ff386ecbed229b7ef5c6de3491048d5df0e48
+      IMAGE_REF: aroman-scent-companion:a08ff386ecbed229b7ef5c6de3491048d5df0e48-ux01
+      ENCRYPTED_ARCHIVE_NAME: aroman-scent-companion-a08ff386ecbed229b7ef5c6de3491048d5df0e48-ux01.tar.gz.age
+      CIPHERTEXT_CHECKSUM_NAME: aroman-scent-companion-a08ff386ecbed229b7ef5c6de3491048d5df0e48-ux01.tar.gz.age.sha256
+      PROVENANCE_NAME: aroman-scent-companion-a08ff386ecbed229b7ef5c6de3491048d5df0e48-ux01.provenance.txt
+      ARTIFACT_NAME: aroman-scent-companion-a08ff386ecbed229b7ef5c6de3491048d5df0e48-ux01-age
+    steps:
+      - name: Require configured age recipient
+        shell: bash
+        env:
+          AGE_RECIPIENT: ${{ vars.M6_AGE_RECIPIENT }}
+        run: |
+          set -euo pipefail
+          if [[ -z "${AGE_RECIPIENT:-}" ]]; then
+            echo "Required Actions variable M6_AGE_RECIPIENT is missing." >&2
+            exit 1
+          fi
+          if [[ ! "$AGE_RECIPIENT" =~ ^age1[023456789acdefghjklmnpqrstuvwxyz]+$ ]]; then
+            echo "Existing M6_AGE_RECIPIENT must be an age bech32 recipient." >&2
+            exit 1
+          fi
+
+      - name: Check out approved source revision
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: a08ff386ecbed229b7ef5c6de3491048d5df0e48
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Verify checked out revision
+        run: |
+          actual_revision="$(git rev-parse HEAD)"
+          test "$actual_revision" = "$APPROVED_SOURCE_SHA"
+
+      - name: Install pinned age and verify recipient
+        shell: bash
+        env:
+          AGE_RECIPIENT: ${{ vars.M6_AGE_RECIPIENT }}
+        run: |
+          set -euo pipefail
+          age_archive="$RUNNER_TEMP/age-v1.3.2-linux-amd64.tar.gz"
+          curl --fail --location --silent --show-error \
+            "https://github.com/FiloSottile/age/releases/download/v1.3.2/age-v1.3.2-linux-amd64.tar.gz" \
+            --output "$age_archive"
+          printf '%s  %s\n' \
+            'cbe24006683f8eb669266162894b9a522a1af52f2665fbc63a4bb032ed26ac10' \
+            "$age_archive" | sha256sum --check
+          tar -xzf "$age_archive" -C "$RUNNER_TEMP"
+          age_bin="$RUNNER_TEMP/age/age"
+          age_inspect_bin="$RUNNER_TEMP/age/age-inspect"
+          "$age_bin" --version | grep -Fx 'v1.3.2'
+          echo "$RUNNER_TEMP/age" >> "$GITHUB_PATH"
+
+          probe_ciphertext="$RUNNER_TEMP/ux01-age-recipient-probe.age"
+          printf '%s' 'Aroman UX-01 recipient validation probe' \
+            | "$age_bin" --encrypt --recipient "$AGE_RECIPIENT" > "$probe_ciphertext"
+          test -s "$probe_ciphertext"
+          "$age_inspect_bin" "$probe_ciphertext" > /dev/null
+
+      - name: Build pinned amd64 image
+        run: |
+          docker build --pull --platform linux/amd64 \
+            --build-arg "BOT_SOURCE_REVISION=$APPROVED_SOURCE_SHA" \
+            --tag "$IMAGE_REF" \
+            --file Dockerfile.bot .
+
+      - name: Verify image metadata and offline runtime imports
+        run: |
+          set -euo pipefail
+          revision="$(docker image inspect "$IMAGE_REF" --format '{{index .Config.Labels "org.opencontainers.image.revision"}}')"
+          configured_user="$(docker image inspect "$IMAGE_REF" --format '{{.Config.User}}')"
+          test "$revision" = "$APPROVED_SOURCE_SHA"
+          test "$configured_user" = "node"
+
+          docker run --rm --pull=never --network none --read-only --cap-drop ALL \
+            --security-opt no-new-privileges \
+            --entrypoint node "$IMAGE_REF" \
+            --check scripts/run-scent-companion.mjs
+
+          docker run --rm --pull=never --network none --read-only --cap-drop ALL \
+            --security-opt no-new-privileges \
+            --entrypoint node "$IMAGE_REF" --input-type=module -e '
+              import pg from "pg";
+              import { readFileSync } from "node:fs";
+              import "./src/bots/bot-api.mjs";
+              import "./src/bots/store.mjs";
+              import "./src/bots/runtime.mjs";
+              import "./src/bots/secrets.mjs";
+              import "./src/bots/engine.mjs";
+
+              const pgVersion = JSON.parse(readFileSync("/app/node_modules/pg/package.json", "utf8")).version;
+              if (process.version !== "v24.21.0") throw new Error(`Unexpected Node version: ${process.version}`);
+              if (process.getuid() === 0) throw new Error("Worker process is root");
+              if (pgVersion !== "8.23.1" || typeof pg.Pool !== "function") throw new Error("pg runtime check failed");
+              JSON.parse(readFileSync("/app/src/lib/scent-quest/quiz-data.json", "utf8"));
+              JSON.parse(readFileSync("/app/public/data/scent-quest-perfumes.json", "utf8"));
+              console.log("Offline worker imports passed as non-root with pg@8.23.1");
+            '
+
+      - name: Encrypt image archive, checksum ciphertext and write provenance
+        env:
+          AGE_RECIPIENT: ${{ vars.M6_AGE_RECIPIENT }}
+        run: |
+          set -euo pipefail
+          image_id="$(docker image inspect "$IMAGE_REF" --format '{{.Id}}')"
+          image_platform="$(docker image inspect "$IMAGE_REF" --format '{{.Os}}/{{.Architecture}}')"
+          image_size="$(docker image inspect "$IMAGE_REF" --format '{{.Size}}')"
+          configured_user="$(docker image inspect "$IMAGE_REF" --format '{{.Config.User}}')"
+          revision="$(docker image inspect "$IMAGE_REF" --format '{{index .Config.Labels "org.opencontainers.image.revision"}}')"
+
+          docker save "$IMAGE_REF" \
+            | gzip -n -9 \
+            | age --encrypt --recipient "$AGE_RECIPIENT" > "$ENCRYPTED_ARCHIVE_NAME"
+          test -s "$ENCRYPTED_ARCHIVE_NAME"
+          age-inspect "$ENCRYPTED_ARCHIVE_NAME" > /dev/null
+          sha256sum "$ENCRYPTED_ARCHIVE_NAME" > "$CIPHERTEXT_CHECKSUM_NAME"
+          sha256sum --check "$CIPHERTEXT_CHECKSUM_NAME"
+          ciphertext_sha256="$(sha256sum "$ENCRYPTED_ARCHIVE_NAME" | cut -d ' ' -f1)"
+
+          cat > "$PROVENANCE_NAME" <<EOF
+          image_ref=$IMAGE_REF
+          image_id=$image_id
+          image_size_bytes=$image_size
+          platform=$image_platform
+          source_revision=$revision
+          ciphertext_sha256=$ciphertext_sha256
+          encryption=age-recipient-v1
+          age_version=v1.3.2
+          configured_user=$configured_user
+          node_version=24.21.0
+          pg_version=8.23.1
+          base_image=node:24.21.0-alpine3.23@sha256:9ec4a2e289874ed0d722e1772ec2de45d2801541db8612f3638b26f128c69ac2
+          offline_runtime_imports=passed
+          EOF
+
+      - name: Upload encrypted short-retention artifact
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: ${{ env.ARTIFACT_NAME }}
+          path: |
+            ${{ env.ENCRYPTED_ARCHIVE_NAME }}
+            ${{ env.CIPHERTEXT_CHECKSUM_NAME }}
+            ${{ env.PROVENANCE_NAME }}
+          retention-days: 7
+          if-no-files-found: error
+          compression-level: 0
