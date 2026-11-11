@@ -36,7 +36,7 @@
 .am-mini .am-button-dark{background:var(--am-ink);color:#fffaf2}
 .am-mini .am-button-outline{border-color:#a28e78;background:transparent;color:var(--am-ink)}
 .am-mini .am-privacy-note{font-size:11px;line-height:2;color:#938b83;margin:16px 0 0}
-.am-mini .am-hero-visual{position:relative;min-height:520px;background:#dbd0c2 url("/images/scent-quest/perfume-minimal.jpg") center/cover}
+.am-mini .am-hero-visual{position:relative;min-height:520px;background:#dbd0c2 url("/images/scent-quest/jasmine-white-bloom.jpg") center/cover}
 .am-mini .am-hero-visual:after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(32,31,29,.03),rgba(34,30,26,.25))}
 .am-mini .am-hero-seal{z-index:1;position:absolute;bottom:39px;left:42px;display:flex;align-items:center;gap:14px;color:#fff;direction:ltr}
 .am-mini .am-hero-seal svg{width:45px;height:45px}
