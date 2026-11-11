@@ -23,6 +23,18 @@ const browser=await chromium.launch({headless:true,args:["--no-sandbox"]});
 const log=[];
 const breakpoints=[320,390,768,1280];
 await mkdir(output,{recursive:true});
+// Verify the actual Next response headers, not just source-code intent.
+// Bale Web uses an iframe; the rest of AROMAN must retain XFO=DENY.
+const previewResponse=await fetch(origin+"/scent-quest/mini");
+const homepageResponse=await fetch(origin+"/");
+if(!previewResponse.ok||!homepageResponse.ok)throw Error("Preview/homepage unavailable");
+if(previewResponse.headers.get("x-frame-options"))throw Error("Mini App is incorrectly deny-framed");
+const csp=previewResponse.headers.get("content-security-policy")||"";
+if(!csp.includes("frame-ancestors")||!csp.includes("https://*.bale.ai"))
+  throw Error("Mini App frame ancestor allowlist missing");
+if(homepageResponse.headers.get("x-frame-options")!=="DENY")
+  throw Error("Main website must still deny all framing");
+console.log("PASS: Mini App iframe policy scoped; website XFO=DENY preserved");
 try{
   for(const width of breakpoints){
     const page=await browser.newPage({
