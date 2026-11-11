@@ -3,15 +3,16 @@ import {URL} from "node:url";
 const numeral=n=>new Intl.NumberFormat("fa-IR").format(n);
 const btn=(text,data)=>({text,data});
 const link=(text,url)=>({text,url});
+const webapp=(text,webApp)=>({text,webApp});
 export const newSession=()=>({phase:"welcome",position:0,answers:{}});
 const question=(quiz,id)=>quiz.questions.find(q=>q.id===id);
 const ids=(quiz,phase)=>phase==="quick"?quiz.stage1_questions:quiz.stage2_questions;
 const summary=r=>r.recommendations.map((p,i)=>numeral(i+1)+". "+p.name+" — "+p.brand).join("\n");
-export function renderSession(s,{quiz,catalog,siteUrl}){
+export function renderSession(s,{quiz,catalog,siteUrl,miniAppUrl=""}){
  const base=(siteUrl||"https://aroman.ir").replace(/\/$/,"");
  if(s.phase==="welcome")return {
   text:"✦ هم‌رایحه آرومان\n\nهر رایحه، روایتی از توست.\nبا چند انتخاب ساده، امضای عطری خودت را پیدا کن.\n\n◦ ۷ سؤال کوتاه برای شروع\n◦ ۸ سؤال اختیاری برای شناخت عمیق‌تر\n◦ بدون شماره موبایل و ثبت‌نام\n\nآماده‌ای رایحه‌ات را کشف کنی؟",
-  rows:[[btn("شروع کشف رایحه ✨","n:quick")],[link("درباره آرومان",base)]],
+  rows:[...(miniAppUrl?[[webapp("✨ تجربه تصویری کشف رایحه",miniAppUrl)]]:[]),[btn("شروع کشف رایحه ✨","n:quick")],[link("درباره آرومان",base)]],
   photo:"/images/hero-atelier-composite.png"
  };
  if(["quick","deep"].includes(s.phase)){

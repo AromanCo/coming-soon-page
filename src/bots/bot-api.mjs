@@ -17,7 +17,8 @@ export class BotApi {
     return data.result;
   }
   async sendMessage(id,view,origin=""){
-    const reply_markup={inline_keyboard:view.rows.map(row=>row.map(b=>b.url?
+    const reply_markup={inline_keyboard:view.rows.map(row=>row.map(b=>b.webApp?
+      {text:b.text,web_app:{url:b.webApp}}:b.url?
       {text:b.text,url:b.url}:{text:b.text,callback_data:b.data}))};
     // Images are opt-in. The web host must serve an approved, publicly
     // reachable HTTPS JPEG/PNG to both providers before media is enabled.
