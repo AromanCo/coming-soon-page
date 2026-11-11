@@ -8,7 +8,7 @@
 import console from "node:console";
 import process from "node:process";
 import {mkdir,writeFile} from "node:fs/promises";
-import {pathToFileURL} from "node:url";
+import {pathToFileURL,URL} from "node:url";
 import {resolve} from "node:path";
 
 const origin=process.env.UX02_PREVIEW_ORIGIN ?? "http://127.0.0.1:3107";
@@ -49,14 +49,19 @@ try{
     await checkViewport(page,width,"question");
     await page.screenshot({path:output+"/question-"+width+".png",fullPage:true});
     for(let index=0;index<7;index++){
+      const oldPrompt=await page.locator(".am-question-copy h1").textContent();
       await page.locator(".am-choice").first().click();
-      if(index!==6)await page.locator(".am-count").getByText(new RegExp(String(index+2))).count().catch(()=>null);
+      if(index!==6)await page.waitForFunction((prior)=>document.querySelector(".am-question-copy h1")?.textContent!==prior,oldPrompt);
     }
     await page.locator(".am-results").waitFor({timeout:30000});
     await checkViewport(page,width,"quick-result");
     await page.screenshot({path:output+"/quick-result-"+width+".png",fullPage:true});
     await page.getByRole("button",{name:/کشف عمیق‌تر/}).click();
-    for(let index=0;index<8;index++)await page.locator(".am-choice").first().click();
+    for(let index=0;index<8;index++){
+      const oldPrompt=await page.locator(".am-question-copy h1").textContent();
+      await page.locator(".am-choice").first().click();
+      if(index!==7)await page.waitForFunction((prior)=>document.querySelector(".am-question-copy h1")?.textContent!==prior,oldPrompt);
+    }
     await page.locator(".am-results").waitFor({timeout:30000});
     await checkViewport(page,width,"deep-result");
     await page.screenshot({path:output+"/deep-result-"+width+".png",fullPage:true});
@@ -70,10 +75,7 @@ try{
 }finally{await browser.close();}
 
 async function checkViewport(page,width,screen){
-  const actual=await page.evaluate(()=>({
-    documentWidth:document.documentElement.scrollWidth,
-    viewportWidth:window.innerWidth
-  }));
+  const actual=await page.evaluate("({documentWidth:document.documentElement.scrollWidth,viewportWidth:window.innerWidth})");
   if(actual.documentWidth>actual.viewportWidth+1)throw Error(
     "Horizontal overflow on "+screen+" at "+width+": "+JSON.stringify(actual));
   await page.locator(".am-header").waitFor();
