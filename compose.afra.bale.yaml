@@ -34,6 +34,7 @@ services:
       DATABASE_SSL: ${DATABASE_SSL:-false}
       BOT_PUBLIC_SITE_URL: ${BOT_PUBLIC_SITE_URL:-https://aroman.ir}
       BOT_MEDIA_BASE_URL: ${BOT_MEDIA_BASE_URL:-}
+      BOT_MINIAPP_URL: ${BOT_MINIAPP_URL:-}
     secrets:
       - bale_bot_token
       - db_bale_bot_password
