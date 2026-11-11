@@ -1,0 +1,70 @@
+name: UX-02 visual preview screenshots
+
+on:
+  push:
+    branches:
+      - "feat/ux02-shared-miniapp-preview-20261111"
+    paths:
+      - ".github/workflows/ux02-visual-preview.yml"
+      - "scripts/ux02-visual-qa.mjs"
+      - "src/components/scent-quest-mini.tsx"
+      - "src/app/scent-quest/mini/**"
+      - "src/lib/scent-quest/**"
+      - "public/images/scent-quest/**"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ux02-visual-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  screenshots:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    env:
+      UX02_PLAYWRIGHT_HOME: ${{ runner.temp }}/ux02-playwright
+      UX02_SCREENSHOT_DIR: ux02-screenshots
+      UX02_PREVIEW_ORIGIN: http://127.0.0.1:3107
+      NEXT_PUBLIC_SITE_URL: http://127.0.0.1:3107
+      NEXT_TELEMETRY_DISABLED: "1"
+    steps:
+      - name: Checkout reviewed branch
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - name: Setup pinned Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24.21.0
+          cache: npm
+      - name: Install locked app dependencies
+        run: npm ci
+      - name: Build local-only Next.js preview
+        run: npm run build
+      - name: Install isolated pinned Playwright and Chromium
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$UX02_PLAYWRIGHT_HOME"
+          npm install --prefix "$UX02_PLAYWRIGHT_HOME" --package-lock=false --no-save --ignore-scripts playwright@1.56.1
+          "$UX02_PLAYWRIGHT_HOME/node_modules/.bin/playwright" install --with-deps chromium
+      - name: Capture and verify 16 visual flow screenshots
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm run start -- -p 3107 > "$RUNNER_TEMP/ux02-next.log" 2>&1 &
+          SERVER_PID=$!
+          trap 'kill "$SERVER_PID" 2>/dev/null || true' EXIT
+          curl --fail --silent --show-error --retry 30 --retry-delay 1 --retry-connrefused \
+            "$UX02_PREVIEW_ORIGIN/scent-quest/mini" > /dev/null
+          node scripts/ux02-visual-qa.mjs
+      - name: Upload design review images (no user data)
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: ux02-miniapp-screenshots-${{ github.sha }}
+          path: ux02-screenshots/
+          if-no-files-found: warn
+          retention-days: 7
