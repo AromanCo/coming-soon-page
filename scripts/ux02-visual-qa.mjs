@@ -51,7 +51,7 @@ try{
     for(let index=0;index<7;index++){
       const oldPrompt=await page.locator(".am-question-copy h1").textContent();
       await page.locator(".am-choice").first().click();
-      if(index!==6)await page.waitForFunction((prior)=>document.querySelector(".am-question-copy h1")?.textContent!==prior,oldPrompt);
+      if(index!==6)await page.waitForFunction('(prior) => document.querySelector(".am-question-copy h1")?.textContent !== prior',oldPrompt);
     }
     await page.locator(".am-results").waitFor({timeout:30000});
     await checkViewport(page,width,"quick-result");
@@ -60,7 +60,7 @@ try{
     for(let index=0;index<8;index++){
       const oldPrompt=await page.locator(".am-question-copy h1").textContent();
       await page.locator(".am-choice").first().click();
-      if(index!==7)await page.waitForFunction((prior)=>document.querySelector(".am-question-copy h1")?.textContent!==prior,oldPrompt);
+      if(index!==7)await page.waitForFunction('(prior) => document.querySelector(".am-question-copy h1")?.textContent !== prior',oldPrompt);
     }
     await page.locator(".am-results").waitFor({timeout:30000});
     await checkViewport(page,width,"deep-result");
