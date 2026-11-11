@@ -24,7 +24,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 25
     env:
-      UX02_PLAYWRIGHT_HOME: ${{ runner.temp }}/ux02-playwright
+      UX02_PLAYWRIGHT_HOME: /tmp/ux02-playwright
       UX02_SCREENSHOT_DIR: ux02-screenshots
       UX02_PREVIEW_ORIGIN: http://127.0.0.1:3107
       NEXT_PUBLIC_SITE_URL: http://127.0.0.1:3107
