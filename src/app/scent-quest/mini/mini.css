@@ -1,0 +1,154 @@
+
+.am-mini{
+  --am-ink:#30302e;--am-cream:#f7f2eb;--am-paper:#fffdf8;
+  --am-stone:#e8ddd0;--am-gold:#c9a46c;--am-ash:#77746f;
+  direction:rtl;background:var(--am-cream);color:var(--am-ink);
+  min-height:100svh;font-family:"Vazirmatn Variable",Tahoma,sans-serif;
+  -webkit-font-smoothing:antialiased;
+}
+.am-mini *{box-sizing:border-box}
+.am-mini button,.am-mini a{font:inherit}
+.am-mini button{cursor:pointer}
+.am-mini button:focus-visible,.am-mini a:focus-visible{outline:3px solid #a67e44;outline-offset:4px}
+.am-mini .am-shell{width:min(100%,1140px);min-height:100svh;margin:auto;background:var(--am-paper);box-shadow:0 0 80px rgba(54,44,32,.055)}
+.am-mini .am-header{height:88px;display:flex;align-items:center;gap:24px;padding:0 clamp(22px,5vw,68px);border-bottom:1px solid #eae1d7;position:relative;z-index:2}
+.am-mini .am-identity{display:flex;align-items:center;gap:13px;min-width:max-content;direction:ltr}
+.am-mini .am-identity>svg{width:38px;height:38px;color:#b48b54}
+.am-mini .am-identity>span{display:flex;flex-direction:column;gap:0;align-items:flex-start}
+.am-mini .am-identity b{font-family:Georgia,serif;font-weight:500;letter-spacing:.24em;font-size:19px}
+.am-mini .am-identity small{font-size:9px;letter-spacing:.27em;color:#928572;font-weight:700}
+.am-mini .am-header-caption{margin-right:auto;color:#8b8178;font-size:12px}
+.am-mini .am-header-rule{width:36px;height:1px;background:var(--am-gold)}
+.am-mini .am-eyebrow{font:700 11px Georgia,serif;letter-spacing:.18em;color:#a67e44;direction:ltr}
+.am-mini .am-intro{display:grid;grid-template-columns:1.08fr .92fr;min-height:620px}
+.am-mini .am-hero-copy{padding:clamp(38px,6vw,84px) clamp(24px,6vw,75px);display:flex;align-items:flex-start;flex-direction:column;justify-content:center}
+.am-mini .am-decor{font:normal 32px Georgia,serif;color:#c8a56f;margin:12px 0 0}
+.am-mini .am-intro h1{font-size:clamp(43px,5vw,76px);font-weight:500;letter-spacing:-.055em;line-height:1.6;margin:4px 0 20px}
+.am-mini .am-intro h1 em{color:#aa855a;font-weight:500;font-style:normal}
+.am-mini .am-intro-lead{color:#6c6862;line-height:2.15;font-size:15px;max-width:410px}
+.am-mini .am-hero-stats{display:flex;align-items:center;gap:16px;font-size:11px;color:#82786f;margin:26px 0}
+.am-mini .am-hero-stats strong{font-family:Georgia,serif;font-weight:400;color:#7d623e;font-size:22px;margin-left:5px}
+.am-mini .am-hero-stats i{height:24px;width:1px;background:#d4c7b7}
+.am-mini .am-button{display:inline-flex;align-items:center;justify-content:center;gap:18px;border-radius:3px;border:1px solid transparent;min-height:54px;padding:13px 26px;text-decoration:none;font-size:14px;font-weight:700;text-align:center;transition:background .22s,color .22s,transform .22s}
+.am-mini .am-button:hover{transform:translateY(-2px)}
+.am-mini .am-button-primary{background:var(--am-ink);color:#fffaf2;min-width:224px}
+.am-mini .am-button-primary:hover{background:#6e5741}
+.am-mini .am-button-dark{background:var(--am-ink);color:#fffaf2}
+.am-mini .am-button-outline{border-color:#a28e78;background:transparent;color:var(--am-ink)}
+.am-mini .am-privacy-note{font-size:11px;line-height:2;color:#938b83;margin:16px 0 0}
+.am-mini .am-hero-visual{position:relative;min-height:520px;background:#dbd0c2 url("/images/scent-quest/jasmine-white-bloom.jpg") center/cover}
+.am-mini .am-hero-visual:after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(32,31,29,.03),rgba(34,30,26,.25))}
+.am-mini .am-hero-seal{z-index:1;position:absolute;bottom:39px;left:42px;display:flex;align-items:center;gap:14px;color:#fff;direction:ltr}
+.am-mini .am-hero-seal svg{width:45px;height:45px}
+.am-mini .am-hero-seal span{font:11px/1.8 Georgia,serif;letter-spacing:.16em}
+.am-mini .am-question-section{padding:38px clamp(22px,6vw,75px) 50px;animation:am-entrance .35s ease both}
+.am-mini .am-question-top{display:flex;align-items:center;justify-content:space-between;gap:15px}
+.am-mini .am-stage-name{display:flex;align-items:center;gap:14px}
+.am-mini .am-stage-round{display:grid;place-items:center;width:46px;height:46px;border-radius:50%;border:1px solid #c7aa80;color:#97713d;font:14px Georgia,serif}
+.am-mini .am-stage-name div{display:flex;flex-direction:column;gap:1px}
+.am-mini .am-stage-name div span{font-size:11px;color:#9b8e80}
+.am-mini .am-stage-name div strong{font-size:16px;font-weight:700}
+.am-mini .am-count{font-size:22px;color:#9a7847;font-weight:500}
+.am-mini .am-count span{font-size:12px;color:#81766b}
+.am-mini .am-progress{height:5px;border-radius:30px;background:#e8ded0;overflow:hidden;margin:26px 0 45px;direction:rtl}
+.am-mini .am-progress>span{display:block;height:100%;background:#ba9259;border-radius:30px;transition:width .36s ease}
+.am-mini .am-question-copy{margin-bottom:32px}
+.am-mini .am-question-copy h1{font-size:clamp(27px,3.3vw,44px);line-height:1.65;margin:13px 0 7px;font-weight:600;letter-spacing:-.035em}
+.am-mini .am-question-copy>p{font-size:13px;color:#7f7872;line-height:2}
+.am-mini .am-choices{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.am-mini .am-choice{position:relative;overflow:hidden;text-align:right;padding:0;background:#f4f0ea;border:1px solid #e8e0d6;border-radius:7px;min-width:0;transition:transform .2s ease,box-shadow .2s ease,border-color .2s}
+.am-mini .am-choice:hover{transform:translateY(-3px);border-color:#b38a57;box-shadow:0 10px 24px rgba(59,45,29,.08)}
+.am-mini .am-choice:active{transform:scale(.985)}
+.am-mini .am-choice-photo{display:block;background-position:center;background-size:cover;background-color:#d9cec0;width:100%;height:clamp(120px,20vw,190px);filter:saturate(.78)}
+.am-mini .am-choice-body{min-height:72px;display:flex;align-items:center;gap:10px;padding:14px 18px}
+.am-mini .am-choice-body small{font:14px Georgia,serif;color:#aa8350;align-self:flex-start}
+.am-mini .am-choice-body strong{font-size:13px;line-height:1.8;font-weight:600;overflow-wrap:anywhere}
+.am-mini .am-choice-arrow{color:#aa8350;margin-right:auto;font-size:19px;align-self:flex-start}
+.am-mini .am-question-foot{margin-top:30px;display:flex;justify-content:space-between;align-items:center;gap:12px;border-top:1px solid #ece5dc;padding-top:20px}
+.am-mini .am-text-button{padding:8px 0;color:#8c724d;background:none;border:0;font-weight:700;font-size:13px;text-decoration:underline;text-underline-offset:5px}
+.am-mini .am-question-foot>span{font-size:11px;color:#9a9188}
+.am-mini .am-state{min-height:610px;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;padding:48px 22px;gap:13px}
+.am-mini .am-state svg{width:92px;height:92px;color:#b99460;animation:am-breathe 2.8s ease-in-out infinite}
+.am-mini .am-state h2{font-size:28px}
+.am-mini .am-state>p:not(.am-eyebrow){color:#81796e;max-width:380px;line-height:2}
+.am-mini .am-result-cover{display:grid;grid-template-columns:1.05fr .95fr;min-height:440px;background:#eee5d8}
+.am-mini .am-result-copy{padding:50px clamp(24px,5vw,65px);display:flex;align-items:flex-start;justify-content:center;flex-direction:column}
+.am-mini .am-result-icon{font-size:40px;color:#b18e58;margin-top:18px}
+.am-mini .am-result-copy>p{color:#6b655e;font-size:13px}
+.am-mini .am-result-cover h1{font-size:clamp(35px,4vw,56px);font-weight:500;line-height:1.6;margin:0;color:#514238}
+.am-mini .am-result-subtitle{font-size:17px!important;color:#8b6d48!important}
+.am-mini .am-accords{display:flex;flex-wrap:wrap;gap:7px;margin-top:20px}
+.am-mini .am-accords span{border:1px solid #cbb9a2;padding:7px 12px;font-size:11px;color:#705b47}
+.am-mini .am-result-image{position:relative;background:#d1c1ab url("/images/scent-quest/botanical-perfume-layers.jpg") center/cover;min-height:310px}
+.am-mini .am-result-image:after{content:"";position:absolute;inset:0;background:linear-gradient(0deg,rgba(31,29,25,.4),transparent 60%)}
+.am-mini .am-result-image span{position:absolute;z-index:1;bottom:25px;left:30px;color:#fff;font:11px Georgia,serif;letter-spacing:.16em}
+.am-mini .am-section-intro{padding:56px clamp(22px,6vw,75px) 22px;display:flex;align-items:flex-end;justify-content:space-between;gap:22px}
+.am-mini .am-section-intro h2{font-size:29px;font-weight:500;margin:10px 0 0}
+.am-mini .am-section-intro>p{max-width:300px;color:#8a8076;font-size:12px;line-height:2;margin:0}
+.am-mini .am-products{padding:0 clamp(22px,6vw,75px) 42px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+.am-mini .am-product{min-width:0;background:#f5f0e9;border:1px solid #e6ddcf;border-radius:5px;overflow:hidden}
+.am-mini .am-product>.sq-product-image{height:190px;background:#e3d9c9;display:grid;place-items:center}
+.am-mini .am-product>.sq-product-image img{width:100%;height:100%;object-fit:contain;mix-blend-mode:multiply}
+.am-mini .am-product .sq-rec-fallback{width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#8c764f;gap:5px}
+.am-mini .am-product .sq-rec-fallback svg{width:65px;height:65px}
+.am-mini .am-product .sq-rec-fallback small{font-size:10px}
+.am-mini .am-product-copy{padding:20px 18px 23px;display:flex;flex-direction:column;gap:5px;min-width:0}
+.am-mini .am-product-copy span{color:#aa8659;font:10px Georgia,serif;letter-spacing:.1em}
+.am-mini .am-product-copy small{font-size:11px;color:#9b8b7d}
+.am-mini .am-product-copy strong{font-size:15px;overflow-wrap:anywhere}
+.am-mini .am-product-copy p{font-size:11px;color:#867b70;line-height:1.7;margin:0}
+.am-mini .am-deep-callout{margin:0 clamp(22px,6vw,75px) 38px;padding:35px 34px;background:#ece0ce;border:1px solid #d4bea0;display:flex;align-items:flex-start;flex-direction:column}
+.am-mini .am-deep-callout h2{font-size:30px;font-weight:500;margin:12px 0 0}
+.am-mini .am-deep-callout p{font-size:13px;color:#776b60;line-height:2}
+.am-mini .am-deep-callout .am-button{margin-top:12px}
+.am-mini .am-result-actions{display:flex;flex-wrap:wrap;gap:10px;padding:0 clamp(22px,6vw,75px) 32px;align-items:center}
+.am-mini .am-result-notice{font-size:13px;color:#98734e;padding:0 clamp(22px,6vw,75px)}
+.am-mini .am-end-note{padding:0 clamp(22px,6vw,75px) 28px!important}
+.am-mini .am-footer{display:flex;justify-content:space-between;gap:15px;border-top:1px solid #e9dfd1;padding:27px clamp(22px,6vw,75px);color:#9d9185;font-size:10px}
+.am-mini .am-footer>span:first-child{font-family:Georgia,serif;letter-spacing:.12em}
+@keyframes am-entrance{from{opacity:.25;transform:translateY(9px)}to{opacity:1;transform:translateY(0)}}
+@keyframes am-breathe{50%{opacity:.55;transform:scale(.95)}}
+@media(max-width:760px){
+  .am-mini .am-header{height:70px;padding-inline:23px}
+  .am-mini .am-header-caption,.am-mini .am-header-rule{display:none}
+  .am-mini .am-identity{margin-left:auto;margin-right:auto}
+  .am-mini .am-intro{display:flex;flex-direction:column}
+  .am-mini .am-hero-copy{padding:44px 26px 31px;order:1}
+  .am-mini .am-intro h1{font-size:clamp(42px,10vw,56px);margin:0 0 11px}
+  .am-mini .am-intro-lead{font-size:13px;line-height:2}
+  .am-mini .am-hero-stats{margin:16px 0 22px}
+  .am-mini .am-hero-visual{order:0;min-height:220px;background-position:center 48%}
+  .am-mini .am-hero-seal{bottom:15px;left:18px}
+  .am-mini .am-hero-seal svg{width:32px;height:32px}
+  .am-mini .am-question-section{padding:25px 19px 35px}
+  .am-mini .am-question-copy h1{font-size:26px}
+  .am-mini .am-question-copy{margin-bottom:23px}
+  .am-mini .am-progress{margin:22px 0 31px}
+  .am-mini .am-choices{gap:9px}
+  .am-mini .am-choice-photo{height:135px}
+  .am-mini .am-choice-body{padding:12px 10px;gap:7px;min-height:83px;align-items:flex-start}
+  .am-mini .am-choice-body strong{font-size:11px;line-height:1.8}
+  .am-mini .am-choice-body small{font-size:12px}
+  .am-mini .am-choice-arrow{font-size:15px}
+  .am-mini .am-result-cover{display:flex;flex-direction:column}
+  .am-mini .am-result-image{order:0;min-height:215px}
+  .am-mini .am-result-copy{order:1;padding:30px 23px}
+  .am-mini .am-section-intro{padding-top:38px;align-items:flex-start;flex-direction:column}
+  .am-mini .am-products{grid-template-columns:1fr;gap:13px}
+  .am-mini .am-product{display:flex}
+  .am-mini .am-product>.sq-product-image{width:40%;height:150px;flex:none}
+  .am-mini .am-product-copy{justify-content:center}
+  .am-mini .am-deep-callout{padding:24px}
+  .am-mini .am-result-actions{flex-direction:column;align-items:stretch}
+  .am-mini .am-result-actions .am-button{width:100%}
+}
+@media(max-width:359px){
+  .am-mini .am-choice-photo{height:110px}
+  .am-mini .am-choice-body{min-height:92px}
+  .am-mini .am-choice-body strong{font-size:10.5px}
+  .am-mini .am-hero-stats{font-size:10px;gap:10px}
+  .am-mini .am-hero-stats strong{font-size:18px}
+}
+@media(prefers-reduced-motion:reduce){
+ .am-mini *, .am-mini *:before, .am-mini *:after{animation:none!important;transition:none!important;scroll-behavior:auto!important}
+}

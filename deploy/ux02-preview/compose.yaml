@@ -1,0 +1,37 @@
+# UX-02 isolated preview candidate only. This file is not referenced by the
+# existing Afra Compose project. Do not connect it to production networks.
+# A separate approved HTTPS reverse proxy must restrict exposed paths.
+name: aroman-ux02-preview
+services:
+  miniapp-preview:
+    image: ${AROMAN_UX02_PREVIEW_IMAGE:?An immutable approved UX02 image is required}
+    pull_policy: never
+    user: "node"
+    read_only: true
+    tmpfs:
+      - /tmp:rw,nosuid,nodev,size=64m
+    cap_drop: [ALL]
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 128
+    mem_limit: 512m
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:13087:3000"
+    environment:
+      NODE_ENV: production
+      NEXT_TELEMETRY_DISABLED: "1"
+      # No database, bot token, SMS provider or waitlist credentials.
+      # App health is the read-only Mini App page, not /api/health.
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/scent-quest/mini').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 15s
+      timeout: 7s
+      start_period: 30s
+      retries: 4
+    networks: [preview-only]
+networks:
+  preview-only:
+    # Separate from aroman-coming-soon and the Telegram tunnel networks.
+    name: aroman-ux02-preview-isolated
+    driver: bridge
