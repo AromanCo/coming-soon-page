@@ -1,0 +1,146 @@
+name: UX-02 encrypted preview image delivery
+
+on:
+  push:
+    branches:
+      - "work/ux02-preview-image-delivery-20261111"
+    paths:
+      - ".github/workflows/ux02-preview-image-delivery.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ux02-preview-image-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build-and-package:
+    name: Build, smoke-test and encrypt isolated UX-02 preview
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      APPROVED_SOURCE_SHA: e8c08c7b0d08a1922a52fd46e32f99584b19ff09
+      IMAGE_REF: aroman-ux02-preview:e8c08c7b0d08a1922a52fd46e32f99584b19ff09
+      ARCHIVE_NAME: aroman-ux02-preview-e8c08c7b0d08a1922a52fd46e32f99584b19ff09.tar.gz.age
+      CHECKSUM_NAME: aroman-ux02-preview-e8c08c7b0d08a1922a52fd46e32f99584b19ff09.tar.gz.age.sha256
+      PROVENANCE_NAME: aroman-ux02-preview-e8c08c7b0d08a1922a52fd46e32f99584b19ff09.provenance.txt
+      ARTIFACT_NAME: aroman-ux02-preview-e8c08c7b0d08a1922a52fd46e32f99584b19ff09-age
+    steps:
+      - name: Require existing approved encryption recipient
+        shell: bash
+        env:
+          AGE_RECIPIENT: ${{ vars.M6_AGE_RECIPIENT }}
+        run: |
+          set -euo pipefail
+          if [[ ! "${AGE_RECIPIENT:-}" =~ ^age1[023456789acdefghjklmnpqrstuvwxyz]+$ ]]; then
+            echo "STOP: M6_AGE_RECIPIENT is missing or malformed" >&2
+            exit 1
+          fi
+
+      - name: Checkout exact reviewed UX-02 commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: e8c08c7b0d08a1922a52fd46e32f99584b19ff09
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Require source revision and isolated preview Compose
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$APPROVED_SOURCE_SHA"
+          test -f deploy/ux02-preview/compose.yaml
+          test -f scripts/ux02-edge-preflight.mjs
+          grep -q '127.0.0.1:13087:3000' deploy/ux02-preview/compose.yaml
+
+      - name: Install checksum-pinned age
+        shell: bash
+        env:
+          AGE_RECIPIENT: ${{ vars.M6_AGE_RECIPIENT }}
+        run: |
+          set -euo pipefail
+          file="$RUNNER_TEMP/age-v1.3.2-linux-amd64.tar.gz"
+          curl --fail --location --silent --show-error             "https://github.com/FiloSottile/age/releases/download/v1.3.2/age-v1.3.2-linux-amd64.tar.gz"             -o "$file"
+          printf '%s  %s\n'             'cbe24006683f8eb669266162894b9a522a1af52f2665fbc63a4bb032ed26ac10'             "$file" | sha256sum --check
+          tar -xzf "$file" -C "$RUNNER_TEMP"
+          "$RUNNER_TEMP/age/age" --version | grep -Fx 'v1.3.2'
+          echo "$RUNNER_TEMP/age" >> "$GITHUB_PATH"
+          printf 'aroman ux02 recipient test' |
+            "$RUNNER_TEMP/age/age" -e -r "$AGE_RECIPIENT" > "$RUNNER_TEMP/probe.age"
+          "$RUNNER_TEMP/age/age-inspect" "$RUNNER_TEMP/probe.age" >/dev/null
+
+      - name: Build preview-only immutable amd64 image
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker build --pull --platform linux/amd64             --build-arg "AROMAN_BUILD_REVISION=$APPROVED_SOURCE_SHA"             --build-arg "AROMAN_RELEASE_CANDIDATE=true"             --build-arg "NEXT_PUBLIC_SITE_URL=https://preview.aroman.ir"             --tag "$IMAGE_REF"             --file Dockerfile .
+
+      - name: Verify image metadata and isolated read-only HTTP smoke
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(docker image inspect "$IMAGE_REF" --format '{{.Config.User}}')" = node
+          test "$(docker image inspect "$IMAGE_REF" --format '{{index .Config.Labels "org.opencontainers.image.revision"}}')" = "$APPROVED_SOURCE_SHA"
+          test "$(docker image inspect "$IMAGE_REF" --format '{{.Os}}/{{.Architecture}}')" = linux/amd64
+          docker run -d --name ux02-preview-smoke --no-healthcheck --pull never             --read-only --tmpfs /tmp:rw,nosuid,nodev,size=64m             --cap-drop ALL --security-opt no-new-privileges             -p 127.0.0.1:13087:3000 "$IMAGE_REF"
+          trap 'docker rm -f ux02-preview-smoke >/dev/null 2>&1 || true' EXIT
+          for attempt in $(seq 1 45); do
+            if curl --fail --silent --show-error               "http://127.0.0.1:13087/scent-quest/mini" -o /dev/null 2>/dev/null; then
+              break
+            fi
+            sleep 2
+          done
+          curl --fail --silent --show-error             -D "$RUNNER_TEMP/mini-headers.txt"             "http://127.0.0.1:13087/scent-quest/mini?provider=bale" -o "$RUNNER_TEMP/mini.html"
+          grep -qi '^content-security-policy:.*frame-ancestors' "$RUNNER_TEMP/mini-headers.txt"
+          if grep -qi '^x-frame-options:' "$RUNNER_TEMP/mini-headers.txt"; then
+            echo 'STOP: Mini App still denies Bale iframe' >&2
+            exit 1
+          fi
+          curl --fail --silent --show-error             -D "$RUNNER_TEMP/home-headers.txt"             "http://127.0.0.1:13087/" -o /dev/null
+          grep -qi '^x-frame-options: DENY' "$RUNNER_TEMP/home-headers.txt"
+          curl --fail --silent --show-error             "http://127.0.0.1:13087/data/scent-quest-perfumes.json" -o /dev/null
+          echo "PASS: Isolated non-root read-only image and scoped frame policy"
+
+      - name: Encrypt, verify checksum and write provenance
+        shell: bash
+        env:
+          AGE_RECIPIENT: ${{ vars.M6_AGE_RECIPIENT }}
+        run: |
+          set -euo pipefail
+          image_id="$(docker image inspect "$IMAGE_REF" --format '{{.Id}}')"
+          image_size="$(docker image inspect "$IMAGE_REF" --format '{{.Size}}')"
+          docker save "$IMAGE_REF" |
+            gzip -n -9 | age --encrypt -r "$AGE_RECIPIENT" > "$ARCHIVE_NAME"
+          test -s "$ARCHIVE_NAME"
+          age-inspect "$ARCHIVE_NAME" >/dev/null
+          sha256sum "$ARCHIVE_NAME" > "$CHECKSUM_NAME"
+          sha256sum --check "$CHECKSUM_NAME"
+          cat > "$PROVENANCE_NAME" <<EOF
+          image_ref=$IMAGE_REF
+          image_id=$image_id
+          source_revision=$APPROVED_SOURCE_SHA
+          image_size_bytes=$image_size
+          platform=linux/amd64
+          configured_user=node
+          intended_route=/scent-quest/mini
+          intended_public_hostname=preview.aroman.ir
+          image_is_deployed=false
+          database_credentials=none
+          bot_tokens=none
+          archive_encryption=age-recipient-v1
+          age_version=v1.3.2
+          image_smoke=passed
+          EOF
+
+      - name: Upload encrypted short-retention artifact
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: ${{ env.ARTIFACT_NAME }}
+          path: |
+            ${{ env.ARCHIVE_NAME }}
+            ${{ env.CHECKSUM_NAME }}
+            ${{ env.PROVENANCE_NAME }}
+          retention-days: 7
+          if-no-files-found: error
+          compression-level: 0
