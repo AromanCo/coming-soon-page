@@ -8,6 +8,7 @@ import {BotApi} from "../src/bots/bot-api.mjs";
 import {PostgresSessionStore} from "../src/bots/store.mjs";
 import {processPolledUpdate,orderUpdates} from "../src/bots/runtime.mjs";
 import {readBotConfiguration} from "../src/bots/secrets.mjs";
+import {readMiniAppUrl} from "../src/bots/miniapp-url.mjs";
 
 const platform=process.argv[2];
 let botConfig;
@@ -21,7 +22,10 @@ if(new URL(siteUrl).protocol!=="https:"||(mediaOrigin&&new URL(mediaOrigin).prot
 const pool=new pg.Pool({...((typeof botConfig.database==="string")?{connectionString:botConfig.database}:botConfig.database),ssl:process.env.DATABASE_SSL==="true"?{rejectUnauthorized:true}:false,max:3,keepAlive:true,keepAliveInitialDelayMillis:10000});
 const store=new PostgresSessionStore(pool);
 const api=new BotApi({platform,token:botConfig.token});
-const deps={quiz,catalog,siteUrl};
+let miniAppUrl="";
+try{miniAppUrl=readMiniAppUrl(process.env.BOT_MINIAPP_URL||"",platform);}
+catch{console.error("Invalid approved Mini App URL; refusing bot startup.");process.exit(1);}
+const deps={quiz,catalog,siteUrl,miniAppUrl};
 let stopping=false;process.once("SIGINT",()=>{stopping=true;});process.once("SIGTERM",()=>{stopping=true;});
 let releaseWorkerLock;
 try {
